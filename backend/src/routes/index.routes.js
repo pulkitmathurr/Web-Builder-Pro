@@ -1,0 +1,14 @@
+const express = require('express');
+const router = express.Router();
+
+const authRoutes = require('../modules/auth/auth.routes');
+const superAdminRoutes = require('../modules/superAdmin/superAdmin.routes');
+const schoolRoutes = require('../modules/school/school.routes');
+const contentRoutes = require('../modules/content/content.routes');
+
+router.use('/auth', authRoutes);
+router.use('/super-admin', superAdminRoutes);
+router.use('/school', schoolRoutes);
+router.use('/content', contentRoutes);
+
+module.exports = router;

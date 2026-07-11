@@ -1,0 +1,336 @@
+import { useEffect, useState, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { getPublicSchoolApi } from "../../api/school.api";
+import { getPublicModuleContentApi } from "../../api/content.api";
+import Navbar from "../../components/public/Navbar";
+import Footer from "../../components/public/Footer";
+import { getThemeColors } from "../../constants/publicNav";
+
+const CLASS_ORDER = [
+    'Nursery', 'LKG', 'UKG',
+    'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5',
+    'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10',
+    'Class 11', 'Class 12'
+];
+
+const PERIODS = [
+    { key: 'quarterly', label: 'Quarterly' },
+    { key: 'halfYearly', label: 'Half-Yearly' },
+    { key: 'annual', label: 'Full Year' },
+];
+
+// `amounts` is the new per-period shape; falls back to the legacy flat `amount`
+// field (pre-periods content) when viewing the Full Year period.
+const getAmount = (fee, period) => {
+    if (!fee) return '';
+    const val = fee.amounts?.[period];
+    if (val) return val;
+    if (period === 'annual' && fee.amount) return fee.amount;
+    return '';
+};
+
+const useScrollReveal = () => {
+    const ref = useRef(null);
+    const [visible, setVisible] = useState(false);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+            { threshold: 0.1 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+    return [ref, visible];
+};
+
+const Reveal = ({ children, delay = 0, style = {} }) => {
+    const [ref, visible] = useScrollReveal();
+    return (
+        <div ref={ref} style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(30px)',
+            transition: `opacity 0.7s ease ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+            ...style
+        }}>
+            {children}
+        </div>
+    );
+};
+
+// ── One small optional/transport fee table card ──
+const FeeTableCard = ({ table, tc }) => {
+    const hasItemRows = table.rows.some(r => r.type === 'item');
+    return (
+        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+            <div style={{ padding: '16px 24px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
+                <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#fff' }}>{table.title}</h4>
+            </div>
+            <div>
+                {hasItemRows && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <span style={{ padding: '10px 24px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', borderRight: '1px solid #e2e8f0' }}>{table.itemLabel || 'Item'}</span>
+                        <span style={{ padding: '10px 24px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>{table.amountLabel || 'Amount'}</span>
+                    </div>
+                )}
+                {table.rows.map(row => {
+                    if (row.type === 'subheading') {
+                        return (
+                            <p key={row.id} style={{ fontSize: '12.5px', fontWeight: 700, color: tc.primary, margin: 0, padding: '10px 24px', textTransform: 'uppercase', letterSpacing: '0.05em', background: tc.light, borderBottom: '1px solid #e2e8f0' }}>
+                                {row.text}
+                            </p>
+                        );
+                    }
+                    if (row.type === 'note') {
+                        return (
+                            <p key={row.id} style={{ fontSize: '12.5px', color: '#94a3b8', lineHeight: 1.6, margin: 0, padding: '10px 24px', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9' }}>
+                                {row.text}
+                            </p>
+                        );
+                    }
+                    return (
+                        <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', borderBottom: '1px solid #f1f5f9' }}>
+                            <span style={{ padding: '10px 24px', fontSize: '14px', color: '#334155', borderRight: '1px solid #f1f5f9' }}>{row.label}</span>
+                            <span style={{ padding: '10px 24px', fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textAlign: 'right' }}>{row.value}</span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
+const FeeStructurePublic = () => {
+    const { slug } = useParams();
+    const navigate = useNavigate();
+    const [school, setSchool] = useState(null);
+    const [content, setContent] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [scrollY, setScrollY] = useState(0);
+    const [selectedPeriod, setSelectedPeriod] = useState('annual');
+
+    useEffect(() => {
+        fetchData();
+        const handleScroll = () => setScrollY(window.scrollY);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [slug]);
+
+    const fetchData = async () => {
+        try {
+            const res = await getPublicSchoolApi(slug);
+            setSchool(res.data);
+            if (res.data?.id) {
+                const contentRes = await getPublicModuleContentApi(res.data.id, 'fee');
+                const d = contentRes.data;
+                const hasData = d?.classes?.length > 0 || d?.optionalFeeTables?.length > 0 || d?.transportTables?.length > 0;
+                if (hasData) setContent(d);
+            }
+        } catch (e) {
+            navigate('/school-not-found');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getTotal = (fees, period = selectedPeriod) => fees.reduce((sum, f) => {
+        const n = parseFloat(getAmount(f, period)?.toString().replace(/,/g, '') || 0);
+        return sum + (isNaN(n) ? 0 : n);
+    }, 0);
+
+    if (loading) return (
+        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '48px', height: '48px', border: '3px solid #f0c4c4', borderTop: '3px solid #8b2252', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
+
+    if (!school) return null;
+
+    const tc = getThemeColors(school.theme);
+
+    if (!content) return (
+        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
+            <p style={{ fontSize: '18px', color: '#64748b' }}>Fee Structure not published yet</p>
+            <button onClick={() => navigate(`/school/${slug}`)}
+                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                ← Back to Home
+            </button>
+        </div>
+    );
+
+    const classes = content.classes || [];
+    const sortedClasses = [...classes].sort((a, b) => CLASS_ORDER.indexOf(a.name) - CLASS_ORDER.indexOf(b.name));
+    const allFeeTypes = [];
+    classes.forEach(cls => cls.fees.forEach(f => {
+        if (getAmount(f, selectedPeriod) && !allFeeTypes.includes(f.type)) allFeeTypes.push(f.type);
+    }));
+
+    const optionalFeeTables = content.optionalFeeTables || [];
+    const transportTables = content.transportTables || [];
+
+    return (
+        <>
+            <style>{`
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                html { scroll-behavior: smooth; }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                body { background: #ffffff; }
+                .fee-row { transition: background 0.15s; }
+                .fee-row:hover { background: ${tc.light} !important; }
+                ::-webkit-scrollbar { width: 6px; height: 6px; }
+                ::-webkit-scrollbar-track { background: #f8fafc; }
+                ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+            `}</style>
+
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+
+                {/* ── Navbar ── */}
+                <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="fee" />
+
+                {/* ── Hero ── */}
+                <div style={{ height: '60vh', background: `linear-gradient(135deg,${tc.dark} 0%,${tc.primary} 100%)`, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', background: `radial-gradient(circle,${tc.secondary}20,transparent)`, top: '-200px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '30px 30px' }}></div>
+                    <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
+                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '16px' }}>{school.name}</p>
+                        <h1 style={{ fontSize: 'clamp(48px,7vw,96px)', fontWeight: 900, color: '#ffffff', letterSpacing: '-3px', lineHeight: 1 }}>Fee Structure</h1>
+                        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>Academic Year Fee Breakdown</p>
+                    </div>
+                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom,transparent,#ffffff)' }}></div>
+                </div>
+
+                {/* ── Combined Academic Fee Table — all classes side by side ── */}
+                {sortedClasses.length > 0 && (
+                    <div style={{ padding: '4rem 5rem 5rem', background: '#ffffff' }}>
+                        <Reveal>
+                            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '2rem' }}>
+                                    <div>
+                                        <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Academic Fee Structure</p>
+                                        <h2 style={{ fontSize: '38px', fontWeight: 900, color: '#0f172a', letterSpacing: '-1.5px' }}>Class-wise Fee Breakdown</h2>
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>View By</label>
+                                        <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)}
+                                            style={{ padding: '11px 18px', borderRadius: '8px', border: `1.5px solid ${tc.primary}`, fontSize: '13.5px', fontWeight: 700, color: tc.primary, background: '#ffffff', cursor: 'pointer', outline: 'none' }}>
+                                            {PERIODS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                {allFeeTypes.length === 0 ? (
+                                    <div style={{ padding: '3rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '14px', color: '#94a3b8' }}>{PERIODS.find(p => p.key === selectedPeriod)?.label} fee details not added yet — please contact the school office.</p>
+                                    </div>
+                                ) : (
+                                <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'auto', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', maxWidth: '100%' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${560 + allFeeTypes.length * 160}px` }}>
+                                        <thead>
+                                            <tr style={{ background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
+                                                <th style={{ position: 'sticky', left: 0, zIndex: 2, background: tc.primary, padding: '16px 24px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Class</th>
+                                                {allFeeTypes.map(t => (
+                                                    <th key={t} style={{ padding: '16px 20px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.15)' }}>{t}</th>
+                                                ))}
+                                                <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {sortedClasses.map((cls, i) => (
+                                                <tr key={cls.name} className="fee-row" style={{ background: i % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? '#ffffff' : '#fafafa', padding: '14px 24px', fontSize: '14px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{cls.name}</td>
+                                                    {allFeeTypes.map(t => {
+                                                        const fee = cls.fees.find(f => f.type === t);
+                                                        const amt = getAmount(fee, selectedPeriod);
+                                                        return (
+                                                            <td key={t} style={{ padding: '14px 20px', textAlign: 'right', fontSize: '13.5px', color: amt ? '#334155' : '#cbd5e1', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                                                {amt ? `₹${parseFloat(amt).toLocaleString('en-IN')}` : '—'}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                    <td style={{ padding: '14px 24px', textAlign: 'right', fontSize: '14.5px', fontWeight: 800, color: tc.primary, borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                                        ₹{getTotal(cls.fees).toLocaleString('en-IN')}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                )}
+
+                                {/* Note */}
+                                <div style={{ marginTop: '1.5rem', padding: '16px 24px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fde68a', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                    <svg width="18" height="18" fill="none" stroke="#d97706" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: '1px' }}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                    <p style={{ fontSize: '13px', color: '#92400e', lineHeight: 1.6 }}>
+                                        All amounts are indicative and subject to change. Please contact the school office for the latest fee schedule and payment details.
+                                    </p>
+                                </div>
+                            </div>
+                        </Reveal>
+                    </div>
+                )}
+
+                {/* ── Other Optional Subjects ── */}
+                {optionalFeeTables.length > 0 && (
+                    <div style={{ padding: '2rem 5rem 5rem', background: '#fafafa' }}>
+                        <Reveal>
+                            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Optional Add-ons</p>
+                                    <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>Other optional subjects are also offered</h2>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                                    {optionalFeeTables.map((table, i) => (
+                                        <Reveal key={table.id} delay={i * 0.08}>
+                                            <FeeTableCard table={table} tc={tc} />
+                                        </Reveal>
+                                    ))}
+                                </div>
+                            </div>
+                        </Reveal>
+                    </div>
+                )}
+
+                {/* ── School Transport ── */}
+                {transportTables.length > 0 && (
+                    <div style={{ padding: '2rem 5rem 5rem', background: '#ffffff' }}>
+                        <Reveal>
+                            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+                                <div style={{ marginBottom: '2rem' }}>
+                                    <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Getting to School</p>
+                                    <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>School Transport (Optional)</h2>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                                    {transportTables.map((table, i) => (
+                                        <Reveal key={table.id} delay={i * 0.08}>
+                                            <FeeTableCard table={table} tc={tc} />
+                                        </Reveal>
+                                    ))}
+                                </div>
+                            </div>
+                        </Reveal>
+                    </div>
+                )}
+
+                {/* ── Footer CTA ── */}
+                <div style={{ padding: '5rem', background: tc.light, textAlign: 'center' }}>
+                    <Reveal>
+                        <h3 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', letterSpacing: '-0.5px' }}>
+                            Have questions about fees?
+                        </h3>
+                        <button onClick={() => navigate(`/school/${slug}`)}
+                            style={{ padding: '14px 36px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 10px 30px ${tc.primary}30`, letterSpacing: '0.05em' }}>
+                            Contact Us →
+                        </button>
+                    </Reveal>
+                </div>
+
+                {/* ── Site Footer ── */}
+                <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />
+            </div>
+        </>
+    );
+};
+
+export default FeeStructurePublic;

@@ -1,0 +1,445 @@
+import { useEffect, useState } from 'react';
+import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi, uploadPdfApi } from '../../../api/content.api';
+import RichTextEditor from '../../../components/common/RichTextEditor';
+import ImageCropModal from '../../../components/common/ImageCropModal';
+import ItalicToggle from '../../../components/common/ItalicToggle';
+import useSchoolStore from '../../../store/schoolStore';
+import toast from 'react-hot-toast';
+
+const hexToRgba = (hex, alpha) => {
+    const h = hex.replace('#', '');
+    const n = parseInt(h, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+};
+
+// Default categories prefilled with the standard CBSE Mandatory Disclosure labels.
+// 'info' categories = label + free-text details (admin just fills in the Details column).
+// 'documents' categories = label + a PDF upload per row.
+const defaultContent = {
+    banner: '', heading: '', description: '',
+    disclosurePdf: { label: 'Mandatory Public Disclosure', pdfUrl: '' },
+    categories: [
+        {
+            id: 'cat-a', name: 'General Information', type: 'info',
+            rows: [
+                { id: 'a1', label: 'Name of the School', details: '' },
+                { id: 'a2', label: 'Affiliation No. (if applicable)', details: '' },
+                { id: 'a3', label: 'School Code', details: '' },
+                { id: 'a4', label: 'Complete Address with Pin Code', details: '' },
+                { id: 'a5', label: 'Principal Name', details: '' },
+                { id: 'a6', label: 'School Email ID', details: '' },
+                { id: 'a7', label: 'Contact Details (Landline/Mobile)', details: '' },
+            ],
+        },
+        {
+            id: 'cat-b', name: 'Documents and Information', type: 'documents',
+            rows: [
+                { id: 'b1', label: 'Copies of Affiliation/Upgradation Letter and Recent Extension of Affiliation, if any', pdfUrl: '' },
+                { id: 'b2', label: 'Copies of Societies/Trust/Company Registration/Renewal Certificate, as applicable', pdfUrl: '' },
+                { id: 'b3', label: 'Copy of No Objection Certificate (NOC) Issued, if applicable, by the State Govt./UT', pdfUrl: '' },
+                { id: 'b4', label: "Copies of Recognition Certificate under RTE Act, 2009, and it's renewal if applicable", pdfUrl: '' },
+                { id: 'b5', label: 'Copy of Valid Building Safety Certificate', pdfUrl: '' },
+                { id: 'b6', label: 'Copy of Valid Fire Safety Certificate', pdfUrl: '' },
+            ],
+        },
+        {
+            id: 'cat-c', name: 'Results and Academics', type: 'documents',
+            rows: [
+                { id: 'c1', label: 'Fee Structure of the School', pdfUrl: '' },
+                { id: 'c2', label: 'Annual Academic Calendar', pdfUrl: '' },
+                { id: 'c3', label: 'List of School Management Committee (SMC)', pdfUrl: '' },
+                { id: 'c4', label: 'List of Parents Teachers Association (PTA) Members', pdfUrl: '' },
+                { id: 'c5', label: 'Last Three-Year Result of the Board Examination as per Applicability', pdfUrl: '' },
+            ],
+        },
+        {
+            id: 'cat-d', name: 'Staff Details (Teaching)', type: 'info',
+            rows: [
+                { id: 'd1', label: 'Principal', details: '' },
+                { id: 'd2', label: 'No. of Teachers (PGT / TGT / PRT)', details: '' },
+                { id: 'd3', label: 'Teacher Section Ratio', details: '' },
+                { id: 'd4', label: 'Details of Special Educator', details: '' },
+                { id: 'd5', label: 'Details of Counsellor and Wellness Teacher', details: '' },
+            ],
+        },
+        {
+            id: 'cat-e', name: 'School Infrastructure', type: 'info',
+            rows: [
+                { id: 'e1', label: 'Total Campus Area of School in Square Metre', details: '' },
+                { id: 'e2', label: 'No. and Size of Classroom in Square Metre', details: '' },
+                { id: 'e3', label: 'No. and Size of Laboratories including Computer Labs in Square Metre', details: '' },
+                { id: 'e4', label: 'Internet Facility (Y/N)', details: '' },
+                { id: 'e5', label: 'No. of Girls Toilets', details: '' },
+                { id: 'e6', label: 'No. of Boys Toilets', details: '' },
+            ],
+        },
+    ],
+};
+
+// ── Migrates any previously-saved category shape into the current { rows: [...] } shape.
+// Earlier versions of this module saved `documents: [{id,title,pdfUrl}]` instead of
+// `rows: [{id,label,pdfUrl}]` — this keeps old saved data from crashing the new UI. ──
+const normalizeCategories = (categories) => {
+    if (!Array.isArray(categories)) return defaultContent.categories;
+    return categories.map(cat => {
+        if (Array.isArray(cat.rows)) return { type: 'documents', ...cat };
+        if (Array.isArray(cat.documents)) {
+            return {
+                ...cat,
+                type: cat.type || 'documents',
+                rows: cat.documents.map(d => ({ id: d.id, label: d.title || d.label || '', pdfUrl: d.pdfUrl || '' })),
+            };
+        }
+        return { ...cat, type: cat.type || 'documents', rows: [] };
+    });
+};
+
+const PublicDisclosure = () => {
+    const { tc } = useSchoolStore();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
+    const [isPublished, setIsPublished] = useState(false);
+    const [content, setContent] = useState(defaultContent);
+    const [uploading, setUploading] = useState({});
+    const [bannerCropSrc, setBannerCropSrc] = useState(null);
+
+    useEffect(() => { fetchContent(); }, []);
+
+    const fetchContent = async () => {
+        try {
+            const res = await getModuleContentApi('disclosure');
+            if (res.data) {
+                const merged = { ...defaultContent, ...res.data.content };
+                merged.categories = normalizeCategories(res.data.content?.categories);
+                if (!merged.disclosurePdf) merged.disclosurePdf = defaultContent.disclosurePdf;
+                setContent(merged);
+                setIsPublished(res.data.is_published === 1);
+            }
+        } catch (e) {
+            console.log('No content yet');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchPublishedFlag = async () => {
+        const res = await getModuleContentApi('disclosure');
+        return !!res?.data?.is_published;
+    };
+
+    const handleSave = async (publish = false) => {
+        publish ? setPublishing(true) : setSaving(true);
+        try {
+            await saveModuleContentApi('disclosure', content, publish ? 1 : isPublished ? 1 : 0);
+            if (publish) {
+                let current = await fetchPublishedFlag();
+                if (!current) {
+                    await togglePublishApi('disclosure', 1);
+                    current = await fetchPublishedFlag();
+                }
+                setIsPublished(current);
+                toast.success('Public Disclosure page published! 🎉');
+            }
+            else toast.success('Saved!');
+        } catch (e) {
+            toast.error('Failed to save');
+        } finally {
+            setSaving(false); setPublishing(false);
+        }
+    };
+
+    const handleUnpublish = async () => {
+        try {
+            let current = await fetchPublishedFlag();
+            if (current) {
+                await togglePublishApi('disclosure', 0);
+                current = await fetchPublishedFlag();
+            }
+            setIsPublished(current);
+            toast.success('Unpublished');
+        } catch (e) { toast.error('Failed'); }
+    };
+
+    const updateField = (field, value) => setContent(prev => ({ ...prev, [field]: value }));
+
+    const updateCategory = (catIdx, field, value) => {
+        const updated = [...content.categories];
+        updated[catIdx] = { ...updated[catIdx], [field]: value };
+        updateField('categories', updated);
+    };
+
+    const uploadBanner = async (file) => {
+        setUploading(prev => ({ ...prev, banner: true }));
+        try {
+            const res = await uploadContentImageApi(file);
+            updateField('banner', res.data.url);
+            toast.success('Banner uploaded!');
+        } catch (e) { toast.error('Failed to upload'); }
+        finally { setUploading(prev => ({ ...prev, banner: false })); }
+    };
+
+    const uploadDisclosurePdf = async (file) => {
+        setUploading(prev => ({ ...prev, disclosurePdf: true }));
+        try {
+            const res = await uploadPdfApi(file);
+            updateField('disclosurePdf', { ...content.disclosurePdf, pdfUrl: res.data.url });
+            toast.success('PDF uploaded!');
+        } catch (e) { toast.error('Failed to upload PDF'); }
+        finally { setUploading(prev => ({ ...prev, disclosurePdf: false })); }
+    };
+
+    const inputStyle = {
+        width: '100%', padding: '11px 14px', border: '0.5px solid #e2e8f0',
+        borderRadius: '10px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
+        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
+    };
+
+    const labelStyle = {
+        display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b',
+        marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
+    };
+
+    if (loading) return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+            <div style={{ width: '40px', height: '40px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
+
+    return (
+        <>
+            <style>{`
+                @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .pd-section { animation: fadeInUp 0.35s ease forwards; }
+            `}</style>
+
+            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+
+                {/* Hero Header */}
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Public Disclosure</p>
+                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Public Disclosure</h1>
+                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                                Mandatory CBSE-format disclosure — general info, document uploads, staff & infrastructure details, and the consolidated disclosure PDF.
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px', flexShrink: 0 }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
+                            <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pd-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+                    {/* Top section — banner, heading, description */}
+                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div>
+                            <label style={labelStyle}>Banner Image</label>
+                            <div onClick={() => document.getElementById('pd-banner-upload').click()}
+                                style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: content.banner ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: content.banner ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: content.banner ? '160px' : 'auto' }}>
+                                {uploading.banner ? (
+                                    <div style={{ padding: '2rem' }}><div style={{ width: '24px', height: '24px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div></div>
+                                ) : content.banner ? (
+                                    <img src={content.banner} alt="" style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+                                ) : (
+                                    <p style={{ fontSize: '13px', color: '#64748b' }}>🖼️ Recommended: 1920×1080</p>
+                                )}
+                            </div>
+                            <input id="pd-banner-upload" type="file" accept="image/*"
+                                onChange={e => {
+                                    const f = e.target.files[0];
+                                    e.target.value = '';
+                                    if (f) setBannerCropSrc(URL.createObjectURL(f));
+                                }} style={{ display: 'none' }} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Heading</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)}
+                                    placeholder="e.g. Public Disclosure" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
+                                <ItalicToggle active={!!content.headingItalic} onToggle={() => updateField('headingItalic', !content.headingItalic)} />
+                            </div>
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Description</label>
+                            <RichTextEditor value={content.description} onChange={val => updateField('description', val)}
+                                placeholder="A short note about transparency and compliance..." minHeight="100px" />
+                        </div>
+                    </div>
+
+                    {/* Category sections */}
+                    {content.categories.map((cat, catIdx) => (
+                        <CategorySection key={cat.id} category={cat} catIndex={catIdx}
+                            onRenameCategory={(name) => updateCategory(catIdx, 'name', name)}
+                            onRemoveCategory={content.categories.length > 1 ? () => updateField('categories', content.categories.filter((_, i) => i !== catIdx)) : null}
+                            onUpdateRow={(rowIdx, field, val) => {
+                                const updatedRows = [...cat.rows];
+                                updatedRows[rowIdx] = { ...updatedRows[rowIdx], [field]: val };
+                                updateCategory(catIdx, 'rows', updatedRows);
+                            }}
+                            onRemoveRow={(rowIdx) => updateCategory(catIdx, 'rows', cat.rows.filter((_, i) => i !== rowIdx))}
+                            onAddRow={() => updateCategory(catIdx, 'rows',
+                                [...cat.rows, cat.type === 'info'
+                                    ? { id: `row-${Date.now()}`, label: '', details: '' }
+                                    : { id: `row-${Date.now()}`, label: '', pdfUrl: '', linkUrl: '', description: '' }]
+                            )}
+                            uploading={uploading}
+                            setUploading={setUploading}
+                        />
+                    ))}
+
+                    {/* Add new category */}
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button onClick={() => updateField('categories', [...content.categories, { id: `cat-${Date.now()}`, name: '', type: 'info', rows: [] }])}
+                            style={{ flex: 1, padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                            + Add Info Table (text details)
+                        </button>
+                        <button onClick={() => updateField('categories', [...content.categories, { id: `cat-${Date.now()}`, name: '', type: 'documents', rows: [] }])}
+                            style={{ flex: 1, padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                            + Add Document Table (PDF uploads)
+                        </button>
+                    </div>
+
+                    {/* Standalone Mandatory Public Disclosure PDF button */}
+                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Mandatory Public Disclosure PDF</p>
+                        <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>The consolidated official disclosure document — shown as a standalone button at the bottom of the page</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                                <label style={labelStyle}>Button Label</label>
+                                <input type="text" value={content.disclosurePdf.label}
+                                    onChange={e => updateField('disclosurePdf', { ...content.disclosurePdf, label: e.target.value })}
+                                    placeholder="e.g. Mandatory Public Disclosure" style={inputStyle} />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>PDF</label>
+                                <div onClick={() => document.getElementById('pd-disclosure-pdf').click()}
+                                    style={{ padding: '11px 14px', border: '1px dashed #e2e8f0', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: content.disclosurePdf.pdfUrl ? '#15803d' : '#64748b', background: content.disclosurePdf.pdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
+                                    {uploading.disclosurePdf ? 'Uploading...' : content.disclosurePdf.pdfUrl ? '✓ PDF uploaded — click to change' : '📄 Click to upload PDF'}
+                                </div>
+                                <input id="pd-disclosure-pdf" type="file" accept="application/pdf"
+                                    onChange={e => { const f = e.target.files[0]; if (f) uploadDisclosurePdf(f); }} style={{ display: 'none' }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom Save Bar */}
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : 'Save Draft'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {bannerCropSrc && (
+                <ImageCropModal
+                    imageSrc={bannerCropSrc}
+                    aspect={16 / 9}
+                    onCancel={() => setBannerCropSrc(null)}
+                    onCropComplete={(croppedFile) => { setBannerCropSrc(null); uploadBanner(croppedFile); }}
+                />
+            )}
+        </>
+    );
+};
+
+// ── Category Section — header (editable name + remove) + rows table.
+// Row shape depends on category.type: 'info' rows have a free-text "details" textarea,
+// 'documents' rows have a PDF upload, matching the two table styles in the reference site. ──
+const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategory, onUpdateRow, onRemoveRow, onAddRow, uploading, setUploading }) => {
+    const { tc } = useSchoolStore();
+    const inputStyle = { width: '100%', padding: '9px 12px', border: '0.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const letter = String.fromCharCode(65 + catIndex);
+
+    const handlePdfUpload = async (rowId, rowIdx, file) => {
+        setUploading(prev => ({ ...prev, [rowId]: true }));
+        try {
+            const res = await uploadPdfApi(file);
+            onUpdateRow(rowIdx, 'pdfUrl', res.data.url);
+            toast.success('PDF uploaded!');
+        } catch (e) {
+            toast.error('Failed to upload PDF');
+        } finally {
+            setUploading(prev => ({ ...prev, [rowId]: false }));
+        }
+    };
+
+    return (
+        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1.25rem' }}>
+                <span style={{ fontSize: '15px', fontWeight: 800, color: tc.primary, flexShrink: 0 }}>{letter}.</span>
+                <input type="text" value={category.name} onChange={e => onRenameCategory(e.target.value)}
+                    placeholder="Category name"
+                    style={{ flex: 1, padding: '10px 14px', border: '0.5px solid #e2e8f0', borderRadius: '8px', fontSize: '15px', fontWeight: 700, color: '#0f172a', outline: 'none', background: '#fafafa' }} />
+                <span style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0 }}>
+                    {category.type === 'info' ? 'Info Table' : 'Document Table'}
+                </span>
+                {onRemoveCategory && (
+                    <button onClick={onRemoveCategory} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: '9px 14px', flexShrink: 0 }}>
+                        Remove
+                    </button>
+                )}
+            </div>
+
+            {/* Column headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', padding: '0 0 8px', borderBottom: '1px solid #f1f5f9', marginBottom: '4px' }}>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Information</span>
+                <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{category.type === 'info' ? 'Details' : 'PDF, Link or Text'}</span>
+                <span></span>
+            </div>
+
+            {(category.rows || []).map((row, rowIdx) => (
+                <div key={row.id} style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', alignItems: 'start', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
+                    <input type="text" value={row.label} onChange={e => onUpdateRow(rowIdx, 'label', e.target.value)}
+                        placeholder="e.g. Name of the School" style={inputStyle} />
+                    {category.type === 'info' ? (
+                        <textarea value={row.details} onChange={e => onUpdateRow(rowIdx, 'details', e.target.value)}
+                            placeholder="Type details here..." rows={2}
+                            style={{ ...inputStyle, resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <div onClick={() => document.getElementById(`pd-row-pdf-${row.id}`).click()}
+                                style={{ padding: '9px 12px', border: '1px dashed #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: row.pdfUrl ? '#15803d' : '#64748b', background: row.pdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
+                                {uploading[row.id] ? 'Uploading...' : row.pdfUrl ? '✓ Uploaded — click to change' : '📄 Upload PDF'}
+                            </div>
+                            <input id={`pd-row-pdf-${row.id}`} type="file" accept="application/pdf"
+                                onChange={e => { const f = e.target.files[0]; if (f) handlePdfUpload(row.id, rowIdx, f); }} style={{ display: 'none' }} />
+                            <input type="text" value={row.linkUrl || ''} onChange={e => onUpdateRow(rowIdx, 'linkUrl', e.target.value)}
+                                placeholder="OR paste a link (https://...)" style={{ ...inputStyle, fontSize: '12px' }} />
+                            <textarea value={row.description || ''} onChange={e => onUpdateRow(rowIdx, 'description', e.target.value)}
+                                placeholder="OR / additionally — type text here (optional)" rows={2}
+                                style={{ ...inputStyle, fontSize: '12px', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
+                        </div>
+                    )}
+                    <button onClick={() => onRemoveRow(rowIdx)} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: '9px', height: 'fit-content' }}>×</button>
+                </div>
+            ))}
+
+            <button onClick={onAddRow}
+                style={{ width: '100%', marginTop: '12px', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                + Add Row
+            </button>
+        </div>
+    );
+};
+
+export default PublicDisclosure;

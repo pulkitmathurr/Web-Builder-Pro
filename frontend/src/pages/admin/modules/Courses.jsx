@@ -1,0 +1,552 @@
+import { useEffect, useState } from 'react';
+import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi } from '../../../api/content.api';
+import toast from 'react-hot-toast';
+import RichTextEditor from '../../../components/common/RichTextEditor';
+import ImageCropModal from '../../../components/common/ImageCropModal';
+import ItalicToggle from '../../../components/common/ItalicToggle';
+import useSchoolStore from '../../../store/schoolStore';
+
+const hexToRgba = (hex, alpha) => {
+    const h = hex.replace('#', '');
+    const n = parseInt(h, 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+};
+
+const LEVELS = [
+    {
+        key: 'primary', label: 'Primary School',
+        icon: <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
+    },
+    {
+        key: 'middle', label: 'Middle School',
+        icon: <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
+    },
+    {
+        key: 'high', label: 'High School',
+        icon: <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /></svg>,
+    },
+    {
+        key: 'senior', label: 'Senior School',
+        icon: <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>,
+    },
+];
+
+const ImageIcon = () => (
+    <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+);
+
+const PersonIcon = ({ size = 22 }) => (
+    <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+);
+
+const defaultLevelData = {
+    enabled: false,
+    bannerImage: '',
+    aboutHeading: '',
+    aboutQuote: '',
+    aboutAuthor: '',
+    aboutAuthorDesignation: '',
+    aboutImage: '',
+    uniqueHeading: '',
+    uniqueText: '',
+    uniqueImage: '',
+    gallery: [],
+    contacts: [],
+};
+
+const defaultContent = {
+    primary: { ...defaultLevelData },
+    middle: { ...defaultLevelData },
+    high: { ...defaultLevelData },
+    senior: { ...defaultLevelData },
+};
+
+const Courses = () => {
+    const { tc } = useSchoolStore();
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
+    const [isPublished, setIsPublished] = useState(false);
+    const [content, setContent] = useState(defaultContent);
+    const [activeLevel, setActiveLevel] = useState(null);
+    const [activeTab, setActiveTab] = useState('banner');
+    const [uploading, setUploading] = useState({});
+    const [cropTarget, setCropTarget] = useState(null); // { kind: 'field' | 'gallery' | 'contact', field?, idx?, aspect, src }
+
+    useEffect(() => { fetchContent(); }, []);
+
+    const fetchContent = async () => {
+        try {
+            const res = await getModuleContentApi('courses');
+            if (res.data) {
+                const merged = { ...defaultContent };
+                Object.keys(res.data.content || {}).forEach(k => {
+                    merged[k] = { ...defaultLevelData, ...res.data.content[k] };
+                });
+                setContent(merged);
+                setIsPublished(res.data.is_published === 1);
+                const firstEnabled = LEVELS.find(l => merged[l.key]?.enabled);
+                if (firstEnabled) setActiveLevel(firstEnabled.key);
+            }
+        } catch (e) {
+            console.log('No content yet');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const fetchPublishedFlag = async () => {
+        const res = await getModuleContentApi('courses');
+        return !!res?.data?.is_published;
+    };
+
+    const handleSave = async (publish = false) => {
+        publish ? setPublishing(true) : setSaving(true);
+        try {
+            await saveModuleContentApi('courses', content, publish ? 1 : isPublished ? 1 : 0);
+            if (publish) {
+                let current = await fetchPublishedFlag();
+                if (!current) {
+                    await togglePublishApi('courses', 1);
+                    current = await fetchPublishedFlag();
+                }
+                setIsPublished(current);
+                toast.success('Courses published!');
+            }
+            else toast.success('Saved!');
+        } catch (e) {
+            toast.error('Failed to save');
+        } finally {
+            setSaving(false); setPublishing(false);
+        }
+    };
+
+    const handleUnpublish = async () => {
+        try {
+            let current = await fetchPublishedFlag();
+            if (current) {
+                await togglePublishApi('courses', 0);
+                current = await fetchPublishedFlag();
+            }
+            setIsPublished(current);
+            toast.success('Unpublished');
+        } catch (e) { toast.error('Failed'); }
+    };
+
+    const toggleLevel = (key) => {
+        const newEnabled = !content[key].enabled;
+        setContent(prev => ({ ...prev, [key]: { ...prev[key], enabled: newEnabled } }));
+        if (newEnabled) { setActiveLevel(key); setActiveTab('banner'); }
+        else if (activeLevel === key) {
+            const next = LEVELS.find(l => l.key !== key && content[l.key].enabled);
+            setActiveLevel(next ? next.key : null);
+        }
+    };
+
+    const updateField = (field, value) => {
+        setContent(prev => ({ ...prev, [activeLevel]: { ...prev[activeLevel], [field]: value } }));
+    };
+
+    const handleImageUpload = async (file, field) => {
+        setUploading(prev => ({ ...prev, [field]: true }));
+        try {
+            const res = await uploadContentImageApi(file);
+            updateField(field, res.data.url);
+            toast.success('Uploaded!');
+        } catch (e) {
+            toast.error('Failed to upload');
+        } finally {
+            setUploading(prev => ({ ...prev, [field]: false }));
+        }
+    };
+
+    // Gallery
+    const addGalleryImage = async (file) => {
+        setUploading(prev => ({ ...prev, gallery: true }));
+        try {
+            const res = await uploadContentImageApi(file);
+            const current = content[activeLevel].gallery || [];
+            updateField('gallery', [...current, res.data.url]);
+            toast.success('Image added!');
+        } catch (e) {
+            toast.error('Failed');
+        } finally {
+            setUploading(prev => ({ ...prev, gallery: false }));
+        }
+    };
+
+    const removeGalleryImage = (idx) => {
+        const current = content[activeLevel].gallery || [];
+        updateField('gallery', current.filter((_, i) => i !== idx));
+    };
+
+    // Contacts
+    const addContact = () => {
+        const current = content[activeLevel].contacts || [];
+        updateField('contacts', [...current, { photo: '', name: '', designation: '', email: '', phone: '' }]);
+    };
+
+    const updateContact = (idx, field, value) => {
+        const current = [...(content[activeLevel].contacts || [])];
+        current[idx] = { ...current[idx], [field]: value };
+        updateField('contacts', current);
+    };
+
+    const removeContact = (idx) => {
+        const current = content[activeLevel].contacts || [];
+        updateField('contacts', current.filter((_, i) => i !== idx));
+    };
+
+    const uploadContactPhoto = async (idx, file) => {
+        const key = `contact-${idx}`;
+        setUploading(prev => ({ ...prev, [key]: true }));
+        try {
+            const res = await uploadContentImageApi(file);
+            updateContact(idx, 'photo', res.data.url);
+        } catch (e) {
+            toast.error('Failed to upload');
+        } finally {
+            setUploading(prev => ({ ...prev, [key]: false }));
+        }
+    };
+
+    const onCropConfirmed = (croppedFile) => {
+        const t = cropTarget;
+        setCropTarget(null);
+        if (t.kind === 'field') handleImageUpload(croppedFile, t.field);
+        else if (t.kind === 'gallery') addGalleryImage(croppedFile);
+        else if (t.kind === 'contact') uploadContactPhoto(t.idx, croppedFile);
+    };
+
+    const inputStyle = {
+        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
+        borderRadius: '6px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
+        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
+        transition: 'border 0.2s, box-shadow 0.2s'
+    };
+
+    const labelStyle = {
+        display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b',
+        marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
+    };
+
+    const ImageBox = ({ label, value, field, hint, aspect = 16 / 9 }) => (
+        <div>
+            <label style={labelStyle}>{label}</label>
+            <div onClick={() => document.getElementById(`img-${field}`).click()}
+                style={{ border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: value ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: value ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: value ? '160px' : 'auto' }}>
+                {uploading[field] ? (
+                    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '28px', height: '28px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                        <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p>
+                    </div>
+                ) : value ? (
+                    <img src={value} alt="" style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+                ) : (
+                    <>
+                        <div style={{ color: '#cbd5e1', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><ImageIcon /></div>
+                        <p style={{ fontSize: '13px', color: '#64748b' }}>Click to upload</p>
+                        {hint && <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{hint}</p>}
+                    </>
+                )}
+            </div>
+            <input id={`img-${field}`} type="file" accept="image/*"
+                onChange={e => {
+                    const f = e.target.files[0];
+                    e.target.value = '';
+                    if (f) setCropTarget({ kind: 'field', field, aspect, src: URL.createObjectURL(f) });
+                }}
+                style={{ display: 'none' }} />
+        </div>
+    );
+
+    const tabs = [
+        { key: 'banner', label: 'Banner' },
+        { key: 'about', label: 'About' },
+        { key: 'unique', label: 'Why Unique' },
+        { key: 'gallery', label: 'Gallery' },
+        { key: 'contacts', label: 'Contacts' },
+    ];
+
+    if (loading) return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
+            <div style={{ width: '40px', height: '40px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
+
+    const activeData = activeLevel ? content[activeLevel] : null;
+
+    return (
+        <>
+            <style>{`
+                @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                .crs-section { animation: fadeInUp 0.35s ease forwards; }
+                .crs-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
+                .level-toggle { transition: all 0.2s; }
+            `}</style>
+
+            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+
+                {/* Hero Header */}
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Courses</p>
+                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>School Levels</h1>
+                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                                Enable the levels that exist in your school and fill their details — each becomes its own page.
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px', flexShrink: 0 }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
+                            <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Level Toggles */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '1.75rem' }}>
+                    {LEVELS.map(lv => {
+                        const enabled = content[lv.key]?.enabled;
+                        return (
+                            <div key={lv.key} className="level-toggle"
+                                onClick={() => toggleLevel(lv.key)}
+                                style={{
+                                    padding: '1.15rem', borderRadius: '8px', cursor: 'pointer',
+                                    border: enabled ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0',
+                                    background: enabled ? tc.light : '#ffffff',
+                                    boxShadow: enabled ? `0 6px 16px ${hexToRgba(tc.primary, 0.1)}` : 'none',
+                                }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                                    <span style={{ color: enabled ? tc.primary : '#94a3b8' }}>{lv.icon}</span>
+                                    <div style={{ width: '34px', height: '18px', borderRadius: '9px', background: enabled ? tc.primary : '#e2e8f0', position: 'relative', transition: 'all 0.2s' }}>
+                                        <div style={{ width: '14px', height: '14px', borderRadius: '50%', background: '#fff', position: 'absolute', top: '2px', left: enabled ? '18px' : '2px', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}></div>
+                                    </div>
+                                </div>
+                                <p style={{ fontSize: '14px', fontWeight: 600, color: enabled ? tc.primary : '#0f172a' }}>{lv.label}</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{enabled ? 'Enabled' : 'Tap to enable'}</p>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Active Level Editor */}
+                {!activeLevel ? (
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '3.5rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div style={{ color: '#cbd5e1', display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
+                            <svg width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        </div>
+                        <p style={{ fontSize: '15px', fontWeight: 500, color: '#0f172a', marginBottom: '6px' }}>No level enabled yet</p>
+                        <p style={{ fontSize: '13px', color: '#94a3b8' }}>Enable a school level above to start filling its details</p>
+                    </div>
+                ) : (
+                    <div className="crs-section">
+                        {/* Level tabs (if multiple enabled) */}
+                        <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            {LEVELS.filter(l => content[l.key].enabled).map(l => (
+                                <button key={l.key} onClick={() => { setActiveLevel(l.key); setActiveTab('banner'); }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px', borderRadius: '6px', border: activeLevel === l.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', background: activeLevel === l.key ? tc.light : '#ffffff', color: activeLevel === l.key ? tc.primary : '#64748b', fontSize: '13px', fontWeight: activeLevel === l.key ? 600 : 400, cursor: 'pointer' }}>
+                                    <span style={{ display: 'flex' }}>{l.icon}</span>
+                                    {l.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Section Tabs */}
+                        <div style={{ display: 'flex', gap: '6px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                            {tabs.map(t => (
+                                <button key={t.key} onClick={() => setActiveTab(t.key)}
+                                    style={{ padding: '9px 18px', borderRadius: '6px', border: activeTab === t.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '12.5px', cursor: 'pointer', background: activeTab === t.key ? tc.light : '#ffffff', color: activeTab === t.key ? tc.primary : '#64748b', fontWeight: activeTab === t.key ? 600 : 400 }}>
+                                    {t.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+
+                            {/* Banner Tab */}
+                            {activeTab === 'banner' && (
+                                <div style={{ padding: '2rem' }}>
+                                    <ImageBox label="Banner Image (Full Screen Hero)" value={activeData.bannerImage} field="bannerImage" hint="Recommended: 1920×1080px, landscape" aspect={16 / 9} />
+                                    <div style={{ marginTop: '16px', padding: '16px 18px', background: tc.light, borderRadius: '8px', border: '1px solid #f9c4d4' }}>
+                                        <p style={{ fontSize: '12px', fontWeight: 600, color: tc.primary, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                            How to choose the best banner image
+                                        </p>
+                                        {[
+                                            'This image fills the entire screen at the top of the page — pick a wide, high-resolution photo',
+                                            'Landscape orientation works best; portrait images get cropped awkwardly on wide screens',
+                                            'Campus buildings, classrooms in action, or students at this level work well',
+                                            'Keep the main subject centered — the edges may get trimmed on very wide or narrow screens',
+                                            'Avoid images with text or logos already baked into them',
+                                        ].map((tip, i) => (
+                                            <p key={i} style={{ fontSize: '11.5px', color: '#9f1239', marginBottom: '4px', lineHeight: 1.6 }}>• {tip}</p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* About Tab */}
+                            {activeTab === 'about' && (
+                                <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                    <ImageBox label="About Section Image" value={activeData.aboutImage} field="aboutImage" hint="Portrait recommended" aspect={3 / 4} />
+                                    <div>
+                                        <label style={labelStyle}>Heading</label>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <textarea className="crs-input" value={activeData.aboutHeading} onChange={e => updateField('aboutHeading', e.target.value)}
+                                                placeholder='e.g. "A Supportive, Nurturing Environment"' rows={2} style={{ ...inputStyle, resize: 'vertical', fontStyle: activeData.aboutHeadingItalic ? 'italic' : 'normal' }} />
+                                            <ItalicToggle active={!!activeData.aboutHeadingItalic} onToggle={() => updateField('aboutHeadingItalic', !activeData.aboutHeadingItalic)} />
+                                        </div>
+                                    </div>
+                                    <div>
+    <label style={labelStyle}>Quote / Description</label>
+    <RichTextEditor value={activeData.aboutQuote} onChange={val => updateField('aboutQuote', val)}
+        placeholder="Write a warm description about this section of the school..." minHeight="150px" />
+</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                        <div>
+                                            <label style={labelStyle}>Author Name</label>
+                                            <input className="crs-input" type="text" value={activeData.aboutAuthor} onChange={e => updateField('aboutAuthor', e.target.value)}
+                                                placeholder="e.g. Jessica Waugh" style={inputStyle} />
+                                        </div>
+                                        <div>
+                                            <label style={labelStyle}>Designation</label>
+                                            <input className="crs-input" type="text" value={activeData.aboutAuthorDesignation} onChange={e => updateField('aboutAuthorDesignation', e.target.value)}
+                                                placeholder="e.g. Head of Primary School" style={inputStyle} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Why Unique Tab */}
+                            {activeTab === 'unique' && (
+                                <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                    <ImageBox label="Why Unique Section Image" value={activeData.uniqueImage} field="uniqueImage" hint="Portrait recommended" aspect={3 / 4} />
+                                    <div>
+                                        <label style={labelStyle}>Heading</label>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input className="crs-input" type="text" value={activeData.uniqueHeading} onChange={e => updateField('uniqueHeading', e.target.value)}
+                                                placeholder="e.g. Why We're Unique" style={{ ...inputStyle, fontStyle: activeData.uniqueHeadingItalic ? 'italic' : 'normal' }} />
+                                            <ItalicToggle active={!!activeData.uniqueHeadingItalic} onToggle={() => updateField('uniqueHeadingItalic', !activeData.uniqueHeadingItalic)} />
+                                        </div>
+                                    </div>
+                                    <div>
+    <label style={labelStyle}>Description</label>
+    <RichTextEditor value={activeData.uniqueText} onChange={val => updateField('uniqueText', val)}
+        placeholder="What makes this section of your school special..." minHeight="180px" />
+</div>
+                                </div>
+                            )}
+
+                            {/* Gallery Tab */}
+                            {activeTab === 'gallery' && (
+                                <div style={{ padding: '2rem' }}>
+                                    <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>{(activeData.gallery || []).length} images added</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
+                                        {(activeData.gallery || []).map((img, i) => (
+                                            <div key={i} style={{ position: 'relative', borderRadius: '6px', overflow: 'hidden', aspectRatio: '1' }}>
+                                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                <button onClick={() => removeGalleryImage(i)}
+                                                    style={{ position: 'absolute', top: '6px', right: '6px', width: '24px', height: '24px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div onClick={() => document.getElementById('gallery-input').click()}
+                                        style={{ border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
+                                        {uploading.gallery ? (
+                                            <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p>
+                                        ) : (
+                                            <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add gallery image</p>
+                                        )}
+                                    </div>
+                                    <input id="gallery-input" type="file" accept="image/*"
+                                        onChange={e => {
+                                            const f = e.target.files[0];
+                                            e.target.value = '';
+                                            if (f) setCropTarget({ kind: 'gallery', aspect: 1, src: URL.createObjectURL(f) });
+                                        }}
+                                        style={{ display: 'none' }} />
+                                </div>
+                            )}
+
+                            {/* Contacts Tab */}
+                            {activeTab === 'contacts' && (
+                                <div style={{ padding: '2rem' }}>
+                                    {(activeData.contacts || []).map((c, i) => (
+                                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '16px', padding: '1.25rem', background: '#fafafa', borderRadius: '8px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
+                                            <div onClick={() => document.getElementById(`contact-photo-${i}`).click()}
+                                                style={{ width: '100px', height: '100px', borderRadius: '6px', border: '1.5px dashed #cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: c.photo ? 'transparent' : '#ffffff' }}>
+                                                {uploading[`contact-${i}`] ? (
+                                                    <div style={{ width: '20px', height: '20px', border: '2px solid #f0c4c4', borderTop: `2px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                                ) : c.photo ? (
+                                                    <img src={c.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <span style={{ color: '#cbd5e1' }}><PersonIcon /></span>
+                                                )}
+                                            </div>
+                                            <input id={`contact-photo-${i}`} type="file" accept="image/png,image/jpg,image/jpeg,image/webp"
+                                                onChange={e => {
+                                                    const f = e.target.files[0];
+                                                    e.target.value = '';
+                                                    if (f) setCropTarget({ kind: 'contact', idx: i, aspect: 1, src: URL.createObjectURL(f) });
+                                                }}
+                                                style={{ display: 'none' }} />
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                                                    <input type="text" value={c.name} onChange={e => updateContact(i, 'name', e.target.value)} placeholder="Name" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
+                                                    <input type="text" value={c.designation} onChange={e => updateContact(i, 'designation', e.target.value)} placeholder="Designation" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '8px' }}>
+                                                    <input type="email" value={c.email} onChange={e => updateContact(i, 'email', e.target.value)} placeholder="Email" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
+                                                    <input type="text" value={c.phone} onChange={e => updateContact(i, 'phone', e.target.value)} placeholder="Phone" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
+                                                    <button onClick={() => removeContact(i)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>×</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button onClick={addContact}
+                                        style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #cbd5e1', borderRadius: '6px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                                        + Add Contact Person
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Bottom Save Bar */}
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : 'Save Draft'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {cropTarget && (
+                <ImageCropModal
+                    imageSrc={cropTarget.src}
+                    aspect={cropTarget.aspect}
+                    onCancel={() => setCropTarget(null)}
+                    onCropComplete={onCropConfirmed}
+                />
+            )}
+        </>
+    );
+};
+
+export default Courses;

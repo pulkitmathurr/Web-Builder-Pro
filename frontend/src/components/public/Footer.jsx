@@ -1,0 +1,231 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { getPublicModuleContentApi } from "../../api/content.api";
+import { COURSE_LEVELS, isLevelComplete } from "../../utils/courseLevels";
+
+const SocialIcon = ({ type }) => {
+    const icons = {
+        facebook: "M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-1.5c-.83 0-1.5.67-1.5 1.5V12h3l-.5 3H13v6.95c5.05-.5 9-4.76 9-9.95z",
+        instagram: "M12 2c2.72 0 3.06.01 4.12.06 1.06.05 1.79.22 2.43.46.66.25 1.21.59 1.76 1.14.5.5.85 1 1.11 1.65.25.65.42 1.39.46 2.45C21.99 8.36 22 8.7 22 11.42v1.16c0 2.72-.01 3.06-.06 4.12-.05 1.06-.22 1.79-.46 2.43-.25.66-.59 1.21-1.14 1.76-.5.5-1 .85-1.65 1.11-.65.25-1.39.42-2.45.46-1.06.05-1.4.06-4.12.06h-1.16c-2.72 0-3.06-.01-4.12-.06-1.06-.05-1.79-.22-2.43-.46-.66-.25-1.21-.59-1.76-1.14-.5-.5-.85-1-1.11-1.65-.25-.65-.42-1.39-.46-2.45C2.01 15.64 2 15.3 2 12.58v-1.16c0-2.72.01-3.06.06-4.12.05-1.06.22-1.79.46-2.43.25-.66.59-1.21 1.14-1.76.5-.5 1-.85 1.65-1.11.65-.25 1.39-.42 2.45-.46C8.36 2.01 8.7 2 11.42 2h1.16zm-.4 1.62h-.4c-2.67 0-2.99.01-4.04.06-.97.04-1.5.2-1.85.34-.47.18-.8.4-1.15.75-.35.35-.57.68-.75 1.15-.14.35-.3.88-.34 1.85-.05 1.05-.06 1.37-.06 4.04v.4c0 2.67.01 2.99.06 4.04.04.97.2 1.5.34 1.85.18.47.4.8.75 1.15.35.35.68.57 1.15.75.35.14.88.3 1.85.34 1.05.05 1.37.06 4.04.06h.4c2.67 0 2.99-.01 4.04-.06.97-.04 1.5-.2 1.85-.34.47-.18.8-.4 1.15-.75.35-.35.57-.68.75-1.15.14-.35.3-.88.34-1.85.05-1.05.06-1.37.06-4.04v-.4c0-2.67-.01-2.99-.06-4.04-.04-.97-.2-1.5-.34-1.85-.18-.47-.4-.8-.75-1.15-.35-.35-.68-.57-1.15-.75-.35-.14-.88-.3-1.85-.34-1.05-.05-1.37-.06-4.04-.06zM12 6.87a5.13 5.13 0 110 10.26 5.13 5.13 0 010-10.26zm0 1.62a3.51 3.51 0 100 7.02 3.51 3.51 0 000-7.02zm5.34-2.88a1.2 1.2 0 110 2.4 1.2 1.2 0 010-2.4z",
+        youtube: "M21.58 7.19c-.23-.86-.91-1.54-1.77-1.77C18.25 5 12 5 12 5s-6.25 0-7.81.42c-.86.23-1.54.91-1.77 1.77C2 8.75 2 12 2 12s0 3.25.42 4.81c.23.86.91 1.54 1.77 1.77C5.75 19 12 19 12 19s6.25 0 7.81-.42c.86-.23 1.54-.91 1.77-1.77C22 15.25 22 12 22 12s0-3.25-.42-4.81zM10 15.5v-7l6 3.5-6 3.5z",
+        twitter: "M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.49-1.75.85-2.72 1.05a3.78 3.78 0 00-6.44 3.44c-3.16-.16-5.95-1.67-7.83-3.97-.33.56-.51 1.21-.51 1.9 0 1.31.67 2.46 1.69 3.14-.62-.02-1.21-.19-1.72-.47v.05c0 1.83 1.3 3.36 3.03 3.71-.32.09-.65.13-1 .13-.24 0-.48-.02-.71-.07.48 1.51 1.88 2.6 3.54 2.63A7.59 7.59 0 012 19.54c1.6 1.03 3.5 1.62 5.54 1.62 6.65 0 10.28-5.51 10.28-10.29 0-.16 0-.31-.01-.47.71-.51 1.32-1.15 1.81-1.88-.66.29-1.36.49-2.07.59z",
+        linkedin: "M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14zM8.34 18V9.94H5.7V18h2.64zM7.03 8.78a1.53 1.53 0 100-3.06 1.53 1.53 0 000 3.06zM18.31 18v-4.36c0-2.33-1.25-3.42-2.91-3.42a2.5 2.5 0 00-2.27 1.26h-.03V9.94h-2.53c.03.71 0 8.06 0 8.06h2.53v-4.5c0-.24.02-.48.09-.65.2-.48.65-.99 1.4-.99.99 0 1.39.75 1.39 1.86V18h2.53z",
+    };
+    if (!icons[type]) return null;
+    return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d={icons[type]} /></svg>;
+};
+
+const FOOTER_BG = '#222831';
+
+// ── Footer nav categories (Milestone 2 links only) ──
+const FOOTER_NAV = [
+    {
+        heading: 'About Us',
+        links: [
+            { label: 'About Us',      path: (slug) => `/school/${slug}/about` },
+            { label: 'Faculty',       path: (slug) => `/school/${slug}/faculty` },
+            { label: 'Infrastructure',path: (slug) => `/school/${slug}/infrastructure` },
+            { label: 'Alumni',        path: (slug) => `/school/${slug}/alumni` },
+            { label: 'TC Information',path: (slug) => `/school/${slug}/tc` },
+        ],
+    },
+    {
+        heading: 'Academics',
+        links: [
+            { key: 'courses', label: 'Courses',          path: (slug) => `/school/${slug}/courses` },
+            { label: 'Fee Structure',    path: (slug) => `/school/${slug}/fee` },
+            { label: 'Public Disclosure',path: (slug) => `/school/${slug}/public-disclosure` },
+        ],
+    },
+    {
+        heading: 'Highlights',
+        links: [
+            { label: 'Sports',      path: (slug) => `/school/${slug}/sports` },
+            { label: 'Gallery',     path: (slug) => `/school/${slug}/gallery/photo` },
+            { label: 'Achievements',path: (slug) => `/school/${slug}/achievements` },
+        ],
+    },
+];
+
+const Footer = ({ school, slug, tc, bgImage }) => {
+    const navigate = useNavigate();
+    const [coursesContent, setCoursesContent] = useState(null);
+
+    useEffect(() => {
+        if (!school?.id) return;
+        getPublicModuleContentApi(school.id, 'courses')
+            .then(res => setCoursesContent(res.data || {}))
+            .catch(() => setCoursesContent({}));
+    }, [school?.id]);
+
+    // Footer's Courses link routes to whichever fully-filled level page exists — there's no
+    // generic "/courses" overview page, so this picks the first complete one instead.
+    const firstCompleteLevel = COURSE_LEVELS.find(l => isLevelComplete(coursesContent?.[l.key]));
+
+    const socials = [
+        { type: 'facebook', url: school.facebook },
+        { type: 'instagram', url: school.instagram },
+        { type: 'youtube',   url: school.youtube },
+        { type: 'twitter',   url: school.twitter },
+        { type: 'linkedin',  url: school.linkedin },
+    ].filter(s => s.url);
+
+    const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    const linkStyle = {
+        fontSize: '13.5px',
+        color: 'rgba(255,255,255,0.6)',
+        cursor: 'pointer',
+        transition: 'color 0.2s',
+        lineHeight: 1.4,
+    };
+
+    return (
+        <footer style={{ position: 'relative', overflow: 'hidden', borderTopLeftRadius: '48px', borderTopRightRadius: '48px', fontFamily: "'Inter', system-ui, sans-serif", color: 'rgba(255,255,255,0.85)' }}>
+
+            {/* Background */}
+            <div style={{ position: 'absolute', inset: 0, background: FOOTER_BG }}>
+                {bgImage && (
+                    <img src={bgImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.18 }} />
+                )}
+                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${FOOTER_BG}d9, ${FOOTER_BG}f7)` }} />
+            </div>
+
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '1280px', margin: '0 auto', padding: '4rem 3rem 2.5rem' }}>
+
+                {/* ── Main grid: Brand | Nav categories | Map ── */}
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'minmax(200px,1.1fr) repeat(3, minmax(130px,1fr)) minmax(200px,1fr)',
+                    gap: '2.5rem',
+                    alignItems: 'start',
+                }}>
+
+                    {/* ── Column 1: Brand ── */}
+                    <div>
+                        {/* Logo */}
+                        {school.logo_url ? (
+                            <img
+                                src={school.logo_url}
+                                alt={school.name}
+                                style={{ height: '80px', width: '80px', objectFit: 'contain', marginBottom: '14px', display: 'block' }}
+                            />
+                        ) : (
+                            <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, marginBottom: '14px' }} />
+                        )}
+
+                        {/* School name */}
+                        <p style={{ fontSize: '17px', fontWeight: 700, color: '#ffffff', fontFamily: "'Playfair Display', Georgia, serif", letterSpacing: '0.02em', marginBottom: '16px', lineHeight: 1.3 }}>
+                            {school.name}
+                        </p>
+
+                        {/* Address */}
+                        {school.address && (
+                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7, marginBottom: '8px', maxWidth: '220px' }}>
+                                {school.address}
+                            </p>
+                        )}
+
+                        {/* Phone */}
+                        {school.phone && (
+                            <a href={`tel:${school.phone}`} style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', marginBottom: '6px' }}
+                                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                                {school.phone}
+                            </a>
+                        )}
+
+                        {/* Email */}
+                        {school.email && (
+                            <a href={`mailto:${school.email}`} style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', marginBottom: '20px' }}
+                                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                                {school.email}
+                            </a>
+                        )}
+
+                        {/* Social icons */}
+                        {socials.length > 0 && (
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                                {socials.map(s => (
+                                    <a key={s.type} href={s.url} target="_blank" rel="noopener noreferrer"
+                                        style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.8)', transition: 'background 0.2s, color 0.2s', textDecoration: 'none' }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = tc.secondary; e.currentTarget.style.color = '#fff'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'rgba(255,255,255,0.8)'; }}>
+                                        <SocialIcon type={s.type} />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Back to top */}
+                        <button onClick={scrollToTop}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '9px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '8px', color: 'rgba(255,255,255,0.75)', fontSize: '11.5px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', cursor: 'pointer', transition: 'border-color 0.2s, color 0.2s' }}
+                            onMouseEnter={e => { e.currentTarget.style.borderColor = tc.secondary; e.currentTarget.style.color = '#fff'; }}
+                            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.25)'; e.currentTarget.style.color = 'rgba(255,255,255,0.75)'; }}>
+                            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7"/></svg>
+                            Back to Top
+                        </button>
+                    </div>
+
+                    {/* ── Columns 2-4: Nav categories ── */}
+                    {FOOTER_NAV.map((cat) => (
+                        <div key={cat.heading}>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '1.1rem', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: '10px' }}>
+                                {cat.heading}
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
+                                {cat.links.map(link => {
+                                    const isCourses = link.key === 'courses';
+                                    const disabled = isCourses && !firstCompleteLevel;
+                                    const handleClick = () => {
+                                        if (disabled) return;
+                                        navigate(isCourses ? firstCompleteLevel.path(slug) : link.path(slug));
+                                    };
+                                    return (
+                                        <span
+                                            key={link.label}
+                                            onClick={handleClick}
+                                            style={{ ...linkStyle, opacity: disabled ? 0.4 : 1, cursor: disabled ? 'default' : 'pointer' }}
+                                            onMouseEnter={e => { if (!disabled) e.currentTarget.style.color = '#ffffff'; }}
+                                            onMouseLeave={e => { if (!disabled) e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}>
+                                            {link.label}
+                                        </span>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+
+                    {/* ── Column 5: Map ── */}
+                    {school.map_url && (
+                        <div>
+                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '1.1rem', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: '10px' }}>
+                                Our Location
+                            </p>
+                            <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
+                                <iframe src={school.map_url} width="100%" height="180" style={{ border: 0, display: 'block' }} loading="lazy" title="School location" />
+                                <a href={school.map_url} target="_blank" rel="noopener noreferrer"
+                                    style={{ position: 'absolute', top: '10px', left: '10px', background: '#ffffff', color: '#1a73e8', fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                                    Open in Maps
+                                    <svg width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                </a>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Bottom bar ── */}
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: '2.5rem', paddingTop: '1.5rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>© {new Date().getFullYear()} {school.name}. All rights reserved.</p>
+                    <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>
+                        Powered by <span style={{ color: tc.secondary, fontWeight: 600 }}>Web Builder Pro</span>
+                    </p>
+                </div>
+
+            </div>
+        </footer>
+    );
+};
+
+export default Footer;
