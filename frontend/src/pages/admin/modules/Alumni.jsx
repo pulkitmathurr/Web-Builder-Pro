@@ -121,6 +121,16 @@ const Alumni = () => {
                 .alumni-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .alumni-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .alumni-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                .alumni-card { animation: fadeInUp 0.45s cubic-bezier(0.16,1,0.3,1) both; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease, border-color 0.25s ease; }
+                .alumni-card:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(15,23,42,0.10); border-color: ${hexToRgba(tc.primary, 0.15)}; }
+                .alumni-badge { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; color: #fff; background: linear-gradient(135deg, ${tc.primary}, ${tc.secondary}); box-shadow: 0 3px 8px ${hexToRgba(tc.primary, 0.3)}; flex-shrink: 0; }
+                .alumni-remove-btn { transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), background 0.2s ease, color 0.2s ease; }
+                .alumni-remove-btn:hover { background: #ef4444 !important; color: #fff !important; transform: rotate(90deg) scale(1.05); }
+                .alumni-photobox { transition: border-color 0.2s ease, background 0.2s ease; }
+                .alumni-photobox:hover { border-color: ${tc.primary} !important; background: ${hexToRgba(tc.primary, 0.04)} !important; }
+                .alumni-addbtn { transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease; }
+                .alumni-addbtn:hover { transform: translateY(-2px); background: ${hexToRgba(tc.primary, 0.06)} !important; box-shadow: 0 8px 20px ${hexToRgba(tc.primary, 0.2)}; }
+                .alumni-section-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, ${tc.primary}, ${tc.secondary}); margin-right: 8px; }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
@@ -129,7 +139,7 @@ const Alumni = () => {
                 <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="alumni-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                         <div className="alumni-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Alumni</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Alumni</h1>
@@ -137,38 +147,40 @@ const Alumni = () => {
                                 Showcase notable alumni — their journey since graduating and where they are now.
                             </p>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px', flexShrink: 0 }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                            <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+                        <div className="alumni-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
+                                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => handleSave(false)} disabled={saving}
+                                    style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                    {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                                </button>
+                                {isPublished ? (
+                                    <button onClick={handleUnpublish}
+                                        style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                        Unpublish
+                                    </button>
+                                ) : (
+                                    <button onClick={() => handleSave(true)} disabled={publishing}
+                                        style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                        {publishing ? 'Publishing...' : 'Publish'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Top Action Bar */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '1.25rem' }}>
-                    <button onClick={() => updateField('alumni', [{
+                {/* Add Alumnus */}
+                <div style={{ display: 'flex', marginBottom: '1.25rem' }}>
+                    <button className="alumni-addbtn" onClick={() => updateField('alumni', [{
                         id: `alum-${Date.now()}`, photo: '', name: '', batchYear: '', achievementHeadline: '', testimonial: '', linkedinUrl: ''
                     }, ...content.alumni])}
                         style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
                         + Add Alumnus
                     </button>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={() => handleSave(false)} disabled={saving}
-                            style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                            {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
-                        </button>
-                        {isPublished ? (
-                            <button onClick={handleUnpublish}
-                                style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                                Unpublish
-                            </button>
-                        ) : (
-                            <button onClick={() => handleSave(true)} disabled={publishing}
-                                style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                                {publishing ? 'Publishing...' : 'Publish'}
-                            </button>
-                        )}
-                    </div>
                 </div>
 
                 <div className="alumni-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -176,7 +188,7 @@ const Alumni = () => {
                     {/* Top section */}
                     <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                         <div>
-                            <label style={labelStyle}>Heading</label>
+                            <label style={labelStyle}><span className="alumni-section-dot"></span>Heading</label>
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 <input className="alumni-input" type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)}
                                     placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
@@ -232,12 +244,15 @@ const AlumnusCard = ({ alumnus, index, length, onMove, onUpdate, onRemove, onUpl
     const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' };
 
     return (
-        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+        <div className="alumni-card" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', animationDelay: `${Math.min(index, 8) * 0.05}s` }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>Alumnus #{index + 1}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="alumni-badge">{index + 1}</span>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{alumnus.name || 'New Alumnus'}</p>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
-                    <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                    <button className="alumni-remove-btn" onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
                 </div>
             </div>
 
@@ -245,7 +260,7 @@ const AlumnusCard = ({ alumnus, index, length, onMove, onUpdate, onRemove, onUpl
                 {/* Photo upload */}
                 <div>
                     <label style={labelStyle}>Photo</label>
-                    <div onClick={() => document.getElementById(`alumnus-photo-${alumnus.id}`).click()}
+                    <div className="alumni-photobox" onClick={() => document.getElementById(`alumnus-photo-${alumnus.id}`).click()}
                         style={{ height: '140px', borderRadius: '12px', border: '1.5px dashed #e2e8f0', background: '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                         {uploading ? (
                             <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>

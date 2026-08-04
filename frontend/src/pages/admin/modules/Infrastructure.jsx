@@ -305,7 +305,7 @@ const Infrastructure = () => {
         <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
           <div className="infra-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
             <div className="infra-hero-item">
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Infrastructure</p>
               <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Infrastructure Categories</h1>
@@ -313,66 +313,66 @@ const Infrastructure = () => {
                 Add categories like Our Campus, Sports Facilities, Transport — each gets its own page.
               </p>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px', flexShrink: 0 }}>
-              <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-              <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+            <div className="infra-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
+                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  onClick={() => handleSave(false)}
+                  disabled={saving}
+                  style={{
+                    padding: "7px 14px",
+                    background: isDirty ? "rgba(250,204,21,0.15)" : "rgba(255,255,255,0.08)",
+                    color: isDirty ? "#fde047" : "rgba(255,255,255,0.65)",
+                    border: isDirty ? "1px solid rgba(250,204,21,0.35)" : "1px solid rgba(255,255,255,0.15)",
+                    borderRadius: "6px",
+                    fontSize: "12px",
+                    fontWeight: isDirty ? 700 : 500,
+                    cursor: "pointer",
+                  }}
+                >
+                  {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
+                </button>
+                {isPublished ? (
+                  <button
+                    onClick={handleUnpublish}
+                    style={{
+                      padding: "7px 14px",
+                      background: "rgba(239,68,68,0.15)",
+                      color: "#fca5a5",
+                      border: "1px solid rgba(239,68,68,0.3)",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Unpublish
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSave(true)}
+                    disabled={publishing}
+                    style={{
+                      padding: "7px 16px",
+                      background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "6px",
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}`,
+                    }}
+                  >
+                    {publishing ? "Publishing..." : "Publish"}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-
-        {/* Top Action Bar */}
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "1.25rem" }}>
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            style={{
-              padding: "11px 24px",
-              background: isDirty ? "#fefce8" : "#ffffff",
-              color: isDirty ? "#a16207" : "#64748b",
-              border: isDirty ? "1px solid #fde68a" : "1px solid #e2e8f0",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: isDirty ? 700 : 500,
-              cursor: "pointer",
-            }}
-          >
-            {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
-          </button>
-          {isPublished ? (
-            <button
-              onClick={handleUnpublish}
-              style={{
-                padding: "11px 24px",
-                background: "#fef2f2",
-                color: "#dc2626",
-                border: "1px solid #fecaca",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Unpublish
-            </button>
-          ) : (
-            <button
-              onClick={() => handleSave(true)}
-              disabled={publishing}
-              style={{
-                padding: "11px 28px",
-                background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`,
-              }}
-            >
-              {publishing ? "Publishing..." : "Publish"}
-            </button>
-          )}
         </div>
 
         {/* ── Main Layout ── */}

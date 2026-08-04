@@ -198,6 +198,22 @@ const Achievements = () => {
                 input[type=text]:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .ach-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .ach-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                .ach-card { animation: fadeInUp 0.45s cubic-bezier(0.16,1,0.3,1) both; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease, border-color 0.25s ease; }
+                .ach-card:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(15,23,42,0.10); border-color: ${hexToRgba(tc.primary, 0.15)}; }
+                .ach-badge { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700; color: #fff; background: linear-gradient(135deg, ${tc.primary}, ${tc.secondary}); box-shadow: 0 3px 8px ${hexToRgba(tc.primary, 0.3)}; flex-shrink: 0; }
+                .ach-remove-btn { transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1), background 0.2s ease, color 0.2s ease; }
+                .ach-remove-btn:hover { background: #ef4444 !important; color: #fff !important; transform: rotate(90deg) scale(1.05); }
+                .ach-photobox { transition: border-color 0.2s ease, background 0.2s ease; }
+                .ach-photobox:hover { border-color: ${tc.primary} !important; background: ${hexToRgba(tc.primary, 0.04)} !important; }
+                .ach-addbtn { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+                .ach-addbtn:hover { transform: translateY(-2px); box-shadow: 0 10px 22px ${hexToRgba(tc.primary, 0.35)}; }
+                .ach-cert-addbtn { transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease; }
+                .ach-cert-addbtn:hover { border-color: ${tc.primary} !important; color: ${tc.primary} !important; background: ${hexToRgba(tc.primary, 0.04)} !important; }
+                .ach-cert-card { animation: fadeInUp 0.4s ease both; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease; overflow: hidden; }
+                .ach-cert-card:hover { transform: translateY(-4px); box-shadow: 0 12px 26px rgba(15,23,42,0.12); }
+                .ach-cert-img { transition: transform 0.45s cubic-bezier(0.16,1,0.3,1); }
+                .ach-cert-card:hover .ach-cert-img { transform: scale(1.08); }
+                .ach-section-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, ${tc.primary}, ${tc.secondary}); margin-right: 8px; }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
@@ -206,7 +222,7 @@ const Achievements = () => {
                 <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="ach-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
                         <div className="ach-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Achievements</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Achievements</h1>
@@ -214,30 +230,30 @@ const Achievements = () => {
                                 Showcase school and student achievements, with certificates.
                             </p>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px', flexShrink: 0 }}>
-                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                            <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+                        <div className="ach-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
+                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
+                                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => handleSave(false)} disabled={saving}
+                                    style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                    {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                                </button>
+                                {isPublished ? (
+                                    <button onClick={handleUnpublish}
+                                        style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                        Unpublish
+                                    </button>
+                                ) : (
+                                    <button onClick={() => handleSave(true)} disabled={publishing}
+                                        style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                        {publishing ? 'Publishing...' : 'Publish'}
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-
-                {/* Top Action Bar */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.75rem' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
                 </div>
 
                 {/* Heading + Description */}
@@ -269,14 +285,14 @@ const Achievements = () => {
                 {/* Achievement Entries */}
                 <div className="ach-section" style={{ marginBottom: '1.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>Achievement Entries <span style={{ color: '#94a3b8', fontWeight: 400 }}>({content.achievements.length})</span></p>
-                        <button onClick={addAchievement} style={{ padding: '8px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}><span className="ach-section-dot"></span>Achievement Entries <span style={{ color: '#94a3b8', fontWeight: 400 }}>({content.achievements.length})</span></p>
+                        <button className="ach-addbtn" onClick={addAchievement} style={{ padding: '8px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 3px 10px ${hexToRgba(tc.primary, 0.25)}` }}>
                             + Add Achievement
                         </button>
                     </div>
 
                     {content.achievements.length === 0 && (
-                        <div style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '2.5rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
+                        <div style={{ background: '#ffffff', border: '1.5px dashed #e5e7eb', borderRadius: '18px', padding: '2.5rem', textAlign: 'center' }}>
                             <p style={{ fontSize: '13px', color: '#94a3b8' }}>No achievements added yet</p>
                         </div>
                     )}
@@ -285,12 +301,15 @@ const Achievements = () => {
                         {content.achievements.map((a, idx) => {
                             const photoKey = a.id;
                             return (
-                                <div key={a.id} style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
+                                <div key={a.id} className="ach-card" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)', animationDelay: `${Math.min(idx, 8) * 0.05}s` }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                                        <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>Achievement #{idx + 1}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span className="ach-badge">{idx + 1}</span>
+                                            <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{a.name || 'New Achievement'}</p>
+                                        </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <ReorderButtons index={idx} length={content.achievements.length} onMove={moveAchievement} vertical={false} />
-                                            <button onClick={() => removeAchievement(a.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                                            <button className="ach-remove-btn" onClick={() => removeAchievement(a.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
                                         </div>
                                     </div>
 
@@ -298,7 +317,7 @@ const Achievements = () => {
                                         {/* Photo */}
                                         <div>
                                             <label style={labelStyle}>Photo</label>
-                                            <div onClick={() => document.getElementById(`ach-photo-${a.id}`).click()}
+                                            <div className="ach-photobox" onClick={() => document.getElementById(`ach-photo-${a.id}`).click()}
                                                 style={{ width: '100%', height: '220px', borderRadius: '14px', border: '1.5px dashed #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: a.photo ? 'transparent' : '#fafafa' }}>
                                                 {uploading[photoKey] ? (
                                                     <div style={{ width: '22px', height: '22px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
@@ -359,20 +378,20 @@ const Achievements = () => {
 
                 {/* Certifications */}
                 <div className="ach-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
-                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Certifications</p>
+                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}><span className="ach-section-dot"></span>Certifications</p>
                     <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB each.</p>
-                    <button onClick={addCertification} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e5e7eb', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                    <button className="ach-cert-addbtn" onClick={addCertification} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e5e7eb', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
                         + Add Certification
                     </button>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px' }}>
                         {content.certifications.map((c, ci) => (
-                            <div key={c.id} style={{ border: '1px solid #f1f5f9', borderRadius: '14px', overflow: 'hidden' }}>
+                            <div key={c.id} className="ach-cert-card" style={{ border: '1px solid #f1f5f9', borderRadius: '14px', animationDelay: `${Math.min(ci, 8) * 0.05}s` }}>
                                 <div onClick={() => document.getElementById(`cert-img-${c.id}`).click()}
                                     style={{ height: '130px', background: '#fafbfc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                     {uploading[`cert-${c.id}`] ? (
                                         <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
                                     ) : c.image ? (
-                                        <img src={c.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <img className="ach-cert-img" src={c.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : (
                                         <span style={{ fontSize: '12px', color: '#94a3b8' }}>Upload</span>
                                     )}

@@ -335,38 +335,36 @@ const TCInformation = () => {
                 <div className="tc-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                 <div className="tc-hero-item" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <h1 style={{ fontSize: 26, fontWeight: 800 }}>Transfer Certificates</h1>
-                            <span
-                                style={{
-                                    fontSize: 11.5,
-                                    fontWeight: 700,
-                                    padding: '4px 12px',
-                                    borderRadius: 999,
-                                    background: isPublished ? 'rgba(34,197,94,0.18)' : 'rgba(250,204,21,0.15)',
-                                    color: isPublished ? '#4ade80' : '#fde047',
-                                    border: `1px solid ${isPublished ? 'rgba(74,222,128,0.4)' : 'rgba(253,224,71,0.35)'}`,
-                                }}
-                            >
-                                {isPublished ? 'PUBLISHED' : 'DRAFT'}
-                            </span>
-                        </div>
+                        <h1 style={{ fontSize: 26, fontWeight: 800 }}>Transfer Certificates</h1>
                         <p style={{ marginTop: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', maxWidth: 560 }}>
                             Add session-wise TC records one student at a time — TC No, Student Name, and the
                             signed TC as a PDF. Students can then search and download it from the public page.
                         </p>
                     </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                        <span
+                            style={{
+                                fontSize: 11.5,
+                                fontWeight: 700,
+                                padding: '4px 12px',
+                                borderRadius: 999,
+                                background: isPublished ? 'rgba(34,197,94,0.18)' : 'rgba(250,204,21,0.15)',
+                                color: isPublished ? '#4ade80' : '#fde047',
+                                border: `1px solid ${isPublished ? 'rgba(74,222,128,0.4)' : 'rgba(253,224,71,0.35)'}`,
+                            }}
+                        >
+                            {isPublished ? 'PUBLISHED' : 'DRAFT'}
+                        </span>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={handleSave} disabled={saving} style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: 6, fontSize: 12, fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                {saving ? 'Saving…' : isDirty ? '● Save' : 'Save'}
+                            </button>
+                            <button onClick={handlePublishToggle} disabled={publishing} style={isPublished ? { padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' } : { padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                {publishing ? 'Working…' : isPublished ? 'Unpublish' : 'Publish'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-
-            {/* ============ Top action bar ============ */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginBottom: 20 }}>
-                <button onClick={handleSave} disabled={saving} style={isDirty ? { ...btnGhost, background: '#fefce8', color: '#a16207', border: '1px solid #fde68a', fontWeight: 700 } : btnGhost}>
-                    {saving ? 'Saving…' : isDirty ? '● Save' : 'Save'}
-                </button>
-                <button onClick={handlePublishToggle} disabled={publishing} style={{ ...btnPrimary, background: isPublished ? '#7f1d1d' : '#16a34a' }}>
-                    {publishing ? 'Working…' : isPublished ? 'Unpublish' : 'Publish'}
-                </button>
             </div>
 
             {msg && (
