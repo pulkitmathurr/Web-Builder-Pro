@@ -1,10 +1,47 @@
-import ReactQuill from "react-quill-new";
+import ReactQuill, { Quill } from "react-quill-new";
 import "react-quill-new/dist/quill.snow.css";
+
+// ── Custom font whitelist — matches the site's FONT_OPTIONS (constants/fonts.js) so the
+// rich-text font picker offers the same brand fonts used elsewhere, not generic web-safe ones.
+const FONT_STACKS = {
+  inter: "'Inter', system-ui, sans-serif",
+  poppins: "'Poppins', sans-serif",
+  montserrat: "'Montserrat', sans-serif",
+  playfair: "'Playfair Display', Georgia, serif",
+  raleway: "'Raleway', sans-serif",
+  merriweather: "'Merriweather', Georgia, serif",
+};
+const FONT_LABELS = {
+  inter: "Inter",
+  poppins: "Poppins",
+  montserrat: "Montserrat",
+  playfair: "Playfair Display",
+  raleway: "Raleway",
+  merriweather: "Merriweather",
+};
+const FONT_WHITELIST = Object.keys(FONT_STACKS);
+
+const QuillFont = Quill.import("formats/font");
+QuillFont.whitelist = FONT_WHITELIST;
+Quill.register(QuillFont, true);
+
+// A tidy, brand-safe swatch set for the color/background pickers (Quill renders these as
+// clickable swatches automatically when given an array instead of the full palette).
+// A leading '' entry is required for Quill's snow theme to render a "remove color" swatch
+// (styled as a red diagonal slash) — without it, users can only switch between swatches,
+// never clear back to no color/no highlight.
+const COLOR_SWATCHES = [
+  "", "#0f172a", "#334155", "#64748b", "#94a3b8", "#ffffff",
+  "#dc2626", "#ea580c", "#ca8a04", "#16a34a", "#0891b2",
+  "#2563eb", "#7c3aed", "#c026d3", "#db2777",
+];
 
 const modules = {
   toolbar: [
     ["bold", "italic", "underline", "strike"],
     [{ size: ["small", false, "large", "huge"] }],
+    [{ font: FONT_WHITELIST }],
+    [{ color: COLOR_SWATCHES }, { background: COLOR_SWATCHES }],
     [{ list: "ordered" }, { list: "bullet" }],
     [{ align: [] }],
     ["clean"],
@@ -17,19 +54,45 @@ const formats = [
   "underline",
   "strike",
   "size",
+  "font",
+  "color",
+  "background",
   "list",
   "bullet",
   "align",
 ];
+
+const fontFaceCss = FONT_WHITELIST.map(
+  (key) => `
+.rte-wrapper .ql-font-${key} { font-family: ${FONT_STACKS[key]}; }
+.rte-wrapper .ql-picker.ql-font .ql-picker-label[data-value="${key}"]::before,
+.rte-wrapper .ql-picker.ql-font .ql-picker-item[data-value="${key}"]::before {
+    content: '${FONT_LABELS[key]}';
+    font-family: ${FONT_STACKS[key]};
+}`
+).join("\n");
 
 const RichTextEditor = ({
   value,
   onChange,
   placeholder,
   minHeight = "120px",
+  maxWidth,
+  fontSize = "13.5px",
+  fontFamily = "system-ui, sans-serif",
 }) => {
   return (
-    <div className="rte-wrapper" style={{ "--rte-min-height": minHeight }}>
+    <div
+      className="rte-wrapper"
+      style={{
+        "--rte-min-height": minHeight,
+        "--rte-font-size": fontSize,
+        "--rte-font-family": fontFamily,
+        width: "100%",
+        maxWidth: maxWidth || "100%",
+        boxSizing: "border-box",
+      }}
+    >
       <style>{`
                 .rte-wrapper .ql-toolbar {
                     border: 0.5px solid #e2e8f0;
@@ -40,8 +103,8 @@ const RichTextEditor = ({
                 .rte-wrapper .ql-container {
                     border: 0.5px solid #e2e8f0;
                     border-radius: 0 0 10px 10px;
-                    font-family: system-ui, sans-serif;
-                    font-size: 13.5px;
+                    font-family: var(--rte-font-family);
+                    font-size: var(--rte-font-size);
                     background: #ffffff;
                 }
                 .rte-wrapper .ql-editor {
@@ -52,7 +115,7 @@ const RichTextEditor = ({
                 .rte-wrapper .ql-editor.ql-blank::before {
                     color: #94a3b8;
                     font-style: normal;
-                    font-size: 13.5px;
+                    font-size: var(--rte-font-size);
                 }
                 .rte-wrapper .ql-snow.ql-toolbar button:hover,
                 .rte-wrapper .ql-snow .ql-toolbar button:hover,
@@ -70,9 +133,13 @@ const RichTextEditor = ({
                 .rte-wrapper .ql-snow.ql-toolbar button.ql-active .ql-fill {
                     fill: #8b2252;
                 }
-                    .rte-wrapper .ql-editor .ql-size-small { font-size: 0.75em; }
-.rte-wrapper .ql-editor .ql-size-large { font-size: 1.5em; }
-.rte-wrapper .ql-editor .ql-size-huge { font-size: 2.5em; }
+                .rte-wrapper .ql-editor .ql-size-small { font-size: 0.75em; }
+                .rte-wrapper .ql-editor .ql-size-large { font-size: 1.5em; }
+                .rte-wrapper .ql-editor .ql-size-huge { font-size: 2.5em; }
+                .rte-wrapper .ql-picker.ql-font { width: 130px; }
+                .rte-wrapper .ql-picker.ql-font .ql-picker-label::before,
+                .rte-wrapper .ql-picker.ql-font .ql-picker-item::before { content: 'Font'; }
+                ${fontFaceCss}
             `}</style>
       <ReactQuill
         theme="snow"

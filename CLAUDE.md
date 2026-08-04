@@ -48,15 +48,22 @@ No test suite exists in either package yet.
 ## Database
 
 MySQL via XAMPP. No migration files/ORM — schema is managed by hand (`database/` directory
-exists but is currently empty). Backend connects via a raw `mysql2/promise` pool
-(`backend/src/config/db.js`); all queries are hand-written SQL in `*.service.js` files.
+holds hand-authored `.sql` snapshots for tables that aren't part of the original schema, e.g.
+`tbl_enquiries.sql` — apply these by hand to any other environment, same as the rest of the
+schema). Backend connects via a raw `mysql2/promise` pool (`backend/src/config/db.js`); all
+queries are hand-written SQL in `*.service.js` files.
 
 - **`tbl_schools`** — standard fields plus: `map_url`, `facebook`, `instagram`, `youtube`,
   `twitter`, `linkedin`, `hero_video_url`, `hero_video_title`, `logo_url`, `intro_message`,
-  `theme` (one of `default`, `blue`, `green`, `purple`, `orange`, `dark`). Also needs
-  `menu_image_url` (MegaMenu background) and `footer_bg_url` (Footer background) — these are
-  already consumed by the shared public components but are **not yet exposed on the admin
-  Settings page** (see Outstanding Backlog).
+  `theme` (one of `default`, `blue`, `green`, `purple`, `orange`, `dark`), `footer_bg_url`
+  (optional faint background image behind the public Footer — set from admin Settings →
+  Footer Background tab, wired end-to-end: upload route, `updateSchoolProfileService`
+  allowlist, and `getPublicSchoolService`'s SELECT). There is also a `menu_image_url` column
+  left over from an earlier full-screen "mega menu" nav design — that component
+  (`MegaMenu.jsx`) no longer exists (Navbar now renders hover dropdowns directly, see
+  Architecture → Frontend), so `menu_image_url` has no consumer anywhere in the current code.
+  Treat it as dead/orphaned rather than wiring it up, unless a future design brings back a
+  full-screen nav overlay.
 - **`tbl_module_content`** — generic content store used by every module:
   `id | school_id | module_key | content (LONGTEXT, JSON) | is_published | created_at | updated_at`.
   See "Generic content system" below for the module keys in use.
@@ -133,59 +140,44 @@ Routes are wired centrally in `backend/src/routes/index.routes.js` (mounted unde
   before the generic `/school/:slug/:levelSlug` catch-all (`SchoolLevelPublic.jsx`), which
   otherwise intercepts them.
 - **Shared public UI**: every public school page composes:
-  - `components/public/Navbar.jsx` — props `{ school, slug, tc, scrollY, onMenuOpen }`.
-    Transparent → solid white on scroll; logo + school name left, hamburger right.
-  - `components/public/MegaMenu.jsx` — props `{ open, onClose, school, slug, tc, activeKey, menuImage }`.
-    Full-screen overlay, accordion groups, optional `menuImage` background, `activeKey`
-    highlights the current page's link.
+  - `components/public/Navbar.jsx` — props `{ school, slug, tc, scrollY, activeKey, forceSolid }`.
+    Transparent → solid/blurred white on scroll (or always solid when `forceSolid` — used by
+    pages like the announcement/event detail pages whose utility bar sits directly under the
+    navbar with no dark hero to blend into); logo + school name left, top-level nav items right.
+    **There is no separate full-screen mega menu overlay** — top-level items are either a plain
+    link, a hover dropdown listing a group of links (some of which open a further nested flyout
+    on hover, e.g. Courses/Infrastructure sub-levels), or a single top-level flyout (Sports). All
+    of this is data-driven from `NAVBAR_ITEMS` in `constants/publicNav.js`, filtered per-school
+    by `isModuleEnabled`/`selected_modules`.
   - `components/public/Footer.jsx` — props `{ school, slug, tc, bgImage }`. Fixed `#222831`
-    background (independent of school theme for now); logo (92px) + school name in Playfair
-    Display; social icons (Facebook/Instagram/YouTube/Twitter/LinkedIn from
-    `school.facebook/instagram/youtube/twitter/linkedin`); quick links in 2 columns (split from
-    `PUBLIC_NAV_LINKS`); contact section; map iframe with "Open in Maps ↗" pill; "Back to Top"
+    background (independent of school theme for now) with an optional faint `bgImage` overlay
+    (`school.footer_bg_url`, set from the admin Settings → Footer Background tab); logo (92px) +
+    school name in Playfair Display; social icons (Facebook/Instagram/YouTube/Twitter/LinkedIn
+    from `school.facebook/instagram/youtube/twitter/linkedin`); quick links grouped from
+    `FOOTER_NAV_GROUPS`; contact section; map iframe with "Open in Maps ↗" pill; "Back to Top"
     button; copyright + "Powered by Web Builder Pro" bottom bar.
 
   `tc` (theme colors) comes from `getThemeColors(school.theme)` in `constants/publicNav.js`,
   returning `{ primary, secondary, light, dark }`. Usage pattern in every public page:
   ```jsx
   import Navbar from "../../components/public/Navbar";
-  import MegaMenu from "../../components/public/MegaMenu";
   import Footer from "../../components/public/Footer";
   import { getThemeColors } from "../../constants/publicNav";
 
   const tc = getThemeColors(school.theme);
-  <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} onMenuOpen={() => setMenuOpen(true)} />
-  <MegaMenu open={menuOpen} onClose={() => setMenuOpen(false)} school={school} slug={slug} tc={tc} activeKey="about" menuImage={school.menu_image_url} />
+  <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="about" />
   {/* ... page content ... */}
   <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />
   ```
-  `constants/publicNav.js` also defines `PUBLIC_NAV_GROUPS` (MegaMenu accordion, 3 groups) and
-  `PUBLIC_NAV_LINKS` (flat list for Footer quick links) — update both when adding a public page
-  that should appear in navigation. Current shape:
-  ```js
-  // PUBLIC_NAV_GROUPS:
-  [
-    { label: 'About', links: [
-      { key: 'about', label: 'About Us', path: (slug) => `/school/${slug}/about` },
-      { key: 'faculty', label: 'Faculty', path: (slug) => `/school/${slug}/faculty` },
-      { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure` },
-      { key: 'alumni', label: 'Alumni', path: (slug) => `/school/${slug}/alumni` },
-      { key: 'tc', label: 'TC Information', path: (slug) => `/school/${slug}/tc` },
-    ]},
-    { label: 'Academics', links: [
-      { key: 'courses', label: 'Courses', path: (slug) => `/school/${slug}/courses` },
-      { key: 'fee', label: 'Fee Structure', path: (slug) => `/school/${slug}/fee` },
-      { key: 'publicDisclosure', label: 'Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
-    ]},
-    { label: 'Highlights', links: [
-      { key: 'sports', label: 'Sports', path: (slug) => `/school/${slug}/sports` },
-      { key: 'gallery', label: 'Gallery', path: (slug) => `/school/${slug}/gallery/photo` },
-      { key: 'achievements', label: 'Achievements', path: (slug) => `/school/${slug}/achievements` },
-    ]},
-  ]
-  ```
-  (Note the `publicDisclosure` link `key` here is just a nav-item id, unrelated to the
-  `disclosure` module-content key — don't confuse the two.)
+  `constants/publicNav.js` defines `NAVBAR_ITEMS` (drives the Navbar's top-level items and their
+  dropdowns/flyouts) and `FOOTER_NAV_GROUPS` (grouped quick links for the Footer) — update both
+  when adding a public page that should appear in navigation. `NAVBAR_ITEMS` supports three
+  shapes: a plain link (`{ key, label, path }`), a group dropdown (`{ label, links: [...] }`,
+  where a link can carry static `subItems` or fetched `dynamicSubItems: 'courses' | 'infrastructure'`
+  for a nested flyout), or a single top-level flyout (`{ key, label, path, subItems }`, used by
+  Sports). See the file for the current full list (About Us / Academics / Sports / Gallery /
+  News & Events / Admissions groups, plus the standalone Home and Mandatory Public Disclosure
+  links).
 
 - **Rich text**: content authored via `components/common/RichTextEditor.jsx` (wraps
   `react-quill-new`) is rendered on public pages with `dangerouslySetInnerHTML`. Any page doing
@@ -202,7 +194,7 @@ Routes are wired centrally in `backend/src/routes/index.routes.js` (mounted unde
   .rte-content .ql-size-large { font-size: 1.5em; }
   .rte-content .ql-size-huge { font-size: 2.5em; }
   ```
-- **Standard public page anatomy**: `<Navbar />` → `<MegaMenu />` → hero section (90vh parallax
+- **Standard public page anatomy**: `<Navbar />` → hero section (90vh parallax
   or 60vh gradient, depending on page) → content sections wrapped in `Reveal`
   (IntersectionObserver fade+slide-up) → optional footer CTA section (most pages keep it; Alumni
   removed it) → `<Footer />`.
@@ -244,6 +236,14 @@ Routes are wired centrally in `backend/src/routes/index.routes.js` (mounted unde
 | 10 | `alumni` | `Alumni.jsx` | `AlumniPublic.jsx` | See below |
 | 11 | `disclosure` | `PublicDisclosure.jsx` | `PublicDisclosurePublic.jsx` | See below |
 | 12 | `tc` | `TCInformation.jsx` | `TCInformationPublic.jsx` | See below |
+| 13 | `announcements` | `Announcements.jsx` | `AnnouncementsPublic.jsx` + `AnnouncementDetailPublic.jsx` | Milestone 3, first dynamic module. See below |
+| 14 | `events` | `Events.jsx` | `EventsPublic.jsx` + `EventDetailPublic.jsx` | Card grid + Upcoming/Past tabs. See below |
+| 15 | `calendar` | `Calendar.jsx` | `CalendarPublic.jsx` | Month-grid academic calendar. See below |
+| 16 | `circulars` | `Circulars.jsx` | `CircularsPublic.jsx` + `CircularDetailPublic.jsx` | Document-style list, PDF/link download. See below |
+| 17 | `admission` | `AdmissionEnquiry.jsx` | `AdmissionEnquiryPublic.jsx` | Public form → admin inbox. See below |
+| 18 | `career` | `CareerEnquiry.jsx` | `CareerEnquiryPublic.jsx` | Public form → admin inbox. See below |
+
+All of Milestone 3 (dynamic modules) is now built.
 
 ### Alumni (key: `alumni`)
 **Admin fields**: banner image, heading, description (RTE), repeatable alumni entries — photo
@@ -262,8 +262,9 @@ request.
 ### Public Disclosure (key: `disclosure`)
 **Critical**: `moduleRegistry.jsx` uses key `disclosure`, **not** `publicDisclosure`. Every
 file — admin page, public page, `App.jsx`, `ModulePage.jsx`, `publicNav.js` — must use
-`disclosure` for the module-content key (the `publicDisclosure` string only appears as an
-unrelated nav-link `key` in `PUBLIC_NAV_GROUPS`, see above).
+`disclosure` for the module-content key (`publicNav.js`'s `DISCLOSURE_LINK` nav item also
+uses `key: 'disclosure'` now, so there's no longer a second `publicDisclosure` string to
+confuse it with — both are consolidated to `disclosure`).
 
 **Admin structure**: heading, description (RTE), flexible categories (add/remove/rename). Each
 category has a type toggle: `info` (label + text details) or `documents` (label + PDF upload
@@ -296,6 +297,103 @@ filename (`cbse_*.xlsx` → CBSE, `state_*.xlsx` → State Board, `icse_*.xlsx` 
 Default); a `frontend/src/utils/TCTemplates.js` utility with format generators (file already
 exists as a stub); on-the-fly TC PDF generation via the browser print dialog (no extra library).
 
+### Announcements & News (key: `announcements`)
+First Milestone 3 module — reuses the existing generic `content/` module system as-is (no new
+backend needed), same pattern as the Milestone 2 static pages: `heading`/`description` at the
+top, plus a repeatable `announcements` array.
+
+**Admin structure**: heading, description (RTE), "+ Add Announcement" prepends a new entry.
+Each entry: optional image, title, date, tag (`General`/`Urgent`/`Event`/`Holiday`/`Exam
+Notice` — color-coded on the public page), RTE body, "Pin to top" checkbox. No manual reorder —
+display order on the public page is always computed (pinned first, then date descending), so
+admin-side ordering doesn't matter.
+
+**Public page**: no banner, clean gradient hero (same recipe as About Us/Disclosure). Cards
+list with a date-badge tile on the left (day/month/year) and tag pill + title + RTE body +
+optional image on the right; pinned entries get a highlighted border and a "📌 Pinned" label.
+
+This module was the template for the other Milestone 3 content-style modules (Events &
+Activities, Circulars) — same date + tag + repeatable-entry shape, reusing the generic content
+system. Both the announcement and event detail pages use `forceSolid` on `Navbar` (see
+Architecture → Frontend) since their utility bar sits directly under the fixed navbar with no
+dark hero for a transparent navbar to blend into.
+
+Date/time formatting for all four date-driven Milestone 3 modules (`announcements`, `events`,
+`calendar`, `circulars`) is centralized in `frontend/src/utils/dateTimeFormat.js`
+(`formatDate`, `formatTime`, `relativeLabel`, `shortDate`, `parseDate`, `toDateKey`, `stripHtml`,
+`readingTime`) — see the non-breaking-hyphen note under Known bugs before duplicating any of this
+logic in a new module.
+
+### Events & Activities (key: `events`)
+**Admin structure**: heading, description (RTE), repeatable event entries — image (optional),
+title, date, time, venue (optional text), tag (`Cultural`/`Sports`/`Academic`/`Workshop`/
+`Competition`/`Celebration`), RTE body. No "pinned" concept — Upcoming vs Past is always computed
+from `date` vs today, both on the list page and the detail page's badge.
+
+**Public page**: same clean gradient header as Announcements, then an Upcoming/Past segmented
+tab control (counts shown per tab), then a responsive card grid (`EventCard`) — image or
+tag-tinted gradient placeholder with a calendar icon, a white date-badge chip overlaid top-left,
+tag pill top-right, title, venue, 2-line body preview. Upcoming sorted soonest-first, Past
+sorted most-recent-first. Click → `EventDetailPublic.jsx` (mirrors `AnnouncementDetailPublic.jsx`
+— white card, framed/contained image capped at 380px tall via `object-fit: contain` inside a
+`#f8fafc` box so full-width never means "cropped" or "huge", meta row with date/time/venue/read
+time, Upcoming/Past badge).
+
+### Event Calendar (key: `calendar`)
+**Admin structure**: heading, description (RTE), a flat repeatable list of dated items — title,
+date, category (`Holiday`/`Exam`/`PTM`/`Event`/`Other`, color-coded), optional plain-text note.
+Simpler than Announcements/Events: no image, no RTE body, no image upload — just a compact table
+of rows (date/title/category/note per row) sorted by date for editing.
+
+**Public page**: a month-grid calendar (`buildMonthGrid` in `CalendarPublic.jsx`, Sunday-start
+week) with prev/next navigation, today highlighted with a ring, up to 3 colored category dots per
+day (native `title` tooltip lists that day's entry titles), a color legend, and — since a bare
+dot grid isn't very informative on its own — a full sorted list of the *currently viewed month's*
+entries underneath (date badge, category dot, title, note, category pill).
+
+### Circulars (key: `circulars`)
+**Admin structure**: heading, description (RTE), repeatable circular entries — title, date, tag
+(`Academic`/`Administrative`/`Fee`/`Exam`/`Holiday`/`General`), PDF upload (`uploadPdfApi`) *or*
+a link URL (either/both optional), optional RTE note.
+
+**Public page**: inbox-row list identical in spirit to Announcements' inbox (date + 📄 icon +
+tag + title + note preview + chevron), click → `CircularDetailPublic.jsx` with a prominent
+gradient "⬇ Download Circular" (if `pdfUrl`) or "View Circular" (if only `linkUrl`) button above
+the note; if neither is set, shows "No document has been attached yet" instead of a dead button.
+
+### Admission Enquiry & Career Enquiry (keys: `admission`, `career`)
+Different in kind from every other module — these are **public form submissions read by admin**,
+not admin-authored content, so they do **not** use the generic `content/` system or the
+save/publish lifecycle at all.
+
+**New backend module**: `backend/src/modules/enquiry/` (routes/controller/service, same shape as
+`content/`) backed by `tbl_enquiries` (schema in `database/tbl_enquiries.sql` — **apply this by
+hand to any other environment**, e.g. production, the same way the rest of the schema is
+hand-managed). One table serves both enquiry types via an `enquiry_type` ENUM column; rows also
+carry a `uuid` (project convention for any admin-facing entity id, matching `tbl_schools` /
+`tbl_admins` — see `superAdmin.service.js`) and an `extra_data` JSON column for type-specific
+fields (`studentName`/`classApplying` for admission, `position`/`resumeUrl` for career).
+`POST /api/enquiry/public/:schoolId` is public (no auth); `GET /:type`, `PATCH /:uuid/status`,
+`DELETE /:uuid` are `protect`+`isAdmin` and always scoped by `req.user.schoolId`, same pattern as
+every other admin-only endpoint in this codebase.
+
+**Admin UI**: both `AdmissionEnquiry.jsx` and `CareerEnquiry.jsx` are thin wrappers around one
+shared `frontend/src/components/admin/EnquiryList.jsx` (inbox-style rows, New/Contacted/Closed
+status dropdown, delete, expandable row for the message + extra fields) configured with a
+different `type` and `extraFields` — add a new enquiry-style module by adding another thin
+wrapper rather than duplicating the list UI.
+
+**Public UI**: two standalone form pages (no shared list/detail split since there's nothing to
+browse) — `AdmissionEnquiryPublic.jsx` and `CareerEnquiryPublic.jsx`, both posting through
+`frontend/src/api/enquiry.api.js` (`submitEnquiryApi`). Career's form uploads a resume PDF via
+the existing `uploadPdfApi` (same Cloudinary uploader `content/` already uses) before submit.
+Both show an inline success state ("Enquiry Submitted!" / "Application Submitted!") with a
+"Submit Another" reset rather than navigating away.
+
+**Nav placement**: both live under a new "Admissions" `NAVBAR_ITEMS` group (see below) rather
+than as flat top-level items — the navbar was already at capacity (see Known bugs) and grouping
+keeps room for future modules.
+
 ## Known bugs / non-bugs
 
 - **Cloudinary `Request Timeout` / `http_code 499`** on upload — a network issue, not a code
@@ -310,16 +408,28 @@ exists as a stub); on-the-fly TC PDF generation via the browser print dialog (no
   `module_key` mismatch between `moduleRegistry.jsx`, the `App.jsx` route, and
   `modulePageMap` in `ModulePage.jsx`. Fails silently with no console error, so check all three
   by hand.
+- **Dates silently fail to parse / render as `--`** — `saveModuleContentApi` runs
+  `noBreakHyphensDeep()` on all saved content (`frontend/src/api/content.api.js`), which replaces
+  plain hyphens with non-breaking hyphens (U+2011) *everywhere in the JSON*, including inside
+  `YYYY-MM-DD` date strings. `new Date("2026‑07‑28")` silently returns `Invalid Date`. Always
+  parse dates through `frontend/src/utils/dateTimeFormat.js` (`parseDate`/`formatDate`/etc, which
+  normalize dashes first) rather than calling `new Date(...)` directly on stored date fields.
+- **Navbar items wrapping to two lines / overflowing at laptop widths (~1280–1366px)** — the
+  navbar (`components/public/Navbar.jsx`) has no responsive breakpoint/hamburger yet, so it's
+  purely a matter of the top-level `NAVBAR_ITEMS` list fitting in one line at these widths.
+  Already tuned once (tighter `gap`, `letterSpacing`, `whiteSpace: nowrap` on every label, school
+  name ellipsizes via `overflow:hidden`/`minWidth:0`) to fit 8 top-level items down to 1280px.
+  Adding another flat top-level item will likely break this again — prefer folding new nav links
+  into an existing group (`About Us`/`Academics`/`Gallery`/`News & Events`/`Admissions`) or
+  creating a new group rather than a new flat `{ key, label, path }` entry.
 
 ## Outstanding backlog
 
-- **Dynamic modules not yet started**: Events & Activities, Announcements, Circulars, Admission
-  Enquiry, Career Enquiry (already have registry entries under the `dynamic` category in
-  `moduleRegistry.jsx`, but no admin/public pages). These will need date-based listing/filtering
-  UI patterns not yet established elsewhere in the codebase.
-- **Settings admin gap**: `menu_image_url` and `footer_bg_url` upload fields need to be added to
-  the admin Settings page so school admins can actually set the MegaMenu/Footer background
-  images the shared public components already support.
+- **Milestone 3 dynamic modules — done**: all six (`announcements`, `events`, `calendar`,
+  `circulars`, `admission`, `career`) are built — see Modules built so far.
+- **`database/tbl_enquiries.sql` not yet applied outside local dev** — remember to run it by hand
+  against any other environment (staging/production) before the Admission/Career Enquiry
+  modules will work there; the rest of the schema is hand-managed the same way.
 - **TC Generation System upgrade** (planned, spec ready) — see TC Information section above.
 
 ## Working style / communication notes

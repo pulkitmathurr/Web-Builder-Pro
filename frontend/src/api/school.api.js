@@ -46,3 +46,17 @@ export const uploadSchoolLogoApi = async (formData) => {
     });
     return response.data;
 };
+
+export const uploadWelcomeBannerApi = async (formData) => {
+    const response = await axiosInstance.post('/school/welcome-banner', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};
+
+export const uploadFooterBackgroundApi = async (formData) => {
+    const response = await axiosInstance.post('/school/footer-bg', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};

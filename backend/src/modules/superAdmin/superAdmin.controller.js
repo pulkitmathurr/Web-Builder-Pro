@@ -14,7 +14,7 @@ const { sendSuccess, sendError } = require('../../utils/response.utils');
 const createSchool = async (req, res) => {
     try {
         const school = await createSchoolService(req.body, req.user.id);
-        return sendSuccess(res, 'School successfully banayi gayi', school, 201);
+        return sendSuccess(res, 'School created successfully', school, 201);
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
     }
@@ -23,7 +23,7 @@ const createSchool = async (req, res) => {
 const getAllSchools = async (req, res) => {
     try {
         const schools = await getAllSchoolsService();
-        return sendSuccess(res, 'Saare schools mil gaye', schools);
+        return sendSuccess(res, 'All schools fetched', schools);
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
     }
@@ -32,7 +32,7 @@ const getAllSchools = async (req, res) => {
 const getSchoolByUuid = async (req, res) => {
     try {
         const school = await getSchoolByUuidService(req.params.uuid);
-        return sendSuccess(res, 'School mil gayi', school);
+        return sendSuccess(res, 'School fetched', school);
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
     }
@@ -59,7 +59,7 @@ const deleteSchool = async (req, res) => {
 const createAdmin = async (req, res) => {
     try {
         const admin = await createAdminService(req.body);
-        return sendSuccess(res, 'Admin successfully banaya gaya', admin, 201);
+        return sendSuccess(res, 'Admin created successfully', admin, 201);
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
     }
@@ -78,7 +78,7 @@ const createSchoolWithAdmin = async (req, res) => {
     try {
         const logoUrl = req.file ? req.file.path : null;
         const school = await createSchoolWithAdminService(req.body, req.user.id, logoUrl);
-        return sendSuccess(res, 'School aur Admin successfully bana diye gaye', school, 201);
+        return sendSuccess(res, 'School and Admin created successfully', school, 201);
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
     }

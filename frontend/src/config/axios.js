@@ -1,11 +1,15 @@
 import axios from 'axios';
 
+// VITE_API_URL is set at build time (e.g. in Vercel's project settings) to point at the
+// deployed backend. Falls back to localhost so local dev keeps working unchanged.
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const axiosInstance = axios.create({
-    baseURL: 'http://localhost:5000/api',
+    baseURL: API_BASE_URL,
     withCredentials: true,
 });
 
-// Request interceptor — har request mein access token daalo
+// Request interceptor — attach the access token to every request
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('accessToken');
@@ -17,7 +21,7 @@ axiosInstance.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor — token expire hone pe refresh karo
+// Response interceptor — refresh the token when it expires
 axiosInstance.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -28,7 +32,7 @@ axiosInstance.interceptors.response.use(
 
             try {
                 const res = await axios.post(
-                    'http://localhost:5000/api/auth/refresh',
+                    `${API_BASE_URL}/auth/refresh`,
                     {},
                     { withCredentials: true }
                 );

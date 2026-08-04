@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi, uploadPdfApi } from '../../../api/content.api';
+import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadPdfApi } from '../../../api/content.api';
 import RichTextEditor from '../../../components/common/RichTextEditor';
-import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
+import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import useSchoolStore from '../../../store/schoolStore';
 import toast from 'react-hot-toast';
 
@@ -16,7 +16,7 @@ const hexToRgba = (hex, alpha) => {
 // 'info' categories = label + free-text details (admin just fills in the Details column).
 // 'documents' categories = label + a PDF upload per row.
 const defaultContent = {
-    banner: '', heading: '', description: '',
+    heading: '', description: '',
     disclosurePdf: { label: 'Mandatory Public Disclosure', pdfUrl: '' },
     categories: [
         {
@@ -95,14 +95,14 @@ const normalizeCategories = (categories) => {
 };
 
 const PublicDisclosure = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [uploading, setUploading] = useState({});
-    const [bannerCropSrc, setBannerCropSrc] = useState(null);
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -114,6 +114,7 @@ const PublicDisclosure = () => {
                 merged.categories = normalizeCategories(res.data.content?.categories);
                 if (!merged.disclosurePdf) merged.disclosurePdf = defaultContent.disclosurePdf;
                 setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
             }
         } catch (e) {
@@ -132,6 +133,7 @@ const PublicDisclosure = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('disclosure', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -139,7 +141,7 @@ const PublicDisclosure = () => {
                     current = await fetchPublishedFlag();
                 }
                 setIsPublished(current);
-                toast.success('Public Disclosure page published! 🎉');
+                toast.success('Mandatory Public Disclosure page published! 🎉');
             }
             else toast.success('Saved!');
         } catch (e) {
@@ -169,16 +171,6 @@ const PublicDisclosure = () => {
         updateField('categories', updated);
     };
 
-    const uploadBanner = async (file) => {
-        setUploading(prev => ({ ...prev, banner: true }));
-        try {
-            const res = await uploadContentImageApi(file);
-            updateField('banner', res.data.url);
-            toast.success('Banner uploaded!');
-        } catch (e) { toast.error('Failed to upload'); }
-        finally { setUploading(prev => ({ ...prev, banner: false })); }
-    };
-
     const uploadDisclosurePdf = async (file) => {
         setUploading(prev => ({ ...prev, disclosurePdf: true }));
         try {
@@ -190,15 +182,18 @@ const PublicDisclosure = () => {
     };
 
     const inputStyle = {
-        width: '100%', padding: '11px 14px', border: '0.5px solid #e2e8f0',
+        width: '100%', padding: '11px 14px', border: '1px solid #e5e9f0',
         borderRadius: '10px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
     };
 
     const labelStyle = {
         display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b',
         marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
     };
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -212,18 +207,24 @@ const PublicDisclosure = () => {
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .pd-section { animation: fadeInUp 0.35s ease forwards; }
+                .pd-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .pd-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .pd-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="pd-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Public Disclosure</p>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Public Disclosure</h1>
+                        <div className="pd-hero-item">
+                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Mandatory Public Disclosure</p>
+                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Mandatory Public Disclosure</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
                                 Mandatory CBSE-format disclosure — general info, document uploads, staff & infrastructure details, and the consolidated disclosure PDF.
                             </p>
@@ -235,36 +236,41 @@ const PublicDisclosure = () => {
                     </div>
                 </div>
 
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.25rem' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
+                </div>
+
                 <div className="pd-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                    {/* Top section — banner, heading, description */}
+                    {/* Top section — heading, description */}
                     <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                        <div>
-                            <label style={labelStyle}>Banner Image</label>
-                            <div onClick={() => document.getElementById('pd-banner-upload').click()}
-                                style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: content.banner ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: content.banner ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: content.banner ? '160px' : 'auto' }}>
-                                {uploading.banner ? (
-                                    <div style={{ padding: '2rem' }}><div style={{ width: '24px', height: '24px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div></div>
-                                ) : content.banner ? (
-                                    <img src={content.banner} alt="" style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
-                                ) : (
-                                    <p style={{ fontSize: '13px', color: '#64748b' }}>🖼️ Recommended: 1920×1080</p>
-                                )}
-                            </div>
-                            <input id="pd-banner-upload" type="file" accept="image/*"
-                                onChange={e => {
-                                    const f = e.target.files[0];
-                                    e.target.value = '';
-                                    if (f) setBannerCropSrc(URL.createObjectURL(f));
-                                }} style={{ display: 'none' }} />
-                        </div>
                         <div>
                             <label style={labelStyle}>Heading</label>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <input type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)}
-                                    placeholder="e.g. Public Disclosure" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
+                                <input className="pd-input" type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)}
+                                    placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
                                 <ItalicToggle active={!!content.headingItalic} onToggle={() => updateField('headingItalic', !content.headingItalic)} />
                             </div>
+                            <HeadingStyleField
+                                color={content.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                font={content.headingFont} onFontChange={val => updateField('headingFont', val)}
+                                defaultColor="#ffffff"
+                            />
                         </div>
                         <div>
                             <label style={labelStyle}>Description</label>
@@ -313,9 +319,9 @@ const PublicDisclosure = () => {
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div>
                                 <label style={labelStyle}>Button Label</label>
-                                <input type="text" value={content.disclosurePdf.label}
+                                <input className="pd-input" type="text" value={content.disclosurePdf.label}
                                     onChange={e => updateField('disclosurePdf', { ...content.disclosurePdf, label: e.target.value })}
-                                    placeholder="e.g. Mandatory Public Disclosure" style={inputStyle} />
+                                    placeholder="Enter Button Label" style={inputStyle} />
                             </div>
                             <div>
                                 <label style={labelStyle}>PDF</label>
@@ -330,34 +336,7 @@ const PublicDisclosure = () => {
                     </div>
                 </div>
 
-                {/* Bottom Save Bar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
-                </div>
             </div>
-
-            {bannerCropSrc && (
-                <ImageCropModal
-                    imageSrc={bannerCropSrc}
-                    aspect={16 / 9}
-                    onCancel={() => setBannerCropSrc(null)}
-                    onCropComplete={(croppedFile) => { setBannerCropSrc(null); uploadBanner(croppedFile); }}
-                />
-            )}
         </>
     );
 };
@@ -367,7 +346,7 @@ const PublicDisclosure = () => {
 // 'documents' rows have a PDF upload, matching the two table styles in the reference site. ──
 const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategory, onUpdateRow, onRemoveRow, onAddRow, uploading, setUploading }) => {
     const { tc } = useSchoolStore();
-    const inputStyle = { width: '100%', padding: '9px 12px', border: '0.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const inputStyle = { width: '100%', padding: '9px 12px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     const letter = String.fromCharCode(65 + catIndex);
 
     const handlePdfUpload = async (rowId, rowIdx, file) => {
@@ -409,10 +388,10 @@ const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategor
 
             {(category.rows || []).map((row, rowIdx) => (
                 <div key={row.id} style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', alignItems: 'start', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
-                    <input type="text" value={row.label} onChange={e => onUpdateRow(rowIdx, 'label', e.target.value)}
-                        placeholder="e.g. Name of the School" style={inputStyle} />
+                    <input className="pd-input" type="text" value={row.label} onChange={e => onUpdateRow(rowIdx, 'label', e.target.value)}
+                        placeholder="Enter Label" style={inputStyle} />
                     {category.type === 'info' ? (
-                        <textarea value={row.details} onChange={e => onUpdateRow(rowIdx, 'details', e.target.value)}
+                        <textarea className="pd-input" value={row.details} onChange={e => onUpdateRow(rowIdx, 'details', e.target.value)}
                             placeholder="Type details here..." rows={2}
                             style={{ ...inputStyle, resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
                     ) : (
@@ -423,9 +402,9 @@ const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategor
                             </div>
                             <input id={`pd-row-pdf-${row.id}`} type="file" accept="application/pdf"
                                 onChange={e => { const f = e.target.files[0]; if (f) handlePdfUpload(row.id, rowIdx, f); }} style={{ display: 'none' }} />
-                            <input type="text" value={row.linkUrl || ''} onChange={e => onUpdateRow(rowIdx, 'linkUrl', e.target.value)}
+                            <input className="pd-input" type="text" value={row.linkUrl || ''} onChange={e => onUpdateRow(rowIdx, 'linkUrl', e.target.value)}
                                 placeholder="OR paste a link (https://...)" style={{ ...inputStyle, fontSize: '12px' }} />
-                            <textarea value={row.description || ''} onChange={e => onUpdateRow(rowIdx, 'description', e.target.value)}
+                            <textarea className="pd-input" value={row.description || ''} onChange={e => onUpdateRow(rowIdx, 'description', e.target.value)}
                                 placeholder="OR / additionally — type text here (optional)" rows={2}
                                 style={{ ...inputStyle, fontSize: '12px', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
                         </div>

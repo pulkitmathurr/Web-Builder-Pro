@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi } from '../../../api/content.api';
-import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
+import ReorderButtons from '../../../components/common/ReorderButtons';
 import useSchoolStore from '../../../store/schoolStore';
+import { moveItem } from '../../../utils/reorder';
 import toast from 'react-hot-toast';
 
 const hexToRgba = (hex, alpha) => {
@@ -11,17 +12,18 @@ const hexToRgba = (hex, alpha) => {
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 };
 
-const CROP_ASPECTS = { banner: 16 / 9, member: 1 };
+const CROP_ASPECTS = { member: null };
 
-const defaultContent = { members: [], banners: [] };
+const defaultContent = { members: [] };
 
 const Faculty = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [uploading, setUploading] = useState({});
     const [cropTarget, setCropTarget] = useState(null); // { mode: 'banner' | 'member', id?, src }
 
@@ -31,7 +33,9 @@ const Faculty = () => {
         try {
             const res = await getModuleContentApi('faculty');
             if (res.data) {
-                setContent({ ...defaultContent, ...res.data.content });
+                const merged = { ...defaultContent, ...res.data.content };
+                setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
             }
         } catch (e) {
@@ -50,6 +54,7 @@ const Faculty = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('faculty', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -82,7 +87,7 @@ const Faculty = () => {
     const addMember = () => {
     setContent(prev => ({
         ...prev,
-        members: [...prev.members, { id: `m-${Date.now()}`, photo: '', name: '', designation: '', qualification: '', experience: '', bio: '', level: 'general' }]
+        members: [{ id: `m-${Date.now()}`, photo: '', name: '', designation: '', qualification: '', experience: '', level: 'general', udiseCode: '' }, ...prev.members]
     }));
 };
 
@@ -97,37 +102,38 @@ const Faculty = () => {
         setContent(prev => ({ ...prev, members: prev.members.filter(m => m.id !== id) }));
     };
 
+    const moveMember = (idx, dir) => {
+        setContent(prev => ({ ...prev, members: moveItem(prev.members, idx, dir) }));
+    };
+
     const onCropConfirmed = async (croppedFile) => {
         const target = cropTarget;
         setCropTarget(null);
-        const key = target.mode === 'member' ? target.id : 'banner';
-        setUploading(prev => ({ ...prev, [key]: true }));
+        setUploading(prev => ({ ...prev, [target.id]: true }));
         try {
             const res = await uploadContentImageApi(croppedFile);
-            if (target.mode === 'banner') {
-                setContent(prev => ({ ...prev, banners: [...(prev.banners || []), res.data.url] }));
-                toast.success('Banner added!');
-            } else {
-                updateMember(target.id, 'photo', res.data.url);
-                toast.success('Photo uploaded!');
-            }
+            updateMember(target.id, 'photo', res.data.url);
+            toast.success('Photo uploaded!');
         } catch (e) {
             toast.error('Failed to upload');
         } finally {
-            setUploading(prev => ({ ...prev, [key]: false }));
+            setUploading(prev => ({ ...prev, [target.id]: false }));
         }
     };
 
     const inputStyle = {
-        width: '100%', padding: '10px 13px', border: '0.5px solid #e2e8f0',
-        borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
+        width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0',
+        borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
     };
 
     const labelStyle = {
         display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b',
         marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
     };
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -141,20 +147,30 @@ const Faculty = () => {
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .fac-section { animation: fadeInUp 0.35s ease forwards; }
+                @media (max-width: 640px) {
+                    .fac-member-grid { grid-template-columns: 1fr !important; }
+                    .fac-quals-grid { grid-template-columns: 1fr 1fr !important; }
+                }
+                .fac-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .fac-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .fac-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="fac-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                        <div className="fac-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Faculty</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Faculty Members</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                                Showcase your teachers — photo, qualification, experience and bio.
+                                Showcase your teachers — photo, qualification and experience.
                             </p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px', flexShrink: 0 }}>
@@ -163,46 +179,54 @@ const Faculty = () => {
                         </div>
                     </div>
                 </div>
-{/* Banner Carousel */}
-<div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Page Banners</p>
-    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1rem' }}>Add multiple images — they'll rotate automatically on the public page</p>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
-        {(content.banners || []).map((img, i) => (
-            <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '16/9' }}>
-                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <button onClick={() => setContent(prev => ({ ...prev, banners: prev.banners.filter((_, idx) => idx !== i) }))}
-                    style={{ position: 'absolute', top: '6px', right: '6px', width: '24px', height: '24px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-            </div>
-        ))}
-    </div>
-    <div onClick={() => document.getElementById('banner-input').click()}
-        style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-        {uploading.banner ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add banner image</p>}
-    </div>
-    <input id="banner-input" type="file" accept="image/*"
-        onChange={e => {
-            const f = e.target.files[0];
-            e.target.value = '';
-            if (f) setCropTarget({ mode: 'banner', src: URL.createObjectURL(f) });
-        }}
-        style={{ display: 'none' }} />
-</div>
+
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', marginBottom: '1.75rem' }}>
+                    <button onClick={addMember}
+                        style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
+                        + Add Faculty Member
+                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button onClick={() => handleSave(false)} disabled={saving}
+                            style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                            {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                        </button>
+                        {isPublished ? (
+                            <button onClick={handleUnpublish}
+                                style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                                Unpublish
+                            </button>
+                        ) : (
+                            <button onClick={() => handleSave(true)} disabled={publishing}
+                                style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                {publishing ? 'Publishing...' : 'Publish'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Members */}
                 <div className="fac-section" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {content.members.map((m) => (
+                    {content.members.map((m, idx) => (
                         <div key={m.id} style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr', gap: '20px' }}>
+                            <div className="fac-member-grid" style={{ display: 'grid', gridTemplateColumns: '26px 110px 1fr', gap: '20px' }}>
+                                {/* Order */}
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                    <ReorderButtons index={idx} length={content.members.length} onMove={moveMember} />
+                                </div>
                                 {/* Photo */}
-                                <div onClick={() => document.getElementById(`photo-${m.id}`).click()}
-                                    style={{ width: '110px', height: '110px', borderRadius: '12px', border: '1.5px dashed #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: m.photo ? 'transparent' : '#fafafa' }}>
-                                    {uploading[m.id] ? (
-                                        <div style={{ width: '22px', height: '22px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                                    ) : m.photo ? (
-                                        <img src={m.photo} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                    ) : (
-                                        <span style={{ fontSize: '13px', color: '#94a3b8' }}>📷 Photo</span>
-                                    )}
+                                <div>
+                                    <div onClick={() => document.getElementById(`photo-${m.id}`).click()}
+                                        style={{ width: '110px', height: '110px', borderRadius: '12px', border: '1.5px dashed #e2e8f0', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: m.photo ? 'transparent' : '#fafafa' }}>
+                                        {uploading[m.id] ? (
+                                            <div style={{ width: '22px', height: '22px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                        ) : m.photo ? (
+                                            <img src={m.photo} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <span style={{ fontSize: '13px', color: '#94a3b8' }}>📷 Photo</span>
+                                        )}
+                                    </div>
+                                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center', lineHeight: 1.4 }}>Square photo · Max 5MB</p>
                                 </div>
                                 <input id={`photo-${m.id}`} type="file" accept="image/*"
                                     onChange={e => {
@@ -217,31 +241,37 @@ const Faculty = () => {
                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
     <div>
         <label style={labelStyle}>Name</label>
-        <input type="text" value={m.name} onChange={e => updateMember(m.id, 'name', e.target.value)} placeholder="e.g. Mrs. Anita Sharma" style={inputStyle} />
+        <input className="fac-input" type="text" value={m.name} onChange={e => updateMember(m.id, 'name', e.target.value)} placeholder="Enter Full Name" style={inputStyle} />
     </div>
     <div>
         <label style={labelStyle}>Designation / Subject</label>
-        <input type="text" value={m.designation} onChange={e => updateMember(m.id, 'designation', e.target.value)} placeholder="e.g. Mathematics Teacher" style={inputStyle} />
+        <input className="fac-input" type="text" value={m.designation} onChange={e => updateMember(m.id, 'designation', e.target.value)} placeholder="Enter Designation / Subject" style={inputStyle} />
     </div>
 </div>
-<div>
-    <label style={labelStyle}>Teaches At</label>
-    <select value={m.level || 'general'} onChange={e => updateMember(m.id, 'level', e.target.value)} style={inputStyle}>
-        <option value="general">General (All Levels)</option>
-        <option value="primary">Primary School</option>
-        <option value="middle">Middle School</option>
-        <option value="high">High School</option>
-        <option value="senior">Senior School</option>
-    </select>
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+    <div>
+        <label style={labelStyle}>Teaches At</label>
+        <select className="fac-input" value={m.level || 'general'} onChange={e => updateMember(m.id, 'level', e.target.value)} style={inputStyle}>
+            <option value="general">General (All Levels)</option>
+            <option value="pgt">PGT</option>
+            <option value="tgt">TGT</option>
+            <option value="prt">PRT</option>
+            <option value="ntt">NTT</option>
+        </select>
+    </div>
+    <div>
+        <label style={labelStyle}>Udise National Code/ Oasis ID</label>
+        <input className="fac-input" type="text" value={m.udiseCode || ''} onChange={e => updateMember(m.id, 'udiseCode', e.target.value)} placeholder="Enter Udise National Code/ Oasis ID" style={inputStyle} />
+    </div>
 </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 48px', gap: '10px' }}>
+                                    <div className="fac-quals-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 48px', gap: '10px' }}>
                                         <div>
                                             <label style={labelStyle}>Qualification</label>
-                                            <input type="text" value={m.qualification} onChange={e => updateMember(m.id, 'qualification', e.target.value)} placeholder="e.g. M.Sc, B.Ed" style={inputStyle} />
+                                            <input className="fac-input" type="text" value={m.qualification} onChange={e => updateMember(m.id, 'qualification', e.target.value)} placeholder="Enter Qualification" style={inputStyle} />
                                         </div>
                                         <div>
                                             <label style={labelStyle}>Experience</label>
-                                            <input type="text" value={m.experience} onChange={e => updateMember(m.id, 'experience', e.target.value)} placeholder="e.g. 12 years" style={inputStyle} />
+                                            <input className="fac-input" type="text" value={m.experience} onChange={e => updateMember(m.id, 'experience', e.target.value)} placeholder="Enter Experience" style={inputStyle} />
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                                             <button onClick={() => removeMember(m.id)} style={{ width: '100%', height: '38px', background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>×</button>
@@ -249,37 +279,8 @@ const Faculty = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ marginTop: '12px' }}>
-                                <label style={labelStyle}>Bio (optional)</label>
-                                <RichTextEditor value={m.bio} onChange={val => updateMember(m.id, 'bio', val)}
-                                    placeholder="Short bio about this teacher..." minHeight="80px" />
-                            </div>
                         </div>
                     ))}
-
-                    <button onClick={addMember}
-                        style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                        + Add Faculty Member
-                    </button>
-                </div>
-
-                {/* Bottom Save Bar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
                 </div>
             </div>
 

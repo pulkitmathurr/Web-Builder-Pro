@@ -2,19 +2,83 @@ import { COURSE_LEVELS } from "../utils/courseLevels";
 
 // ── Single source of truth for theme colors used across ALL public pages ──
 const THEME_COLORS_MAP = {
-    default: { primary: "#8b2252", secondary: "#c9687e", light: "#fdf2f6", dark: "#2d0a1a" },
-    blue:    { primary: "#1e3a5f", secondary: "#2563eb", light: "#eff6ff", dark: "#0f1e3d" },
-    green:   { primary: "#064e3b", secondary: "#059669", light: "#f0fdf4", dark: "#022c22" },
-    purple:  { primary: "#4a1d96", secondary: "#7c3aed", light: "#faf5ff", dark: "#1e0a3c" },
-    orange:  { primary: "#7c2d12", secondary: "#ea580c", light: "#fff7ed", dark: "#3c1006" },
-    dark:    { primary: "#0f0c05", secondary: "#c9a227", light: "#fefce8", dark: "#0a0800" },
+    default:   { primary: "#8b2252", secondary: "#c9687e", light: "#fdf2f6", dark: "#2d0a1a" },
+    blue:      { primary: "#1e3a5f", secondary: "#2563eb", light: "#eff6ff", dark: "#0f1e3d" },
+    green:     { primary: "#064e3b", secondary: "#059669", light: "#f0fdf4", dark: "#022c22" },
+    purple:    { primary: "#4a1d96", secondary: "#7c3aed", light: "#faf5ff", dark: "#1e0a3c" },
+    orange:    { primary: "#7c2d12", secondary: "#ea580c", light: "#fff7ed", dark: "#3c1006" },
+    dark:      { primary: "#0f0c05", secondary: "#c9a227", light: "#fefce8", dark: "#0a0800" },
+    beige:     { primary: "#7a624a", secondary: "#cbab7c", light: "#faf5ec", dark: "#241c12" },
+    slate:     { primary: "#414b56", secondary: "#8b98a8", light: "#f2f4f6", dark: "#171b20" },
+    cream:     { primary: "#9c8a63", secondary: "#e6d7b0", light: "#fffcf5", dark: "#2b2515" },
+    red:       { primary: "#7f1d1d", secondary: "#dc2626", light: "#fef2f2", dark: "#3f0d0d" },
+    teal:      { primary: "#134e4a", secondary: "#0d9488", light: "#f0fdfa", dark: "#042f2e" },
+    navy:      { primary: "#0f1c3f", secondary: "#3b5bdb", light: "#eef2ff", dark: "#070d1f" },
+    burgundy:  { primary: "#4a0e1f", secondary: "#be123c", light: "#fff1f2", dark: "#26060f" },
+    olive:     { primary: "#1f2e0a", secondary: "#65a30d", light: "#f7fee7", dark: "#0f1705" },
+    cyan:      { primary: "#0e3b45", secondary: "#0891b2", light: "#ecfeff", dark: "#071e24" },
+    amber:     { primary: "#78350f", secondary: "#f59e0b", light: "#fffbeb", dark: "#3d1c04" },
+    charcoal:  { primary: "#18181b", secondary: "#71717a", light: "#fafafa", dark: "#09090b" },
+    lavender:  { primary: "#3f2d63", secondary: "#a78bfa", light: "#f5f3ff", dark: "#1f1733" },
+    coral:     { primary: "#7c2d3d", secondary: "#fb7185", light: "#fff5f5", dark: "#3d1620" },
+    plainCream: { primary: "#8a7550", secondary: "#f3ecd9", light: "#fdfaf3", dark: "#332a1a" },
+    mustard:   { primary: "#7a5c00", secondary: "#eab308", light: "#fffbeb", dark: "#332600" },
+    indigo:    { primary: "#312e81", secondary: "#6366f1", light: "#eef2ff", dark: "#181650" },
 };
 
 export const getThemeColors = (theme) => THEME_COLORS_MAP[theme] || THEME_COLORS_MAP.default;
 
+// ── Whether a school admin has this module switched on via "Manage Modules" ──
+// `selected_modules` comes back from the public school API as an array of module keys
+// (or is missing/non-array on very old data) — fail-open only in that legacy case so an
+// unset field doesn't accidentally hide every module on a school that predates this field.
+export const isModuleEnabled = (school, moduleKey) => {
+    const mods = school?.selected_modules;
+    if (!Array.isArray(mods)) return true;
+    return mods.includes(moduleKey);
+};
+
+// ── Base/surface palette — independent of the accent theme above. Drives the
+// site's overall background (previously hardcoded white) plus the shade used
+// for cards/panels that sit on top of it, so accent theme (primary/secondary)
+// and base theme (surface/card) can be mixed and matched freely.
+//  - surface:    main page/section background (replaces hardcoded #ffffff)
+//  - surfaceAlt: muted/alternating section background (replaces #fafafa / #f8fafc stripes)
+//  - card:       card/panel background sitting on a tinted or surfaceAlt section
+//  - cardAlt:    a slightly deeper card shade, for secondary cards or hover states
+// NOTE: these need to stay visibly distinct from #ffffff at a glance — the first
+// version of this palette (surface tones like #fffef7) was so close to pure white
+// it was indistinguishable on a normal monitor, which read as "the base color isn't
+// changing." Keep `surface`/`surfaceAlt` clearly tinted; `card` can stay closer to
+// white since real cards commonly do even on a tinted page.
+const BASE_COLORS_MAP = {
+    white:    { label: "White",        surface: "#ffffff", surfaceAlt: "#f1f5f9", card: "#ffffff", cardAlt: "#e9edf3" },
+    cream:    { label: "Cream",        surface: "#f7ead0", surfaceAlt: "#edd6a4", card: "#fffaf0", cardAlt: "#e6cd94" },
+    ivory:    { label: "Ivory",        surface: "#f2ecdd", surfaceAlt: "#e4d8bd", card: "#fbf8f0", cardAlt: "#d9cca8" },
+    gray:     { label: "Soft Gray",    surface: "#e7ebef", surfaceAlt: "#d4dbe1", card: "#ffffff", cardAlt: "#c2ccd4" },
+    blue:     { label: "Light Blue",   surface: "#dceefb", surfaceAlt: "#b8ddf5", card: "#f2f9fe", cardAlt: "#a8d0ec" },
+    pink:     { label: "Light Pink",   surface: "#fbe1ea", surfaceAlt: "#f5c2d6", card: "#fef4f8", cardAlt: "#f0aec8" },
+    green:    { label: "Light Green",  surface: "#e3efe0", surfaceAlt: "#c7dfc0", card: "#f4f9f2", cardAlt: "#b3d2a8" },
+    lavender: { label: "Light Lavender", surface: "#ece4f7", surfaceAlt: "#d6c5ec", card: "#f7f3fc", cardAlt: "#c3a8e0" },
+    yellow:   { label: "Light Yellow", surface: "#f9f0d0", surfaceAlt: "#f2e0a0", card: "#fdf9ec", cardAlt: "#ecd482" },
+    peach:    { label: "Light Peach",  surface: "#fbe6d4", surfaceAlt: "#f5cca4", card: "#fef6ee", cardAlt: "#edb87e" },
+    teal:     { label: "Light Teal",   surface: "#dcf0ec", surfaceAlt: "#b0ded4", card: "#f0faf8", cardAlt: "#8fcec0" },
+    coral:    { label: "Light Coral",  surface: "#fbe0d8", surfaceAlt: "#f5b8a8", card: "#fef4f0", cardAlt: "#ee9c86" },
+    sand:     { label: "Light Sand",   surface: "#ece3d4", surfaceAlt: "#d9c7ab", card: "#f7f3ea", cardAlt: "#c7b28c" },
+    mint:     { label: "Light Mint",   surface: "#dcefe6", surfaceAlt: "#b3ddc9", card: "#f0faf5", cardAlt: "#93cbae" },
+    rose:     { label: "Rose",         surface: "#fce0e6", surfaceAlt: "#f7bdc9", card: "#fef5f7", cardAlt: "#f0a3b3" },
+    indigo:   { label: "Indigo",       surface: "#e0e4fb", surfaceAlt: "#c2c9f5", card: "#f4f5fe", cardAlt: "#a9b2ec" },
+    slate:    { label: "Slate Blue",   surface: "#e2e8f2", surfaceAlt: "#c7d1e3", card: "#f4f7fb", cardAlt: "#aebbd4" },
+    amber:    { label: "Amber",        surface: "#fbe9c9", surfaceAlt: "#f5d28f", card: "#fef9ee", cardAlt: "#eabb5e" },
+};
+
+export const getBaseColors = (base) => BASE_COLORS_MAP[base] || BASE_COLORS_MAP.white;
+
+export const BASE_COLOR_OPTIONS = Object.entries(BASE_COLORS_MAP).map(([key, v]) => ({ key, ...v }));
+
 export const HOME_LINK = { key: 'home', label: 'Home', path: (slug) => `/school/${slug}` };
 
-export const DISCLOSURE_LINK = { key: 'disclosure', label: 'Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` };
+export const DISCLOSURE_LINK = { key: 'disclosure', label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` };
 
 // ── Navbar top-level items ──
 // Three shapes, rendered differently by Navbar.jsx:
@@ -32,7 +96,7 @@ export const NAVBAR_ITEMS = [
             { key: 'about',          label: 'About Us',       path: (slug) => `/school/${slug}/about` },
             { key: 'faculty',        label: 'Faculty',        path: (slug) => `/school/${slug}/faculty` },
             { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure`, dynamicSubItems: 'infrastructure' },
-            { key: 'alumni',         label: 'Alumni',         path: (slug) => `/school/${slug}/alumni` },
+            { key: 'alumni',         label: 'Our Proud Alumni',         path: (slug) => `/school/${slug}/alumni` },
         ],
     },
     {
@@ -60,6 +124,15 @@ export const NAVBAR_ITEMS = [
             { key: 'gallery-video', label: 'Video Gallery', path: (slug) => `/school/${slug}/gallery/video` },
         ],
     },
+    {
+        label: 'News & Events',
+        links: [
+            { key: 'announcements', label: 'Announcements',      path: (slug) => `/school/${slug}/announcements` },
+            { key: 'events',        label: 'Events & Activities', path: (slug) => `/school/${slug}/events` },
+            { key: 'calendar',      label: 'Event Calendar',      path: (slug) => `/school/${slug}/calendar` },
+            { key: 'circulars',     label: 'Circulars',           path: (slug) => `/school/${slug}/circulars` },
+        ],
+    },
     DISCLOSURE_LINK,
 ];
 
@@ -82,7 +155,7 @@ export const FOOTER_NAV_GROUPS = [
         links: [
             { key: 'courses',     label: 'Courses',           path: (slug) => `/school/${slug}/courses` },
             { key: 'fee',         label: 'Fee Structure',     path: (slug) => `/school/${slug}/fee` },
-            { key: 'disclosure',  label: 'Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
+            { key: 'disclosure',  label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {
@@ -91,6 +164,10 @@ export const FOOTER_NAV_GROUPS = [
             { key: 'sports',       label: 'Sports',       path: (slug) => `/school/${slug}/sports` },
             { key: 'gallery',      label: 'Gallery',      path: (slug) => `/school/${slug}/gallery/photo` },
             { key: 'achievements', label: 'Achievements', path: (slug) => `/school/${slug}/achievements` },
+            { key: 'announcements', label: 'Announcements', path: (slug) => `/school/${slug}/announcements` },
+            { key: 'events',        label: 'Events & Activities', path: (slug) => `/school/${slug}/events` },
+            { key: 'calendar',      label: 'Event Calendar', path: (slug) => `/school/${slug}/calendar` },
+            { key: 'circulars',     label: 'Circulars', path: (slug) => `/school/${slug}/circulars` },
         ],
     },
 ];

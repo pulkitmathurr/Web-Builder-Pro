@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
+import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import useSchoolStore from '../../../store/schoolStore';
 
 const hexToRgba = (hex, alpha) => {
@@ -35,13 +36,8 @@ const ImageIcon = () => (
     <svg width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
 );
 
-const PersonIcon = ({ size = 22 }) => (
-    <svg width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-);
-
 const defaultLevelData = {
     enabled: false,
-    bannerImage: '',
     aboutHeading: '',
     aboutQuote: '',
     aboutAuthor: '',
@@ -51,7 +47,6 @@ const defaultLevelData = {
     uniqueText: '',
     uniqueImage: '',
     gallery: [],
-    contacts: [],
 };
 
 const defaultContent = {
@@ -62,16 +57,18 @@ const defaultContent = {
 };
 
 const Courses = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [activeLevel, setActiveLevel] = useState(null);
-    const [activeTab, setActiveTab] = useState('banner');
+    const [activeTab, setActiveTab] = useState('about');
     const [uploading, setUploading] = useState({});
-    const [cropTarget, setCropTarget] = useState(null); // { kind: 'field' | 'gallery' | 'contact', field?, idx?, aspect, src }
+    const [cropTarget, setCropTarget] = useState(null); // { kind: 'field' | 'gallery', field?, aspect, src }
+    const [imageQueue, setImageQueue] = useState([]); // remaining gallery files still waiting to be cropped
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -84,6 +81,7 @@ const Courses = () => {
                     merged[k] = { ...defaultLevelData, ...res.data.content[k] };
                 });
                 setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
                 const firstEnabled = LEVELS.find(l => merged[l.key]?.enabled);
                 if (firstEnabled) setActiveLevel(firstEnabled.key);
@@ -104,6 +102,7 @@ const Courses = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('courses', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -136,7 +135,7 @@ const Courses = () => {
     const toggleLevel = (key) => {
         const newEnabled = !content[key].enabled;
         setContent(prev => ({ ...prev, [key]: { ...prev[key], enabled: newEnabled } }));
-        if (newEnabled) { setActiveLevel(key); setActiveTab('banner'); }
+        if (newEnabled) { setActiveLevel(key); setActiveTab('about'); }
         else if (activeLevel === key) {
             const next = LEVELS.find(l => l.key !== key && content[l.key].enabled);
             setActiveLevel(next ? next.key : null);
@@ -180,49 +179,32 @@ const Courses = () => {
         updateField('gallery', current.filter((_, i) => i !== idx));
     };
 
-    // Contacts
-    const addContact = () => {
-        const current = content[activeLevel].contacts || [];
-        updateField('contacts', [...current, { photo: '', name: '', designation: '', email: '', phone: '' }]);
+    // Each file is cropped one at a time (freeform, no locked aspect — adjustable from
+    // every side) before upload. Once confirmed, the next queued file automatically
+    // opens in the crop modal.
+    const startGalleryUpload = (files) => {
+        if (files.length === 0) return;
+        setImageQueue(files.slice(1));
+        setCropTarget({ kind: 'gallery', aspect: null, src: URL.createObjectURL(files[0]) });
     };
 
-    const updateContact = (idx, field, value) => {
-        const current = [...(content[activeLevel].contacts || [])];
-        current[idx] = { ...current[idx], [field]: value };
-        updateField('contacts', current);
-    };
-
-    const removeContact = (idx) => {
-        const current = content[activeLevel].contacts || [];
-        updateField('contacts', current.filter((_, i) => i !== idx));
-    };
-
-    const uploadContactPhoto = async (idx, file) => {
-        const key = `contact-${idx}`;
-        setUploading(prev => ({ ...prev, [key]: true }));
-        try {
-            const res = await uploadContentImageApi(file);
-            updateContact(idx, 'photo', res.data.url);
-        } catch (e) {
-            toast.error('Failed to upload');
-        } finally {
-            setUploading(prev => ({ ...prev, [key]: false }));
+    const onCropConfirmed = async (croppedFile) => {
+        const t = cropTarget;
+        setCropTarget(null);
+        if (t.kind === 'field') await handleImageUpload(croppedFile, t.field);
+        else if (t.kind === 'gallery') await addGalleryImage(croppedFile);
+        if (t.kind === 'gallery' && imageQueue.length > 0) {
+            const [next, ...rest] = imageQueue;
+            setImageQueue(rest);
+            setCropTarget({ kind: 'gallery', aspect: null, src: URL.createObjectURL(next) });
         }
     };
 
-    const onCropConfirmed = (croppedFile) => {
-        const t = cropTarget;
-        setCropTarget(null);
-        if (t.kind === 'field') handleImageUpload(croppedFile, t.field);
-        else if (t.kind === 'gallery') addGalleryImage(croppedFile);
-        else if (t.kind === 'contact') uploadContactPhoto(t.idx, croppedFile);
-    };
-
     const inputStyle = {
-        width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0',
-        borderRadius: '6px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
-        transition: 'border 0.2s, box-shadow 0.2s'
+        width: '100%', padding: '11px 14px', border: '1px solid #e5e9f0',
+        borderRadius: '10px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border 0.2s, box-shadow 0.2s, background 0.2s'
     };
 
     const labelStyle = {
@@ -230,23 +212,37 @@ const Courses = () => {
         marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
     };
 
-    const ImageBox = ({ label, value, field, hint, aspect = 16 / 9 }) => (
+    const ImageBox = ({ label, value, field, hint, aspect = 16 / 9, previewAspect, previewMaxWidth }) => {
+        // previewAspect/previewMaxWidth shape the field preview to match how the image actually
+        // renders on the live site (e.g. portrait 3/4), instead of a wide banner box.
+        const shaped = !!previewAspect;
+        return (
         <div>
             <label style={labelStyle}>{label}</label>
             <div onClick={() => document.getElementById(`img-${field}`).click()}
-                style={{ border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: value ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: value ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: value ? '160px' : 'auto' }}>
+                style={{
+                    position: 'relative', border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: value ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: value ? 'transparent' : '#fafafa', overflow: 'hidden',
+                    ...(shaped
+                        ? { width: previewMaxWidth || '260px', aspectRatio: previewAspect, display: 'flex', flexDirection: 'column', alignItems: value ? 'stretch' : 'center', justifyContent: value ? 'stretch' : 'center' }
+                        : { minHeight: value ? '160px' : 'auto' }),
+                }}>
                 {uploading[field] ? (
                     <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                         <div style={{ width: '28px', height: '28px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
                         <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p>
                     </div>
                 ) : value ? (
-                    <img src={value} alt="" style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+                    <>
+                        <img src={value} alt="" style={shaped ? { width: '100%', height: '100%', objectFit: 'cover', display: 'block' } : { width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
+                        <button type="button" onClick={e => { e.stopPropagation(); updateField(field, ''); }}
+                            style={{ position: 'absolute', top: '8px', right: '8px', width: '24px', height: '24px', background: 'rgba(15,23,42,0.7)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            title="Remove image">×</button>
+                    </>
                 ) : (
                     <>
                         <div style={{ color: '#cbd5e1', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><ImageIcon /></div>
                         <p style={{ fontSize: '13px', color: '#64748b' }}>Click to upload</p>
-                        {hint && <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{hint}</p>}
+                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{hint ? `${hint} · JPG, PNG, WEBP · Max 5MB` : 'JPG, PNG, WEBP · Max 5MB'}</p>
                     </>
                 )}
             </div>
@@ -258,15 +254,16 @@ const Courses = () => {
                 }}
                 style={{ display: 'none' }} />
         </div>
-    );
+        );
+    };
 
     const tabs = [
-        { key: 'banner', label: 'Banner' },
         { key: 'about', label: 'About' },
         { key: 'unique', label: 'Why Unique' },
         { key: 'gallery', label: 'Gallery' },
-        { key: 'contacts', label: 'Contacts' },
     ];
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -282,18 +279,23 @@ const Courses = () => {
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .crs-section { animation: fadeInUp 0.35s ease forwards; }
-                .crs-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
+                .crs-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .level-toggle { transition: all 0.2s; }
+                .crs-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .crs-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="crs-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                        <div className="crs-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Courses</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>School Levels</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
@@ -305,6 +307,25 @@ const Courses = () => {
                             <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
                         </div>
                     </div>
+                </div>
+
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.75rem' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
                 </div>
 
                 {/* Level Toggles */}
@@ -335,7 +356,7 @@ const Courses = () => {
 
                 {/* Active Level Editor */}
                 {!activeLevel ? (
-                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '3.5rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '3.5rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                         <div style={{ color: '#cbd5e1', display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
                             <svg width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.6" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
                         </div>
@@ -347,7 +368,7 @@ const Courses = () => {
                         {/* Level tabs (if multiple enabled) */}
                         <div style={{ display: 'flex', gap: '6px', marginBottom: '1rem', flexWrap: 'wrap' }}>
                             {LEVELS.filter(l => content[l.key].enabled).map(l => (
-                                <button key={l.key} onClick={() => { setActiveLevel(l.key); setActiveTab('banner'); }}
+                                <button key={l.key} onClick={() => { setActiveLevel(l.key); setActiveTab('about'); }}
                                     style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px', borderRadius: '6px', border: activeLevel === l.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', background: activeLevel === l.key ? tc.light : '#ffffff', color: activeLevel === l.key ? tc.primary : '#64748b', fontSize: '13px', fontWeight: activeLevel === l.key ? 600 : 400, cursor: 'pointer' }}>
                                     <span style={{ display: 'flex' }}>{l.icon}</span>
                                     {l.label}
@@ -365,57 +386,40 @@ const Courses = () => {
                             ))}
                         </div>
 
-                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-
-                            {/* Banner Tab */}
-                            {activeTab === 'banner' && (
-                                <div style={{ padding: '2rem' }}>
-                                    <ImageBox label="Banner Image (Full Screen Hero)" value={activeData.bannerImage} field="bannerImage" hint="Recommended: 1920×1080px, landscape" aspect={16 / 9} />
-                                    <div style={{ marginTop: '16px', padding: '16px 18px', background: tc.light, borderRadius: '8px', border: '1px solid #f9c4d4' }}>
-                                        <p style={{ fontSize: '12px', fontWeight: 600, color: tc.primary, marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            How to choose the best banner image
-                                        </p>
-                                        {[
-                                            'This image fills the entire screen at the top of the page — pick a wide, high-resolution photo',
-                                            'Landscape orientation works best; portrait images get cropped awkwardly on wide screens',
-                                            'Campus buildings, classrooms in action, or students at this level work well',
-                                            'Keep the main subject centered — the edges may get trimmed on very wide or narrow screens',
-                                            'Avoid images with text or logos already baked into them',
-                                        ].map((tip, i) => (
-                                            <p key={i} style={{ fontSize: '11.5px', color: '#9f1239', marginBottom: '4px', lineHeight: 1.6 }}>• {tip}</p>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
 
                             {/* About Tab */}
                             {activeTab === 'about' && (
                                 <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                                    <ImageBox label="About Section Image" value={activeData.aboutImage} field="aboutImage" hint="Portrait recommended" aspect={3 / 4} />
+                                    <ImageBox label="About Section Image" value={activeData.aboutImage} field="aboutImage" hint="Freely adjustable from every side — keep it tall/vertical" aspect={null} previewAspect="3/4" previewMaxWidth="260px" />
                                     <div>
                                         <label style={labelStyle}>Heading</label>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <textarea className="crs-input" value={activeData.aboutHeading} onChange={e => updateField('aboutHeading', e.target.value)}
-                                                placeholder='e.g. "A Supportive, Nurturing Environment"' rows={2} style={{ ...inputStyle, resize: 'vertical', fontStyle: activeData.aboutHeadingItalic ? 'italic' : 'normal' }} />
+                                                placeholder="Enter Heading" rows={2} style={{ ...inputStyle, resize: 'vertical', fontStyle: activeData.aboutHeadingItalic ? 'italic' : 'normal' }} />
                                             <ItalicToggle active={!!activeData.aboutHeadingItalic} onToggle={() => updateField('aboutHeadingItalic', !activeData.aboutHeadingItalic)} />
                                         </div>
+                                        <HeadingStyleField
+                                            color={activeData.aboutHeadingColor} onColorChange={val => updateField('aboutHeadingColor', val)}
+                                            font={activeData.aboutHeadingFont} onFontChange={val => updateField('aboutHeadingFont', val)}
+                                        />
                                     </div>
                                     <div>
     <label style={labelStyle}>Quote / Description</label>
     <RichTextEditor value={activeData.aboutQuote} onChange={val => updateField('aboutQuote', val)}
-        placeholder="Write a warm description about this section of the school..." minHeight="150px" />
+        placeholder="Write a warm description about this section of the school..." minHeight="150px"
+        maxWidth="745px" fontSize="16px" fontFamily="'Inter', system-ui, sans-serif" />
 </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                                         <div>
                                             <label style={labelStyle}>Author Name</label>
                                             <input className="crs-input" type="text" value={activeData.aboutAuthor} onChange={e => updateField('aboutAuthor', e.target.value)}
-                                                placeholder="e.g. Jessica Waugh" style={inputStyle} />
+                                                placeholder="Enter Author Name" style={inputStyle} />
                                         </div>
                                         <div>
                                             <label style={labelStyle}>Designation</label>
                                             <input className="crs-input" type="text" value={activeData.aboutAuthorDesignation} onChange={e => updateField('aboutAuthorDesignation', e.target.value)}
-                                                placeholder="e.g. Head of Primary School" style={inputStyle} />
+                                                placeholder="Enter Designation" style={inputStyle} />
                                         </div>
                                     </div>
                                 </div>
@@ -424,19 +428,24 @@ const Courses = () => {
                             {/* Why Unique Tab */}
                             {activeTab === 'unique' && (
                                 <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                                    <ImageBox label="Why Unique Section Image" value={activeData.uniqueImage} field="uniqueImage" hint="Portrait recommended" aspect={3 / 4} />
+                                    <ImageBox label="Why Unique Section Image" value={activeData.uniqueImage} field="uniqueImage" hint="Freely adjustable from every side — keep it tall/vertical" aspect={null} previewAspect="3/4" previewMaxWidth="260px" />
                                     <div>
                                         <label style={labelStyle}>Heading</label>
                                         <div style={{ display: 'flex', gap: '8px' }}>
                                             <input className="crs-input" type="text" value={activeData.uniqueHeading} onChange={e => updateField('uniqueHeading', e.target.value)}
-                                                placeholder="e.g. Why We're Unique" style={{ ...inputStyle, fontStyle: activeData.uniqueHeadingItalic ? 'italic' : 'normal' }} />
+                                                placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: activeData.uniqueHeadingItalic ? 'italic' : 'normal' }} />
                                             <ItalicToggle active={!!activeData.uniqueHeadingItalic} onToggle={() => updateField('uniqueHeadingItalic', !activeData.uniqueHeadingItalic)} />
                                         </div>
+                                        <HeadingStyleField
+                                            color={activeData.uniqueHeadingColor} onColorChange={val => updateField('uniqueHeadingColor', val)}
+                                            font={activeData.uniqueHeadingFont} onFontChange={val => updateField('uniqueHeadingFont', val)}
+                                        />
                                     </div>
                                     <div>
     <label style={labelStyle}>Description</label>
     <RichTextEditor value={activeData.uniqueText} onChange={val => updateField('uniqueText', val)}
-        placeholder="What makes this section of your school special..." minHeight="180px" />
+        placeholder="What makes this section of your school special..." minHeight="180px"
+        maxWidth="745px" fontSize="16px" fontFamily="'Inter', system-ui, sans-serif" />
 </div>
                                 </div>
                             )}
@@ -459,89 +468,32 @@ const Courses = () => {
                                         {uploading.gallery ? (
                                             <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p>
                                         ) : (
-                                            <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add gallery image</p>
+                                            <>
+                                                <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add gallery images (multiple allowed)</p>
+                                                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
+                                            </>
                                         )}
                                     </div>
-                                    <input id="gallery-input" type="file" accept="image/*"
+                                    <input id="gallery-input" type="file" accept="image/*" multiple
                                         onChange={e => {
-                                            const f = e.target.files[0];
+                                            const files = Array.from(e.target.files);
                                             e.target.value = '';
-                                            if (f) setCropTarget({ kind: 'gallery', aspect: 1, src: URL.createObjectURL(f) });
+                                            if (files.length > 0) startGalleryUpload(files);
                                         }}
                                         style={{ display: 'none' }} />
-                                </div>
-                            )}
-
-                            {/* Contacts Tab */}
-                            {activeTab === 'contacts' && (
-                                <div style={{ padding: '2rem' }}>
-                                    {(activeData.contacts || []).map((c, i) => (
-                                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '16px', padding: '1.25rem', background: '#fafafa', borderRadius: '8px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
-                                            <div onClick={() => document.getElementById(`contact-photo-${i}`).click()}
-                                                style={{ width: '100px', height: '100px', borderRadius: '6px', border: '1.5px dashed #cbd5e1', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: c.photo ? 'transparent' : '#ffffff' }}>
-                                                {uploading[`contact-${i}`] ? (
-                                                    <div style={{ width: '20px', height: '20px', border: '2px solid #f0c4c4', borderTop: `2px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                                                ) : c.photo ? (
-                                                    <img src={c.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                ) : (
-                                                    <span style={{ color: '#cbd5e1' }}><PersonIcon /></span>
-                                                )}
-                                            </div>
-                                            <input id={`contact-photo-${i}`} type="file" accept="image/png,image/jpg,image/jpeg,image/webp"
-                                                onChange={e => {
-                                                    const f = e.target.files[0];
-                                                    e.target.value = '';
-                                                    if (f) setCropTarget({ kind: 'contact', idx: i, aspect: 1, src: URL.createObjectURL(f) });
-                                                }}
-                                                style={{ display: 'none' }} />
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                                    <input type="text" value={c.name} onChange={e => updateContact(i, 'name', e.target.value)} placeholder="Name" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
-                                                    <input type="text" value={c.designation} onChange={e => updateContact(i, 'designation', e.target.value)} placeholder="Designation" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
-                                                </div>
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 40px', gap: '8px' }}>
-                                                    <input type="email" value={c.email} onChange={e => updateContact(i, 'email', e.target.value)} placeholder="Email" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
-                                                    <input type="text" value={c.phone} onChange={e => updateContact(i, 'phone', e.target.value)} placeholder="Phone" style={{ ...inputStyle, fontSize: '12.5px', padding: '8px 12px' }} />
-                                                    <button onClick={() => removeContact(i)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '16px' }}>×</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                    <button onClick={addContact}
-                                        style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #cbd5e1', borderRadius: '6px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                                        + Add Contact Person
-                                    </button>
                                 </div>
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Bottom Save Bar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
-                </div>
             </div>
 
             {cropTarget && (
                 <ImageCropModal
                     imageSrc={cropTarget.src}
                     aspect={cropTarget.aspect}
-                    onCancel={() => setCropTarget(null)}
+                    onCancel={() => { setCropTarget(null); setImageQueue([]); }}
                     onCropComplete={onCropConfirmed}
                 />
             )}

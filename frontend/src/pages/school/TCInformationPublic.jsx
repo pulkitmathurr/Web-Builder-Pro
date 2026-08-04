@@ -11,10 +11,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
-import { getThemeColors } from '../../constants/publicNav';
+import { getThemeColors, getBaseColors, isModuleEnabled } from '../../constants/publicNav';
+import NotPublished from '../../components/public/NotPublished';
+import { getFontFamily } from '../../constants/fonts';
 import { getPublicSchoolApi } from '../../api/school.api';
 import { getPublicModuleContentApi } from '../../api/content.api';
-import { printTC, FORMAT_LABELS } from '../../utils/TCTemplates';
 
 const MODULE_KEY = 'tc';
 
@@ -33,10 +34,10 @@ const TCInformationPublic = () => {
     const [selectedSession, setSelectedSession] = useState(null);
     const [form, setForm] = useState({ tcNo: '', studentName: '' });
     const [result, setResult] = useState(null); // { status: 'found'|'notfound', record? }
-    const [generating, setGenerating] = useState(false);
     const [formError, setFormError] = useState('');
 
     const tc = school ? getThemeColors(school.theme) : null;
+    const bc = getBaseColors(school?.base_theme);
 
     // ------------------------------------------------------------------
     // Scroll listener for Navbar transparency
@@ -86,44 +87,27 @@ const TCInformationPublic = () => {
     const sessions = useMemo(() => (Array.isArray(content?.sessions) ? content.sessions : []), [content]);
 
     // ------------------------------------------------------------------
-    // Search logic — case-insensitive TC No + Student Name
+    // Search logic — case-insensitive, either TC No OR Student Name is enough
     // ------------------------------------------------------------------
     const handleSearch = () => {
         setFormError('');
         const tcNo = form.tcNo.trim().toLowerCase();
         const name = form.studentName.trim().toLowerCase();
 
-        if (!tcNo || !name) {
-            setFormError('TC Number and Student Name are required.');
+        if (!tcNo && !name) {
+            setFormError('Enter your TC Number or Student Name.');
             return;
         }
 
         const records = selectedSession?.records || [];
-        const found = records.find((r) => {
+        // Every matching record is shown — a shared student name shouldn't hide either one.
+        const found = records.filter((r) => {
             const rTc = String(r.tcNo || '').trim().toLowerCase();
             const rName = String(r.studentName || '').trim().toLowerCase();
-            return rTc === tcNo && rName === name;
+            return (tcNo && rTc === tcNo) || (name && rName === name);
         });
 
-        setResult(found ? { status: 'found', record: found } : { status: 'notfound' });
-    };
-
-    // Legacy records (old CSV-based module) carry a direct pdfUrl —
-    // for those, open the uploaded PDF instead of generating a sparse TC.
-    const isLegacyRecord = !!result?.record?.pdfUrl;
-
-    const handleGenerate = () => {
-        if (!result?.record || !school) return;
-        if (isLegacyRecord) {
-            window.open(result.record.pdfUrl, '_blank', 'noopener');
-            return;
-        }
-        setGenerating(true);
-        // small delay so the spinner is visible before the print window opens
-        setTimeout(() => {
-            printTC(result.record, school, selectedSession?.tcFormat || 'default');
-            setGenerating(false);
-        }, 600);
+        setResult(found.length > 0 ? { status: 'found', records: found } : { status: 'notfound' });
     };
 
     const goToSession = (s) => {
@@ -151,12 +135,14 @@ const TCInformationPublic = () => {
     // ------------------------------------------------------------------
     if (loading) {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc', color: '#64748b', fontSize: 15 }}>
+            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bc.surface, color: '#64748b', fontSize: 15 }}>
                 Loading…
             </div>
         );
     }
     if (!school) return null;
+
+    if (!isModuleEnabled(school, 'tc')) return <NotPublished tc={tc} slug={slug} label="TC Information" reason="disabled" />;
 
     const inputStyle = {
         width: '100%',
@@ -165,12 +151,12 @@ const TCInformationPublic = () => {
         borderRadius: 12,
         fontSize: 15,
         outline: 'none',
-        background: '#fff',
+        background: bc.card,
     };
     const labelStyle = { display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 };
 
     return (
-        <div style={{ background: '#f8fafc', minHeight: '100vh' }}>
+        <div style={{ background: bc.surface, minHeight: '100vh' }}>
             <style>{`
                 .rte-content p { margin-bottom: 0.6em; }
                 .rte-content p:last-child { margin-bottom: 0; }
@@ -181,6 +167,12 @@ const TCInformationPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                .rte-content .ql-font-inter { font-family: 'Inter', system-ui, sans-serif; }
+                .rte-content .ql-font-poppins { font-family: 'Poppins', sans-serif; }
+                .rte-content .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+                .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+                .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
+                .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
 
                 @keyframes stepIn {
                     from { opacity: 0; transform: translateX(28px); }
@@ -190,17 +182,10 @@ const TCInformationPublic = () => {
                     from { opacity: 0; transform: translateY(14px) scale(0.97); }
                     to { opacity: 1; transform: translateY(0) scale(1); }
                 }
-                @keyframes spin { to { transform: rotate(360deg); } }
                 .tc-step-in { animation: stepIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
                 .tc-result-pop { animation: resultPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
                 .tc-session-card { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
                 .tc-session-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(15,23,42,0.1); }
-                .tc-spinner {
-                    display: inline-block; width: 16px; height: 16px;
-                    border: 2.5px solid rgba(255,255,255,0.35); border-top-color: #fff;
-                    border-radius: 50%; animation: spin 0.7s linear infinite;
-                    vertical-align: -3px; margin-right: 8px;
-                }
             `}</style>
 
             <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="tc" />
@@ -223,7 +208,7 @@ const TCInformationPublic = () => {
                 >
                     Transfer Certificate
                 </span>
-                <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(30px, 5vw, 46px)', fontWeight: 700, color: '#0f172a', lineHeight: 1.15, fontStyle: content?.headingItalic ? 'italic' : 'normal' }}>
+                <h1 style={{ fontFamily: content?.headingFont ? getFontFamily(content.headingFont) : "'Playfair Display', serif", fontSize: 'clamp(30px, 5vw, 46px)', fontWeight: 700, color: content?.headingColor || '#0f172a', lineHeight: 1.15, fontStyle: content?.headingItalic ? 'italic' : 'normal' }}>
                     {content?.heading || 'Download Transfer Certificate'}
                 </h1>
                 {content?.description && (
@@ -240,7 +225,7 @@ const TCInformationPublic = () => {
                 {step === 1 && (
                     <>
                         {sessions.length === 0 ? (
-                            <div style={{ textAlign: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: 18, padding: '54px 24px', color: '#64748b', fontSize: 15 }}>
+                            <div style={{ textAlign: 'center', background: bc.card, border: '1px solid #e2e8f0', borderRadius: 18, padding: '54px 24px', color: '#64748b', fontSize: 15 }}>
                                 TC records are not available yet. Please contact the school office.
                             </div>
                         ) : (
@@ -250,7 +235,7 @@ const TCInformationPublic = () => {
                                 </p>
 
                                 {/* Dropdown card */}
-                                <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, padding: '32px 28px', boxShadow: '0 2px 10px rgba(15,23,42,0.04)', textAlign: 'center' }}>
+                                <div style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: 20, padding: '32px 28px', boxShadow: '0 2px 10px rgba(15,23,42,0.04)', textAlign: 'center' }}>
                                     {/* Calendar icon */}
                                     <div style={{ width: 56, height: 56, margin: '0 auto 20px', borderRadius: 16, background: tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={tc.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -284,7 +269,7 @@ const TCInformationPublic = () => {
                                                 fontWeight: 600,
                                                 border: `1.5px solid ${tc.primary}`,
                                                 borderRadius: 12,
-                                                background: '#fff',
+                                                background: bc.card,
                                                 color: '#0f172a',
                                                 cursor: 'pointer',
                                                 outline: 'none',
@@ -293,7 +278,7 @@ const TCInformationPublic = () => {
                                             <option value="" disabled>— Choose session —</option>
                                             {sessions.map((s) => (
                                                 <option key={s.id} value={s.id}>
-                                                    {s.name}  ({FORMAT_LABELS[s.tcFormat || 'default']})
+                                                    {s.name}
                                                 </option>
                                             ))}
                                         </select>
@@ -317,7 +302,7 @@ const TCInformationPublic = () => {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 22 }}>
                             <button
                                 onClick={backToSessions}
-                                style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 999, padding: '8px 18px', fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                                style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: 999, padding: '8px 18px', fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer' }}
                             >
                                 ← Back
                             </button>
@@ -326,25 +311,29 @@ const TCInformationPublic = () => {
                             </span>
                         </div>
 
-                        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 20, padding: 'clamp(24px, 4vw, 40px)', boxShadow: '0 2px 10px rgba(15,23,42,0.04)' }}>
-                            <p style={{ fontSize: 13.5, fontWeight: 600, color: '#94a3b8', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 20 }}>
+                        <div style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: 20, padding: 'clamp(24px, 4vw, 40px)', boxShadow: '0 2px 10px rgba(15,23,42,0.04)' }}>
+                            <p style={{ fontSize: 13.5, fontWeight: 600, color: '#94a3b8', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>
                                 Step 2 — Enter your details
+                            </p>
+                            <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20 }}>
+                                Enter either your TC Number or your Student Name — you don't need both.
                             </p>
 
                             {!result && (
                                 <>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18 }}>
                                         <div>
-                                            <label style={labelStyle}>TC Number *</label>
+                                            <label style={labelStyle}>TC Number</label>
                                             <input
                                                 style={inputStyle}
                                                 placeholder="e.g. TC001"
                                                 value={form.tcNo}
                                                 onChange={(e) => setForm((p) => ({ ...p, tcNo: e.target.value }))}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                                             />
                                         </div>
                                         <div>
-                                            <label style={labelStyle}>Student Name *</label>
+                                            <label style={labelStyle}>Student Name</label>
                                             <input
                                                 style={inputStyle}
                                                 placeholder="Full name as per school records"
@@ -378,59 +367,61 @@ const TCInformationPublic = () => {
                                 </>
                             )}
 
-                            {/* ============ Result: found ============ */}
+                            {/* ============ Result: found — every matching record is shown, not just the first ============ */}
                             {result?.status === 'found' && (
                                 <div className="tc-result-pop">
                                     <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 14, padding: '14px 18px', fontSize: 14.5, fontWeight: 700, color: '#15803d', marginBottom: 22 }}>
-                                        ✓ Transfer Certificate record found!
+                                        ✓ {result.records.length > 1
+                                            ? `${result.records.length} matching Transfer Certificate records found!`
+                                            : 'Transfer Certificate record found!'}
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 26 }}>
-                                        {[
-                                            ['TC No', result.record.tcNo],
-                                            ['Student Name', result.record.studentName],
-                                            ['Father Name', result.record.fatherName],
-                                            ['Class', result.record.lastClassStudied || result.record.class],
-                                            ['Date of Leaving', result.record.dateOfLeaving],
-                                            ['Session', selectedSession.name],
-                                        ].map(([k, v]) => (
-                                            <div key={k} style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 12, padding: '12px 16px' }}>
-                                                <div style={{ fontSize: 11.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>{k}</div>
-                                                <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>{v || '—'}</div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 22 }}>
+                                        {result.records.map((record, i) => (
+                                            <div key={record.id || i} style={{ border: '1px solid #f1f5f9', borderRadius: 14, padding: '18px 20px', background: bc.card }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 18 }}>
+                                                    {[
+                                                        ['TC No', record.tcNo],
+                                                        ['Student Name', record.studentName],
+                                                        ['Session', selectedSession.name],
+                                                    ].map(([k, v]) => (
+                                                        <div key={k} style={{ background: bc.surfaceAlt, border: '1px solid #f1f5f9', borderRadius: 12, padding: '12px 16px' }}>
+                                                            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>{k}</div>
+                                                            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>{v || '—'}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <a
+                                                    href={record.pdfUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{
+                                                        display: 'inline-block',
+                                                        background: tc.primary,
+                                                        color: '#fff',
+                                                        border: 'none',
+                                                        borderRadius: 12,
+                                                        padding: '14px 30px',
+                                                        fontSize: 15,
+                                                        fontWeight: 700,
+                                                        cursor: 'pointer',
+                                                        textDecoration: 'none',
+                                                    }}
+                                                >
+                                                    Download TC (PDF)
+                                                </a>
                                             </div>
                                         ))}
                                     </div>
 
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-                                        <button
-                                            onClick={handleGenerate}
-                                            disabled={generating}
-                                            style={{
-                                                background: tc.primary,
-                                                color: '#fff',
-                                                border: 'none',
-                                                borderRadius: 12,
-                                                padding: '14px 30px',
-                                                fontSize: 15,
-                                                fontWeight: 700,
-                                                cursor: generating ? 'wait' : 'pointer',
-                                                opacity: generating ? 0.85 : 1,
-                                            }}
-                                        >
-                                            {generating && <span className="tc-spinner" />}
-                                            {isLegacyRecord ? 'Download TC (PDF)' : generating ? 'Generating…' : 'Generate & Download TC'}
-                                        </button>
-                                        <button
-                                            onClick={tryAgain}
-                                            style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 24px', fontSize: 14.5, fontWeight: 600, color: '#334155', cursor: 'pointer' }}
-                                        >
-                                            Search Another
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={tryAgain}
+                                        style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 24px', fontSize: 14.5, fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                                    >
+                                        Search Another
+                                    </button>
                                     <p style={{ marginTop: 14, fontSize: 12.5, color: '#94a3b8' }}>
-                                        {isLegacyRecord
-                                            ? 'Note: Your TC will open as a PDF in a new tab.'
-                                            : <>Note: A print window will open. Select <b>"Save as PDF"</b> as the destination to download your TC.</>}
+                                        Note: Your TC will open as a PDF in a new tab.
                                     </p>
                                 </div>
                             )}
@@ -442,7 +433,7 @@ const TCInformationPublic = () => {
                                         ✕ No matching TC record found in session {selectedSession.name}.
                                     </div>
 
-                                    <div style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: 14, padding: '18px 22px', marginBottom: 22 }}>
+                                    <div style={{ background: bc.surfaceAlt, border: '1px solid #f1f5f9', borderRadius: 14, padding: '18px 22px', marginBottom: 22 }}>
                                         <div style={{ fontSize: 13.5, fontWeight: 700, color: '#0f172a', marginBottom: 10 }}>Tips:</div>
                                         <ul style={{ fontSize: 13.5, color: '#475569', lineHeight: 1.9, paddingLeft: 20 }}>
                                             <li>Double-check the TC Number exactly as issued by the school.</li>
@@ -469,7 +460,7 @@ const TCInformationPublic = () => {
                                         </button>
                                         <button
                                             onClick={backToSessions}
-                                            style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, padding: '13px 24px', fontSize: 14.5, fontWeight: 600, color: '#334155', cursor: 'pointer' }}
+                                            style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: 12, padding: '13px 24px', fontSize: 14.5, fontWeight: 600, color: '#334155', cursor: 'pointer' }}
                                         >
                                             Change Session
                                         </button>

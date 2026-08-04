@@ -16,7 +16,7 @@ const ContactUs = () => {
     const [activeSection, setActiveSection] = useState('location');
     const [hoveredSocial, setHoveredSocial] = useState(null);
     const [formData, setFormData] = useState({
-        phone: '', address: '', city: '', state: '', pincode: '',
+        phone: '', phone2: '', address: '', city: '', state: '', pincode: '',
         map_url: '', facebook: '', instagram: '', youtube: '', twitter: '', linkedin: '',
     });
 
@@ -28,6 +28,7 @@ const ContactUs = () => {
             const school = res.data;
             setFormData({
                 phone: school.phone || '',
+                phone2: school.phone2 || '',
                 address: school.address || '',
                 city: school.city || '',
                 state: school.state || '',
@@ -55,7 +56,7 @@ const ContactUs = () => {
     try {
         let dataToSave = { ...formData };
 
-        // Agar poora iframe code paste kiya hai toh src extract karo
+        // If the full iframe code was pasted, extract the src
         if (dataToSave.map_url && dataToSave.map_url.includes('<iframe')) {
             const srcMatch = dataToSave.map_url.match(/src="([^"]+)"/);
             if (srcMatch && srcMatch[1]) {
@@ -64,7 +65,7 @@ const ContactUs = () => {
             }
         }
 
-        // HTML entities decode karo
+        // Decode HTML entities
         if (dataToSave.map_url) {
             dataToSave.map_url = dataToSave.map_url
                 .replace(/&#39;/g, "'")
@@ -149,7 +150,24 @@ const ContactUs = () => {
                     from { opacity: 0; transform: translateY(12px); }
                     to { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes heroIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes drift1 {
+                    0%, 100% { transform: translate(0, 0) scale(1); }
+                    50% { transform: translate(-24px, 18px) scale(1.08); }
+                }
                 .contact-section { animation: fadeInUp 0.35s ease forwards; }
+                .contact-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .contact-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                @media (max-width: 900px) {
+                    .contact-3col { grid-template-columns: repeat(2, 1fr) !important; }
+                }
+                @media (max-width: 700px) {
+                    .contact-2col { grid-template-columns: 1fr !important; }
+                    .contact-3col { grid-template-columns: 1fr !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif' }}>
@@ -157,17 +175,18 @@ const ContactUs = () => {
                 {/* Hero Header */}
                 <div style={{
                     background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`,
-                    borderRadius: '10px',
-                    padding: '2.5rem 2.5rem',
+                    borderRadius: '22px',
+                    padding: '2.5rem 2.75rem',
                     marginBottom: '1.75rem',
                     position: 'relative',
                     overflow: 'hidden',
                     boxShadow: `0 20px 60px ${hexToRgba(tc.primary, 0.2)}, 0 4px 20px rgba(0,0,0,0.15)`
                 }}>
-                    <div style={{ position: 'absolute', width: '350px', height: '350px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-120px', right: '8%', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="contact-hero-orb" style={{ position: 'absolute', width: '350px', height: '350px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-120px', right: '8%', pointerEvents: 'none' }}></div>
 
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
+                        <div className="contact-hero-item" style={{ animationDelay: '0.05s' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tc.secondary }}></div>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Admin / Contact Us</p>
@@ -177,17 +196,20 @@ const ContactUs = () => {
                                 Manage your school's address, Google Maps location and social media links.
                             </p>
                         </div>
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        {/* Quick Contact — one cohesive glass panel with icon rows, instead of separate boxed chips */}
+                        <div className="contact-hero-item" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '18px', padding: '0.5rem 1.5rem', backdropFilter: 'blur(14px)', minWidth: '230px', animationDelay: '0.15s' }}>
                             {[
-                                { label: 'Phone', value: formData.phone || '—', icon: <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> },
-                                { label: 'City', value: formData.city || '—', icon: <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> },
+                                { label: 'Phone Number', value: formData.phone || 'Not added yet', icon: <svg width="16" height="16" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> },
+                                { label: 'City', value: formData.city || 'Not added yet', icon: <svg width="16" height="16" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> },
                             ].map((item, i) => (
-                                <div key={i} style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '1rem 1.25rem', minWidth: '130px', backdropFilter: 'blur(8px)' }}>
-                                    <div style={{ width: '32px', height: '32px', background: hexToRgba(tc.primary, 0.4), borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '8px' }}>
+                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '13px', padding: '13px 0', borderBottom: i === 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                                    <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                         {item.icon}
                                     </div>
-                                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.label}</p>
-                                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{item.value}</p>
+                                    <div style={{ minWidth: 0 }}>
+                                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.value}</p>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -221,7 +243,7 @@ const ContactUs = () => {
 
                 {/* Location Section */}
                 {activeSection === 'location' && (
-                    <div className="contact-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                    <div className="contact-section contact-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
 
                         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -230,12 +252,18 @@ const ContactUs = () => {
                                 </div>
                                 <div>
                                     <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Contact Details</p>
-                                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>Phone number for contact page</p>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>Phone numbers for contact page</p>
                                 </div>
                             </div>
-                            <div style={{ padding: '1.5rem 1.75rem' }}>
-                                <label style={labelStyle}>Phone Number</label>
-                                <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="9876543210" style={inputStyle} />
+                            <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                <div>
+                                    <label style={labelStyle}>Phone Number</label>
+                                    <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter Phone Number" style={inputStyle} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Alternate Phone Number</label>
+                                    <input type="text" name="phone2" value={formData.phone2} onChange={handleChange} placeholder="Enter Alternate Phone Number" style={inputStyle} />
+                                </div>
                             </div>
                         </div>
 
@@ -252,21 +280,21 @@ const ContactUs = () => {
                             <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                 <div>
                                     <label style={labelStyle}>Street Address</label>
-                                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="123 Main Street" style={inputStyle} />
+                                    <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Enter Street Address" style={inputStyle} />
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                <div className="contact-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                     <div>
                                         <label style={labelStyle}>City</label>
-                                        <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Jaipur" style={inputStyle} />
+                                        <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="Enter City" style={inputStyle} />
                                     </div>
                                     <div>
                                         <label style={labelStyle}>State</label>
-                                        <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="Rajasthan" style={inputStyle} />
+                                        <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="Enter State" style={inputStyle} />
                                     </div>
                                 </div>
                                 <div>
                                     <label style={labelStyle}>Pincode</label>
-                                    <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="302001" style={inputStyle} />
+                                    <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} placeholder="Enter Pincode" style={inputStyle} />
                                 </div>
                             </div>
                         </div>
@@ -298,7 +326,7 @@ const ContactUs = () => {
                                 <p style={{ fontSize: '11px', color: '#94a3b8' }}>Show your school location on the contact page</p>
                             </div>
                         </div>
-                        <div style={{ padding: '1.75rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+                        <div className="contact-2col" style={{ padding: '1.75rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
                             <div>
                                 <label style={labelStyle}>Embed URL</label>
                                 <textarea name="map_url" value={formData.map_url} onChange={handleChange} placeholder="https://www.google.com/maps/embed?pb=..." rows={4} style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.6 }} />
@@ -339,7 +367,7 @@ const ContactUs = () => {
                 {/* Social Section */}
                 {activeSection === 'social' && (
                     <div className="contact-section">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '1.25rem' }}>
+                        <div className="contact-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '1.25rem' }}>
                             {socialLinks.map((social, i) => (
                                 <div
                                     key={social.name}

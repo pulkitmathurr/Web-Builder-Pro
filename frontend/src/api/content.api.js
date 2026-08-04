@@ -21,6 +21,11 @@ export const getPublicModuleContentApi = async (schoolId, moduleKey) => {
     return response.data;
 };
 
+export const getPublishedModulesApi = async (schoolId) => {
+    const response = await axiosInstance.get(`/content/public/${schoolId}/modules/published`);
+    return response.data;
+};
+
 export const uploadContentImageApi = async (file) => {
     const formData = new FormData();
     formData.append('image', file);

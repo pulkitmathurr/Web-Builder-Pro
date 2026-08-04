@@ -5,6 +5,7 @@ const {
     saveModuleContent,
     togglePublish,
     getPublicModuleContent,
+    getPublishedModules,
     uploadContentImageHandler,
     uploadPdfHandler,
     uploadVideoHandler,
@@ -12,6 +13,7 @@ const {
 const { protect, isAdmin } = require('../../middlewares/auth.middleware');
 const { uploadContentImage, uploadPdf, uploadVideo } = require('../../config/cloudinary');
 // ── Public Routes ────────────────────────────────────
+router.get('/public/:schoolId/modules/published', getPublishedModules);
 router.get('/public/:schoolId/:moduleKey', getPublicModuleContent);
 
 // ── Protected Routes ─────────────────────────────────

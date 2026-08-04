@@ -68,26 +68,25 @@ const IconSpinner = ({ size = 24, color = '#8b2252' }) => (
 );
 
 const defaultContent = {
-    photoBanner: '',
-    videoBanner: '',
     photoNodes: [],
     videoNodes: [],
 };
 
 const Gallery = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [activeTree, setActiveTree] = useState('photo');
     const [currentFolderId, setCurrentFolderId] = useState(null);
     const [uploading, setUploading] = useState({});
     const [showNewFolder, setShowNewFolder] = useState(false);
     const [newFolderName, setNewFolderName] = useState('');
-    const [cropTarget, setCropTarget] = useState(null);
-    const [coverCropTarget, setCoverCropTarget] = useState(null); // { folderId, src }
+    const [cropTarget, setCropTarget] = useState(null); // { mode: 'cover' | 'image', folderId?, src }
+    const [imageQueue, setImageQueue] = useState([]); // remaining gallery-photo files still waiting to be cropped
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -95,7 +94,9 @@ const Gallery = () => {
         try {
             const res = await getModuleContentApi('gallery');
             if (res.data) {
-                setContent({ ...defaultContent, ...res.data.content });
+                const merged = { ...defaultContent, ...res.data.content };
+                setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
             }
         } catch (e) {
@@ -114,6 +115,7 @@ const Gallery = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('gallery', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -144,15 +146,14 @@ const Gallery = () => {
     };
 
     const nodesKey = activeTree === 'photo' ? 'photoNodes' : 'videoNodes';
-    const bannerKey = activeTree === 'photo' ? 'photoBanner' : 'videoBanner';
     const nodes = content[nodesKey] || [];
 
     const updateNodes = (newNodes) => setContent(prev => ({ ...prev, [nodesKey]: newNodes }));
-    const updateBanner = (url) => setContent(prev => ({ ...prev, [bannerKey]: url }));
 
    const createFolder = () => {
     if (!newFolderName.trim()) return;
-    const newFolder = { id: `f-${Date.now()}`, parentId: currentFolderId, type: 'folder', name: newFolderName.trim(), images: [], videos: [], coverImage: '' };
+    const siblingCount = nodes.filter(n => n.parentId === currentFolderId).length;
+    const newFolder = { id: `f-${Date.now()}`, parentId: currentFolderId, type: 'folder', name: newFolderName.trim(), images: [], videos: [], coverImage: '', priority: siblingCount + 1, createdAt: new Date().toISOString() };
     updateNodes([...nodes, newFolder]);
     setNewFolderName('');
     setShowNewFolder(false);
@@ -160,6 +161,7 @@ const Gallery = () => {
 };
 
     const renameFolder = (id, name) => updateNodes(nodes.map(n => n.id === id ? { ...n, name } : n));
+    const updateFolderPriority = (id, priority) => updateNodes(nodes.map(n => n.id === id ? { ...n, priority } : n));
 
     const deleteFolder = (id) => {
         const idsToDelete = new Set([id]);
@@ -178,7 +180,11 @@ const Gallery = () => {
     };
 
     const getFolder = (id) => nodes.find(n => n.id === id);
-    const childFolders = nodes.filter(n => n.parentId === currentFolderId);
+    // Priority decides display order (both here and on the public site) — 1 shows first.
+    // Folders without a priority (legacy data) sort after all prioritized ones, in creation order.
+    const childFolders = nodes
+        .filter(n => n.parentId === currentFolderId)
+        .sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
     const currentFolder = currentFolderId ? getFolder(currentFolderId) : null;
 
     const breadcrumb = [];
@@ -191,20 +197,24 @@ const Gallery = () => {
     }
 
     // ── Image ops ──
-    const addImages = async (files) => {
+    // Each photo is cropped one at a time (freeform, adjustable from every side) before
+    // upload. Once confirmed, the next queued file automatically opens in the crop modal.
+    const startImageUpload = (files) => {
         if (!currentFolderId) { toast.error('Open a folder first to add photos'); return; }
+        if (files.length === 0) return;
+        setImageQueue(files.slice(1));
+        setCropTarget({ mode: 'image', src: URL.createObjectURL(files[0]) });
+    };
+
+    const addImage = async (file) => {
         setUploading(prev => ({ ...prev, images: true }));
         try {
-            const urls = [];
-            for (const file of files) {
-                const res = await uploadContentImageApi(file);
-                urls.push(res.data.url);
-            }
-            updateNodes(nodes.map(n => n.id === currentFolderId ? { ...n, images: [...(n.images || []), ...urls] } : n));
-            toast.success(`${urls.length} photo(s) added`);
+            const res = await uploadContentImageApi(file);
+            updateNodes(nodes.map(n => n.id === currentFolderId ? { ...n, images: [...(n.images || []), res.data.url] } : n));
         } catch (e) { toast.error('Failed to upload'); }
         finally { setUploading(prev => ({ ...prev, images: false })); }
     };
+
     const uploadFolderCover = async (folderId, file) => {
     setUploading(prev => ({ ...prev, [`cover-${folderId}`]: true }));
     try {
@@ -215,14 +225,32 @@ const Gallery = () => {
     finally { setUploading(prev => ({ ...prev, [`cover-${folderId}`]: false })); }
 };
 
+    // ── Crop confirm handler — shared by folder covers, gallery photos, and video thumbnails ──
+    const onCropConfirmed = async (croppedFile) => {
+        const target = cropTarget;
+        setCropTarget(null);
+        if (target.mode === 'cover') {
+            await uploadFolderCover(target.folderId, croppedFile);
+        } else if (target.mode === 'vidThumb') {
+            await uploadVideoThumb(target.videoId, croppedFile);
+        } else {
+            await addImage(croppedFile);
+        }
+        if (target.mode === 'image' && imageQueue.length > 0) {
+            const [next, ...rest] = imageQueue;
+            setImageQueue(rest);
+            setCropTarget({ mode: 'image', src: URL.createObjectURL(next) });
+        }
+    };
+
     const removeImage = (idx) => updateNodes(nodes.map(n => n.id === currentFolderId ? { ...n, images: n.images.filter((_, i) => i !== idx) } : n));
 
     // ── Video ops ──
-    // Each video item: { id, title, date, sourceType: 'youtube' | 'upload', youtubeUrl, videoUrl }
+    // Each video item: { id, title, date, sourceType: 'youtube' | 'upload', youtubeUrl, videoUrl, thumbnail }
     const addVideo = () => {
         if (!currentFolderId) { toast.error('Open a folder first to add videos'); return; }
         updateNodes(nodes.map(n => n.id === currentFolderId
-            ? { ...n, videos: [...(n.videos || []), { id: `vid-${Date.now()}`, title: '', date: '', sourceType: 'youtube', youtubeUrl: '', videoUrl: '' }] }
+            ? { ...n, videos: [...(n.videos || []), { id: `vid-${Date.now()}`, title: '', date: '', sourceType: 'youtube', youtubeUrl: '', videoUrl: '', thumbnail: '' }] }
             : n));
     };
 
@@ -242,29 +270,27 @@ const Gallery = () => {
         }
     };
 
-    // ── Crop flow for banner ──
-    const onBannerFileSelected = (file) => {
-        const src = URL.createObjectURL(file);
-        setCropTarget({ src, mode: 'banner' });
-    };
-
-    const onCropConfirmed = async (croppedFile) => {
-        setCropTarget(null);
-        setUploading(prev => ({ ...prev, banner: true }));
+    const uploadVideoThumb = async (videoId, file) => {
+        setUploading(prev => ({ ...prev, [`vidthumb-${videoId}`]: true }));
         try {
-            const res = await uploadContentImageApi(croppedFile);
-            updateBanner(res.data.url);
-            toast.success('Banner uploaded');
-        } catch (e) { toast.error('Failed to upload'); }
-        finally { setUploading(prev => ({ ...prev, banner: false })); }
+            const res = await uploadContentImageApi(file);
+            updateVideo(videoId, 'thumbnail', res.data.url);
+            toast.success('Thumbnail uploaded');
+        } catch (e) {
+            toast.error('Failed to upload thumbnail');
+        } finally {
+            setUploading(prev => ({ ...prev, [`vidthumb-${videoId}`]: false }));
+        }
     };
 
     const inputStyle = {
-        width: '100%', padding: '10px 13px', border: '1px solid #e5e7eb',
+        width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0',
         borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
-        transition: 'border-color 0.15s, box-shadow 0.15s',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
     };
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -279,20 +305,31 @@ const Gallery = () => {
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 .gallery-section { animation: fadeInUp 0.35s ease forwards; }
-                .folder-card { transition: all 0.18s cubic-bezier(0.16,1,0.3,1); cursor: pointer; }
-                .folder-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(15,23,42,0.1) !important; border-color: #f0c4c4 !important; }
+                .folder-card { transition: all 0.25s cubic-bezier(0.16,1,0.3,1); cursor: pointer; }
+                .folder-card:hover { transform: translateY(-5px); background: #ffffff !important; border-color: ${hexToRgba(tc.primary, 0.25)} !important; box-shadow: 0 20px 36px rgba(15,23,42,0.14) !important; }
+                .folder-cover-img { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1); }
+                .folder-card:hover .folder-cover-img { transform: scale(1.08); }
+                .folder-cover-overlay { transition: opacity 0.25s ease; }
+                .folder-card:hover .folder-cover-overlay { opacity: 1; }
+                .folder-action-btn { opacity: 0; transform: translateY(4px); transition: all 0.2s ease; }
+                .folder-card:hover .folder-action-btn { opacity: 1; transform: translateY(0); }
                 .crumb:hover { color: ${tc.primary} !important; cursor: pointer; }
                 .source-toggle { transition: all 0.15s; cursor: pointer; }
-                input[type=text]:focus, input[type=date]:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
+                input[type=text]:focus, input[type=date]:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .gallery-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .gallery-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* ── Hero Header ── */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="gallery-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                        <div className="gallery-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Gallery</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Photo & Video Gallery</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
@@ -306,6 +343,25 @@ const Gallery = () => {
                     </div>
                 </div>
 
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.5rem' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {publishing ? 'Publishing...' : <><IconCheck size={14} /> Publish</>}
+                        </button>
+                    )}
+                </div>
+
                 {/* ── Tree Switcher ── */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem' }}>
                     {[{ key: 'photo', label: 'Photo Gallery', Icon: IconImage }, { key: 'video', label: 'Video Gallery', Icon: IconVideo }].map(t => (
@@ -316,30 +372,6 @@ const Gallery = () => {
                         </button>
                     ))}
                 </div>
-
-                {/* ── Banner upload — only at root ── */}
-                {!currentFolderId && (
-                    <div className="gallery-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
-                        <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>{activeTree === 'photo' ? 'Photo' : 'Video'} Gallery Banner</p>
-                        <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>Shown at the top of this gallery page — crop tool will open after selecting an image</p>
-                        <div onClick={() => document.getElementById(`banner-${activeTree}`).click()}
-                            style={{ border: '1.5px dashed #e5e7eb', borderRadius: '14px', padding: content[bannerKey] ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: content[bannerKey] ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: content[bannerKey] ? '180px' : 'auto', position: 'relative' }}>
-                            {uploading.banner ? (
-                                <div style={{ padding: '2rem' }}><IconSpinner color={tc.primary} /></div>
-                            ) : content[bannerKey] ? (
-                                <img src={content[bannerKey]} alt="" style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
-                            ) : (
-                                <>
-                                    <IconUpload size={26} color="#94a3b8" />
-                                    <p style={{ fontSize: '13px', color: '#64748b', marginTop: '10px' }}>Click to upload banner — recommended 1920×1080</p>
-                                </>
-                            )}
-                        </div>
-                        <input id={`banner-${activeTree}`} type="file" accept="image/*"
-                            onChange={e => { const f = e.target.files[0]; if (f) onBannerFileSelected(f); e.target.value = ''; }}
-                            style={{ display: 'none' }} />
-                    </div>
-                )}
 
                 {/* ── Breadcrumb ── */}
                 <div className="gallery-section" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1rem', flexWrap: 'wrap' }}>
@@ -357,67 +389,116 @@ const Gallery = () => {
                 </div>
 
                 {/* ── Folder grid + new folder ── */}
-                <div className="gallery-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>Folders <span style={{ color: '#94a3b8', fontWeight: 400 }}>({childFolders.length})</span></p>
-                        {!showNewFolder && (
-                            <button onClick={() => setShowNewFolder(true)} style={{ padding: '8px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <IconPlus size={12} /> New Folder
-                            </button>
-                        )}
+                <div className="gallery-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '20px', padding: '2rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '1.5rem', gap: '12px', flexWrap: 'wrap' }}>
+                        <div>
+                            <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.2px' }}>Folders <span style={{ color: '#94a3b8', fontWeight: 500 }}>({childFolders.length})</span></p>
+                            <p style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px' }}>Set the # priority on a folder's cover to control its order — 1 shows first on the public gallery. Cover image: landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB.</p>
+                        </div>
+                        <button onClick={() => setShowNewFolder(true)} disabled={showNewFolder}
+                            style={{ padding: '10px 18px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '12.5px', fontWeight: 600, cursor: showNewFolder ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '7px', opacity: showNewFolder ? 0.5 : 1, boxShadow: `0 6px 16px ${hexToRgba(tc.primary, 0.28)}` }}>
+                            <IconPlus size={12} /> New Folder
+                        </button>
                     </div>
 
-                    {showNewFolder && (
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem' }}>
-                            <input type="text" value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
-                                placeholder="Folder name e.g. Annual Day 2024" style={inputStyle}
-                                onKeyDown={e => e.key === 'Enter' && createFolder()} autoFocus />
-                            <button onClick={createFolder} style={{ padding: '10px 18px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>Create</button>
-                            <button onClick={() => { setShowNewFolder(false); setNewFolderName(''); }} style={{ padding: '10px 16px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '10px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
-                        </div>
-                    )}
-
-                    {childFolders.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-                            <IconFolder size={36} color="#e2e8f0" />
-                            <p style={{ fontSize: '13px', color: '#94a3b8', marginTop: '10px' }}>No folders here yet — create one to organize {activeTree === 'photo' ? 'photos' : 'videos'}</p>
+                    {childFolders.length === 0 && !showNewFolder ? (
+                        <div style={{ textAlign: 'center', padding: '3rem 0' }}>
+                            <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: `linear-gradient(135deg, ${hexToRgba(tc.primary, 0.1)}, ${hexToRgba(tc.secondary, 0.14)})`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                                <IconFolder size={28} color={tc.primary} />
+                            </div>
+                            <p style={{ fontSize: '13.5px', color: '#64748b', marginTop: '16px', fontWeight: 500 }}>No folders here yet</p>
+                            <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px' }}>Create one to organize {activeTree === 'photo' ? 'photos' : 'videos'}</p>
+                            <button onClick={() => setShowNewFolder(true)} style={{ marginTop: '18px', padding: '9px 20px', background: tc.light, color: tc.primary, border: `1px solid ${hexToRgba(tc.primary, 0.25)}`, borderRadius: '10px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <IconPlus size={11} /> Create Folder
+                            </button>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '20px' }}>
+                            {showNewFolder && (
+                                <div style={{ borderRadius: '20px', border: `1.5px dashed ${hexToRgba(tc.primary, 0.4)}`, background: tc.light, padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px', minHeight: '218px', justifyContent: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(15,23,42,0.06)' }}>
+                                            <IconFolder size={18} color={tc.primary} />
+                                        </div>
+                                        <span style={{ fontSize: '12.5px', fontWeight: 700, color: tc.primary }}>New Folder</span>
+                                    </div>
+                                    <input type="text" value={newFolderName} onChange={e => setNewFolderName(e.target.value)}
+                                        placeholder="Enter Folder Name" style={{ ...inputStyle, background: '#ffffff' }}
+                                        onKeyDown={e => e.key === 'Enter' && createFolder()} autoFocus />
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button onClick={createFolder} style={{ flex: 1, padding: '9px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '9px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Create</button>
+                                        <button onClick={() => { setShowNewFolder(false); setNewFolderName(''); }} style={{ padding: '9px 14px', background: '#ffffff', color: '#64748b', border: '1px solid #e5e7eb', borderRadius: '9px', fontSize: '12px', cursor: 'pointer' }}>Cancel</button>
+                                    </div>
+                                </div>
+                            )}
                             {childFolders.map(f => {
                                 const subCount = nodes.filter(n => n.parentId === f.id).length;
                                 const itemCount = activeTree === 'photo' ? (f.images || []).length : (f.videos || []).length;
                                 return (
                                     <div key={f.id} className="folder-card" onClick={() => setCurrentFolderId(f.id)}
-    style={{ border: '1px solid #f1f5f9', borderRadius: '14px', overflow: 'hidden', background: '#fafbfc', boxShadow: '0 1px 3px rgba(15,23,42,0.03)', position: 'relative' }}>
-    <div style={{ height: '90px', background: f.coverImage ? 'transparent' : '#f1f5f9', position: 'relative', overflow: 'hidden' }}>
-        {f.coverImage && <img src={f.coverImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-        <button onClick={e => { e.stopPropagation(); document.getElementById(`cover-${f.id}`).click(); }}
-            style={{ position: 'absolute', bottom: '6px', right: '6px', padding: '4px 8px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {uploading[`cover-${f.id}`] ? '...' : 'Set Cover'}
-        </button>
-        <input id={`cover-${f.id}`} type="file" accept="image/*"
-            onClick={e => e.stopPropagation()}
-            onChange={e => {
-                const file = e.target.files[0];
-                e.target.value = '';
-                if (file) setCoverCropTarget({ folderId: f.id, src: URL.createObjectURL(file) });
-            }}
-            style={{ display: 'none' }} />
-        <button onClick={e => { e.stopPropagation(); if (window.confirm(`Delete folder "${f.name}" and everything inside it?`)) deleteFolder(f.id); }}
-            style={{ position: 'absolute', top: '8px', right: '8px', width: '22px', height: '22px', background: '#ffffff', border: '1px solid #fecaca', borderRadius: '50%', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <IconClose size={10} />
-        </button>
-    </div>
-    <div style={{ padding: '1rem 1.25rem' }}>
-        <IconFolder size={24} color={tc.secondary} />
-        <input type="text" value={f.name} onClick={e => e.stopPropagation()} onChange={e => renameFolder(f.id, e.target.value)}
-            style={{ width: '100%', fontSize: '13.5px', fontWeight: 600, color: '#0f172a', border: 'none', background: 'transparent', outline: 'none', padding: 0, margin: '8px 0 4px' }} />
-        <p style={{ fontSize: '11px', color: '#94a3b8' }}>
-            {subCount > 0 ? `${subCount} subfolder${subCount > 1 ? 's' : ''}` : `${itemCount} ${activeTree === 'photo' ? 'photo' : 'video'}${itemCount !== 1 ? 's' : ''}`}
-        </p>
-    </div>
-</div>
+                                        style={{ borderRadius: '22px', background: '#f3f4f8', border: '1px solid #eaecf2', boxShadow: '0 2px 10px rgba(15,23,42,0.05)', position: 'relative', padding: '10px' }}>
+
+                                        {/* Cover — inset with a margin on every side, like a framed photo */}
+                                        <div style={{ height: '150px', borderRadius: '15px', position: 'relative', overflow: 'hidden', background: f.coverImage ? '#f1f5f9' : `linear-gradient(135deg, ${hexToRgba(tc.primary, 0.12)}, ${hexToRgba(tc.secondary, 0.18)})` }}>
+                                            {f.coverImage ? (
+                                                <img src={f.coverImage} alt="" className="folder-cover-img" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <IconFolder size={36} color={hexToRgba(tc.primary, 0.4)} />
+                                                </div>
+                                            )}
+                                            <div className="folder-cover-overlay" style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.4) 100%)', opacity: 0 }}></div>
+
+                                            {/* Priority badge — numbered chip, gradient-filled to match the rest of the admin UI */}
+                                            <div onClick={e => e.stopPropagation()} title="Priority — lower number shows first on the public gallery"
+                                                style={{ position: 'absolute', top: '9px', left: '9px', display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(15,23,42,0.35)', backdropFilter: 'blur(10px)', borderRadius: '10px', padding: '4px', border: '1px solid rgba(255,255,255,0.18)' }}>
+                                                <div style={{ width: '24px', height: '24px', borderRadius: '7px', background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`, boxShadow: `0 2px 6px ${hexToRgba(tc.primary, 0.5)}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <input type="number" min="1" value={f.priority ?? ''} placeholder="–"
+                                                        onChange={e => updateFolderPriority(f.id, e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                                                        style={{ width: '100%', background: 'transparent', border: 'none', color: '#fff', fontSize: '12.5px', fontWeight: 800, letterSpacing: '-0.2px', outline: 'none', padding: 0, textAlign: 'center', fontFamily: "'Inter', system-ui, sans-serif", MozAppearance: 'textfield' }} />
+                                                </div>
+                                                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.85)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', paddingRight: '4px' }}>Order</span>
+                                            </div>
+
+                                            {/* Delete — reveals on hover */}
+                                            <button className="folder-action-btn" onClick={e => { e.stopPropagation(); if (window.confirm(`Delete folder "${f.name}" and everything inside it?`)) deleteFolder(f.id); }}
+                                                style={{ position: 'absolute', top: '9px', right: '9px', width: '26px', height: '26px', background: 'rgba(255,255,255,0.95)', border: 'none', borderRadius: '50%', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                                                <IconClose size={10} />
+                                            </button>
+
+                                            {/* Set cover — reveals on hover */}
+                                            <button className="folder-action-btn" onClick={e => { e.stopPropagation(); document.getElementById(`cover-${f.id}`).click(); }}
+                                                style={{ position: 'absolute', bottom: '9px', right: '9px', padding: '6px 12px', background: 'rgba(255,255,255,0.95)', color: '#0f172a', border: 'none', borderRadius: '8px', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                {uploading[`cover-${f.id}`] ? <IconSpinner size={11} color={tc.primary} /> : <><IconImage size={11} color="#475569" /> {f.coverImage ? 'Change' : 'Set'} Cover</>}
+                                            </button>
+                                            {f.coverImage && (
+                                                <button className="folder-action-btn" onClick={e => { e.stopPropagation(); updateNodes(nodes.map(n => n.id === f.id ? { ...n, coverImage: '' } : n)); }}
+                                                    title="Remove cover"
+                                                    style={{ position: 'absolute', bottom: '9px', right: '104px', width: '26px', height: '26px', background: 'rgba(255,255,255,0.95)', color: '#ef4444', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                                                    <IconClose size={10} />
+                                                </button>
+                                            )}
+                                            <input id={`cover-${f.id}`} type="file" accept="image/*"
+                                                onClick={e => e.stopPropagation()}
+                                                onChange={e => {
+                                                    const file = e.target.files[0];
+                                                    e.target.value = '';
+                                                    if (file) setCropTarget({ mode: 'cover', folderId: f.id, src: URL.createObjectURL(file) });
+                                                }}
+                                                style={{ display: 'none' }} />
+                                        </div>
+
+                                        {/* Caption — plain, minimal, like a filename label under a photo */}
+                                        <div style={{ padding: '12px 4px 6px' }}>
+                                            <input type="text" value={f.name} onClick={e => e.stopPropagation()} onChange={e => renameFolder(f.id, e.target.value)}
+                                                style={{ width: '100%', fontSize: '13.5px', fontWeight: 600, color: '#0f172a', border: 'none', background: 'transparent', outline: 'none', padding: 0, marginBottom: '4px', fontFamily: 'inherit' }} />
+                                            <p style={{ fontSize: '11.5px', color: '#94a3b8', fontWeight: 400, margin: 0 }}>
+                                                {subCount > 0
+                                                    ? `${subCount} subfolder${subCount > 1 ? 's' : ''}`
+                                                    : `${itemCount} ${activeTree === 'photo' ? 'photo' : 'video'}${itemCount !== 1 ? 's' : ''}`}
+                                            </p>
+                                        </div>
+                                    </div>
                                 );
                             })}
                         </div>
@@ -447,67 +528,107 @@ const Gallery = () => {
                                         <>
                                             <IconUpload size={20} color="#94a3b8" />
                                             <p style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>Click to add photos (multiple allowed)</p>
+                                            <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each photo (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
                                         </>
                                     )}
                                 </div>
                                 <input id="img-upload" type="file" accept="image/*" multiple
-                                    onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) addImages(files); e.target.value = ''; }}
+                                    onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startImageUpload(files); }}
                                     style={{ display: 'none' }} />
                             </>
                         )}
 
                         {activeTree === 'video' && (
                             <>
-                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Videos in "{currentFolder.name}" <span style={{ color: '#94a3b8', fontWeight: 400 }}>({(currentFolder.videos || []).length})</span></p>
+                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Videos in "{currentFolder.name}" <span style={{ color: '#94a3b8', fontWeight: 400 }}>({(currentFolder.videos || []).length})</span></p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Thumbnail: landscape (16:9) works best · JPG, PNG, WEBP · Max 5MB.</p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '1.25rem' }}>
                                     {(currentFolder.videos || []).map(v => {
                                         const isYoutube = (v.sourceType || 'youtube') === 'youtube';
                                         const uploadKey = `vidfile-${v.id}`;
+                                        const thumbKey = `vidthumb-${v.id}`;
                                         return (
                                             <div key={v.id} style={{ border: '1px solid #f1f5f9', borderRadius: '12px', padding: '1rem', background: '#fafbfc' }}>
-                                                <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                                                    <input type="text" value={v.title} onChange={e => updateVideo(v.id, 'title', e.target.value)} placeholder="Video Title" style={{ ...inputStyle, flex: 2 }} />
-                                                    <input type="date" value={v.date} onChange={e => updateVideo(v.id, 'date', e.target.value)} style={{ ...inputStyle, flex: 1 }} />
-                                                    <button onClick={() => removeVideo(v.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', color: '#ef4444', cursor: 'pointer', width: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <IconClose size={13} />
-                                                    </button>
-                                                </div>
-
-                                                {/* Source type toggle */}
-                                                <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                                    <button className="source-toggle" onClick={() => updateVideo(v.id, 'sourceType', 'youtube')}
-                                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: isYoutube ? `1.5px solid ${tc.primary}` : '1px solid #e5e7eb', background: isYoutube ? tc.light : '#ffffff', color: isYoutube ? tc.primary : '#64748b', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                        <IconLink size={12} /> YouTube Link
-                                                    </button>
-                                                    <button className="source-toggle" onClick={() => updateVideo(v.id, 'sourceType', 'upload')}
-                                                        style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: !isYoutube ? `1.5px solid ${tc.primary}` : '1px solid #e5e7eb', background: !isYoutube ? tc.light : '#ffffff', color: !isYoutube ? tc.primary : '#64748b', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                        <IconFile size={12} /> Upload from Device
-                                                    </button>
-                                                </div>
-
-                                                {isYoutube ? (
-                                                    <input type="text" value={v.youtubeUrl} onChange={e => updateVideo(v.id, 'youtubeUrl', e.target.value)} placeholder="https://youtube.com/watch?v=..." style={inputStyle} />
-                                                ) : (
-                                                    <div>
-                                                        {v.videoUrl ? (
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
-                                                                <IconCheck size={14} color="#15803d" />
-                                                                <span style={{ fontSize: '12px', color: '#15803d', flex: 1 }}>Video uploaded</span>
-                                                                <button onClick={() => document.getElementById(`vidfile-input-${v.id}`).click()} style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Replace</button>
-                                                            </div>
-                                                        ) : (
-                                                            <div onClick={() => document.getElementById(`vidfile-input-${v.id}`).click()}
-                                                                style={{ border: '1.5px dashed #e5e7eb', borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
-                                                                {uploading[uploadKey] ? <IconSpinner size={20} color={tc.primary} /> : (
-                                                                    <p style={{ fontSize: '12px', color: '#64748b' }}>Click to upload video file (MP4, max 50MB)</p>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                        <input id={`vidfile-input-${v.id}`} type="file" accept="video/mp4,video/webm,video/mov"
-                                                            onChange={e => { const f = e.target.files[0]; if (f) uploadVideoFile(v.id, f); e.target.value = ''; }}
+                                                <div style={{ display: 'flex', gap: '14px' }}>
+                                                    {/* Thumbnail — shown for both YouTube and uploaded videos */}
+                                                    <div style={{ flexShrink: 0 }}>
+                                                        <div onClick={() => document.getElementById(`vidthumb-input-${v.id}`).click()}
+                                                            style={{
+                                                                position: 'relative', width: '120px', height: '68px', borderRadius: '8px', overflow: 'hidden', cursor: 'pointer',
+                                                                background: v.thumbnail ? 'transparent' : '#f1f5f9',
+                                                                border: v.thumbnail ? 'none' : '1.5px dashed #cbd5e1',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            }}>
+                                                            {uploading[thumbKey] ? (
+                                                                <IconSpinner size={18} color={tc.primary} />
+                                                            ) : v.thumbnail ? (
+                                                                <>
+                                                                    <img src={v.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                    <button onClick={e => { e.stopPropagation(); updateVideo(v.id, 'thumbnail', ''); }}
+                                                                        style={{ position: 'absolute', top: '3px', right: '3px', width: '18px', height: '18px', background: 'rgba(15,23,42,0.7)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                                                        title="Remove thumbnail">
+                                                                        <IconClose size={8} />
+                                                                    </button>
+                                                                </>
+                                                            ) : (
+                                                                <span style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center', padding: '0 8px' }}>+ Thumbnail</span>
+                                                            )}
+                                                        </div>
+                                                        <input id={`vidthumb-input-${v.id}`} type="file" accept="image/*"
+                                                            onChange={e => {
+                                                                const f = e.target.files[0];
+                                                                e.target.value = '';
+                                                                if (f) setCropTarget({ mode: 'vidThumb', videoId: v.id, src: URL.createObjectURL(f) });
+                                                            }}
                                                             style={{ display: 'none' }} />
                                                     </div>
-                                                )}
+
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                                                            <input type="text" value={v.title} onChange={e => updateVideo(v.id, 'title', e.target.value)} placeholder="Video Title" style={{ ...inputStyle, flex: 2 }} />
+                                                            <input type="date" value={v.date} onChange={e => updateVideo(v.id, 'date', e.target.value)} style={{ ...inputStyle, flex: 1 }} />
+                                                            <button onClick={() => removeVideo(v.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', color: '#ef4444', cursor: 'pointer', width: '40px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                <IconClose size={13} />
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Source type toggle */}
+                                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+                                                            <button className="source-toggle" onClick={() => updateVideo(v.id, 'sourceType', 'youtube')}
+                                                                style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: isYoutube ? `1.5px solid ${tc.primary}` : '1px solid #e5e7eb', background: isYoutube ? tc.light : '#ffffff', color: isYoutube ? tc.primary : '#64748b', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                                <IconLink size={12} /> YouTube Link
+                                                            </button>
+                                                            <button className="source-toggle" onClick={() => updateVideo(v.id, 'sourceType', 'upload')}
+                                                                style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: !isYoutube ? `1.5px solid ${tc.primary}` : '1px solid #e5e7eb', background: !isYoutube ? tc.light : '#ffffff', color: !isYoutube ? tc.primary : '#64748b', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                                                                <IconFile size={12} /> Upload from Device
+                                                            </button>
+                                                        </div>
+
+                                                        {isYoutube ? (
+                                                            <input type="text" value={v.youtubeUrl} onChange={e => updateVideo(v.id, 'youtubeUrl', e.target.value)} placeholder="https://youtube.com/watch?v=..." style={inputStyle} />
+                                                        ) : (
+                                                            <div>
+                                                                {v.videoUrl ? (
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+                                                                        <IconCheck size={14} color="#15803d" />
+                                                                        <span style={{ fontSize: '12px', color: '#15803d', flex: 1 }}>Video uploaded</span>
+                                                                        <button onClick={() => document.getElementById(`vidfile-input-${v.id}`).click()} style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Replace</button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div onClick={() => document.getElementById(`vidfile-input-${v.id}`).click()}
+                                                                        style={{ border: '1.5px dashed #e5e7eb', borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
+                                                                        {uploading[uploadKey] ? <IconSpinner size={20} color={tc.primary} /> : (
+                                                                            <p style={{ fontSize: '12px', color: '#64748b' }}>Click to upload video file (MP4, max 50MB)</p>
+                                                                        )}
+                                                                    </div>
+                                                                )}
+                                                                <input id={`vidfile-input-${v.id}`} type="file" accept="video/mp4,video/webm,video/mov"
+                                                                    onChange={e => { const f = e.target.files[0]; if (f) uploadVideoFile(v.id, f); e.target.value = ''; }}
+                                                                    style={{ display: 'none' }} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         );
                                     })}
@@ -520,46 +641,14 @@ const Gallery = () => {
                     </div>
                 )}
 
-                {/* ── Bottom Save Bar ── */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {publishing ? 'Publishing...' : <><IconCheck size={14} /> Publish</>}
-                        </button>
-                    )}
-                </div>
             </div>
 
-            {/* ── Crop Modal ── */}
             {cropTarget && (
                 <ImageCropModal
                     imageSrc={cropTarget.src}
-                    aspect={16 / 9}
-                    onCancel={() => setCropTarget(null)}
+                    aspect={null}
+                    onCancel={() => { setCropTarget(null); setImageQueue([]); }}
                     onCropComplete={onCropConfirmed}
-                />
-            )}
-
-            {coverCropTarget && (
-                <ImageCropModal
-                    imageSrc={coverCropTarget.src}
-                    aspect={16 / 9}
-                    onCancel={() => setCoverCropTarget(null)}
-                    onCropComplete={(croppedFile) => {
-                        const folderId = coverCropTarget.folderId;
-                        setCoverCropTarget(null);
-                        uploadFolderCover(folderId, croppedFile);
-                    }}
                 />
             )}
         </>

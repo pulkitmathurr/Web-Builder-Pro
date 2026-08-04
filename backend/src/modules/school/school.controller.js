@@ -96,6 +96,30 @@ const uploadSchoolLogo = async (req, res) => {
     }
 };
 
+// ── Upload Welcome Banner ────────────────────────────
+const uploadWelcomeBanner = async (req, res) => {
+    try {
+        if (!req.file) return sendError(res, 'No file uploaded', 400);
+        const bannerUrl = req.file.path;
+        await updateSchoolProfileService(req.user.schoolId, { welcome_banner_url: bannerUrl });
+        return sendSuccess(res, 'Welcome banner uploaded successfully', { welcome_banner_url: bannerUrl });
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+// ── Upload Footer Background ─────────────────────────
+const uploadFooterBackground = async (req, res) => {
+    try {
+        if (!req.file) return sendError(res, 'No file uploaded', 400);
+        const footerBgUrl = req.file.path;
+        await updateSchoolProfileService(req.user.schoolId, { footer_bg_url: footerBgUrl });
+        return sendSuccess(res, 'Footer background uploaded successfully', { footer_bg_url: footerBgUrl });
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 const getDashboardStats = async (req, res) => {
     try {
         const stats = await getDashboardStatsService();
@@ -114,5 +138,7 @@ module.exports = {
     getPublicSchool,
     uploadHeroVideo,
     uploadSchoolLogo,
+    uploadWelcomeBanner,
+    uploadFooterBackground,
     getDashboardStats,
 };

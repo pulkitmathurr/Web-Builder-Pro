@@ -35,7 +35,7 @@ const Login = () => {
   return (
     <>
       <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap"
         rel="stylesheet"
       />
       <style>{`
@@ -53,6 +53,10 @@ const Login = () => {
           border-color: #8b2252 !important;
           box-shadow: 0 0 0 3px rgba(139,34,82,0.08);
         }
+        .login-submit-btn:not(:disabled):hover {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 22px rgba(139,34,82,0.38);
+        }
       `}</style>
 
       <div style={{
@@ -61,7 +65,7 @@ const Login = () => {
         width: "100vw",
         height: "100vh",
         overflow: "hidden",
-        fontFamily: "system-ui, sans-serif",
+        fontFamily: "'Poppins', system-ui, sans-serif",
       }}>
 
         {/* ── Left Panel 60% ── */}
@@ -87,26 +91,21 @@ const Login = () => {
             <img
               src={logo}
               alt="Logo"
-              style={{ height: 'clamp(48px, 8vh, 94px)', objectFit: 'contain' }}
+              style={{ height: 'clamp(64px, 11vh, 130px)', objectFit: 'contain' }}
             />
           </div>
 
           {/* Illustration + Text */}
           <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-            <div style={{ width: "clamp(160px, 26vh, 380px)", height: "clamp(160px, 26vh, 380px)", margin: "0 auto clamp(0.75rem, 2vh, 2rem)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ width: "clamp(190px, 32vh, 440px)", height: "clamp(190px, 32vh, 440px)", margin: "0 auto clamp(0.75rem, 2vh, 2rem)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <img src={schoolIllustration} alt="School Illustration" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
             </div>
-            <h2 style={{ color: "#5a1a35", fontWeight: 700, fontSize: "clamp(18px, 2.6vh, 28px)", marginBottom: "clamp(6px, 1.2vh, 12px)", lineHeight: 1.35, fontFamily: "'Playfair Display', serif" }}>
+            <h2 style={{ color: "#5a1a35", fontWeight: 700, fontSize: "clamp(22px, 3.4vh, 34px)", marginBottom: "clamp(8px, 1.4vh, 14px)", lineHeight: 1.3, fontFamily: "'Playfair Display', serif", letterSpacing: "-0.01em" }}>
               Manage your school<br />from anywhere
             </h2>
-            <p style={{ color: "#9e4060", fontSize: "clamp(13px, 1.6vh, 16px)", lineHeight: 1.5, maxWidth: "340px", margin: "0 auto" }}>
+            <p style={{ color: "#9e4060", fontSize: "clamp(15px, 2vh, 19px)", lineHeight: 1.6, maxWidth: "400px", margin: "0 auto", fontWeight: 400 }}>
               A complete platform to run your school<br />website and operations with ease.
             </p>
-            <div style={{ display: "flex", gap: "8px", justifyContent: "center", marginTop: "clamp(10px, 2vh, 24px)" }}>
-              <div style={{ width: "28px", height: "7px", borderRadius: "4px", background: "#8b2252" }}></div>
-              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "rgba(139,34,82,0.3)" }}></div>
-              <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: "rgba(139,34,82,0.3)" }}></div>
-            </div>
           </div>
 
           {/* Footer */}
@@ -132,8 +131,8 @@ const Login = () => {
             src={logo}
             alt="Web Builder Pro Logo"
             style={{
-    width: 'clamp(140px, 20vh, 280px)',
-    height: 'clamp(70px, 10vh, 140px)',
+    width: 'clamp(170px, 24vh, 320px)',
+    height: 'clamp(85px, 12vh, 160px)',
     objectFit: 'contain',
     marginBottom: 'clamp(0.25rem, 1vh, 0.5rem)',
     marginLeft: '-24px'
@@ -167,7 +166,7 @@ const Login = () => {
                 </svg>
                 <input
                   type="email" name="email" value={formData.email} onChange={handleChange}
-                  placeholder="Email" required className="login-input"
+                  placeholder="Enter your email" required className="login-input"
                   style={{ width: "100%", padding: "12px 14px 12px 42px", borderRadius: "12px", border: "1.5px solid #f0c4c4", background: "#ffffff", color: "#2d0a1a", fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "all 0.2s" }}
                 />
               </div>
@@ -184,7 +183,7 @@ const Login = () => {
                 </svg>
                 <input
                   type={showPassword ? "text" : "password"} name="password" value={formData.password}
-                  onChange={handleChange} placeholder="Password" required className="login-input"
+                  onChange={handleChange} placeholder="Enter your password" required className="login-input"
                   style={{ width: "100%", padding: "12px 42px 12px 42px", borderRadius: "12px", border: "1.5px solid #f0c4c4", background: "#ffffff", color: "#2d0a1a", fontSize: "14px", outline: "none", boxSizing: "border-box", transition: "all 0.2s" }}
                 />
                 <button type="button" onClick={() => setShowPassword(!showPassword)}
@@ -204,7 +203,7 @@ const Login = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={loading} className="login-submit-btn"
               style={{ width: "100%", padding: "clamp(10px, 1.6vh, 14px)", background: loading ? "#c9a0b0" : "#8b2252", color: "#fff", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "4px", boxShadow: "0 4px 16px rgba(139,34,82,0.3)", transition: "all 0.2s" }}>
               {loading ? (
                 <>

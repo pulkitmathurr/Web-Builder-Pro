@@ -7,14 +7,14 @@ const AppError = require("../../utils/error.utils");
 const createSchoolService = async (schoolData, superAdminId) => {
     const { name, email, phone, address, city, state, pincode } = schoolData;
 
-    if (!name || !email) throw new AppError("School name aur email required hai", 400);
+    if (!name || !email) throw new AppError("School name and email are required", 400);
 
     const [existing] = await pool.query("SELECT id FROM tbl_schools WHERE email = ?", [email]);
-    if (existing.length > 0) throw new AppError("Yeh email already registered hai", 409);
+    if (existing.length > 0) throw new AppError("This email is already registered", 409);
 
     const slug = name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
     const [slugCheck] = await pool.query("SELECT id FROM tbl_schools WHERE slug = ?", [slug]);
-    if (slugCheck.length > 0) throw new AppError("Is naam ka school already exist karta hai", 409);
+    if (slugCheck.length > 0) throw new AppError("A school with this name already exists", 409);
 
     const uuid = uuidv4();
     await pool.query(
@@ -46,7 +46,7 @@ const getSchoolByUuidService = async (uuid) => {
         WHERE s.uuid = ?`,
         [uuid]
     );
-    if (schools.length === 0) throw new AppError("School nahi mili", 404);
+    if (schools.length === 0) throw new AppError("School not found", 404);
     return schools[0];
 };
 
@@ -56,7 +56,7 @@ const updateSchoolStatusService = async (uuid, status) => {
     if (!validStatuses.includes(status)) throw new AppError("Invalid status", 400);
 
     const [school] = await pool.query("SELECT id FROM tbl_schools WHERE uuid = ?", [uuid]);
-    if (school.length === 0) throw new AppError("School nahi mili", 404);
+    if (school.length === 0) throw new AppError("School not found", 404);
 
     await pool.query("UPDATE tbl_schools SET status = ? WHERE uuid = ?", [status, uuid]);
     return { message: `School status updated to ${status}` };
@@ -66,14 +66,14 @@ const updateSchoolStatusService = async (uuid, status) => {
 const createAdminService = async (adminData) => {
     const { name, email, password, phone, schoolUuid } = adminData;
 
-    if (!name || !email || !password || !schoolUuid) throw new AppError("Name, email, password aur schoolUuid required hai", 400);
+    if (!name || !email || !password || !schoolUuid) throw new AppError("Name, email, password and schoolUuid are required", 400);
 
     const [schools] = await pool.query("SELECT id FROM tbl_schools WHERE uuid = ?", [schoolUuid]);
-    if (schools.length === 0) throw new AppError("School nahi mili", 404);
+    if (schools.length === 0) throw new AppError("School not found", 404);
 
     const schoolId = schools[0].id;
     const [existing] = await pool.query("SELECT id FROM tbl_admins WHERE email = ?", [email]);
-    if (existing.length > 0) throw new AppError("Yeh email already registered hai", 409);
+    if (existing.length > 0) throw new AppError("This email is already registered", 409);
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const uuid = uuidv4();
@@ -98,28 +98,31 @@ const updateAdminStatusService = async (uuid, status) => {
     if (!validStatuses.includes(status)) throw new AppError("Invalid status", 400);
 
     const [admin] = await pool.query("SELECT id FROM tbl_admins WHERE uuid = ?", [uuid]);
-    if (admin.length === 0) throw new AppError("Admin nahi mila", 404);
+    if (admin.length === 0) throw new AppError("Admin not found", 404);
 
     await pool.query("UPDATE tbl_admins SET status = ? WHERE uuid = ?", [status, uuid]);
     return { message: `Admin status updated to ${status}` };
 };
 
 // ── Create School + Admin Together ───────────────────
+// Admin login credentials are the school's own email + the password set here —
+// there is no separate admin email anymore, so tbl_admins.email is always set
+// equal to the school's email.
 const createSchoolWithAdminService = async (data, superAdminId, logoUrl = null) => {
-    const { name, email, phone, address, city, state, pincode, adminName, adminEmail, adminPassword, adminPhone } = data;
+    const { name, email, phone, address, city, state, pincode, adminName, adminPassword, adminPhone } = data;
 
-    if (!name || !email) throw new AppError("School name aur email required hai", 400);
-    if (!adminName || !adminEmail || !adminPassword) throw new AppError("Admin name, email aur password required hai", 400);
+    if (!name || !email) throw new AppError("School name and email are required", 400);
+    if (!adminName || !adminPassword) throw new AppError("Admin name and password are required", 400);
 
     const [existingSchool] = await pool.query("SELECT id FROM tbl_schools WHERE email = ?", [email]);
-    if (existingSchool.length > 0) throw new AppError("Yeh school email already registered hai", 409);
+    if (existingSchool.length > 0) throw new AppError("This school email is already registered", 409);
 
-    const [existingAdmin] = await pool.query("SELECT id FROM tbl_admins WHERE email = ?", [adminEmail]);
-    if (existingAdmin.length > 0) throw new AppError("Yeh admin email already registered hai", 409);
+    const [existingAdmin] = await pool.query("SELECT id FROM tbl_admins WHERE email = ?", [email]);
+    if (existingAdmin.length > 0) throw new AppError("This email is already in use by an admin account", 409);
 
     const slug = name.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
     const [slugCheck] = await pool.query("SELECT id FROM tbl_schools WHERE slug = ?", [slug]);
-    if (slugCheck.length > 0) throw new AppError("Is naam ka school already exist karta hai", 409);
+    if (slugCheck.length > 0) throw new AppError("A school with this name already exists", 409);
 
     const schoolUuid = uuidv4();
     const adminUuid = uuidv4();
@@ -135,7 +138,7 @@ const createSchoolWithAdminService = async (data, superAdminId, logoUrl = null) 
 
     await pool.query(
         `INSERT INTO tbl_admins (uuid, school_id, name, email, password, phone, status) VALUES (?, ?, ?, ?, ?, ?, 'active')`,
-        [adminUuid, schoolId, adminName, adminEmail, hashedPassword, adminPhone || null]
+        [adminUuid, schoolId, adminName, email, hashedPassword, adminPhone || null]
     );
 
     const [school] = await pool.query(
@@ -153,7 +156,7 @@ const deleteSchoolService = async (uuid) => {
     const conn = await pool.getConnection();
     try {
         const [school] = await conn.query("SELECT id FROM tbl_schools WHERE uuid = ?", [uuid]);
-        if (school.length === 0) throw new AppError("School nahi mili", 404);
+        if (school.length === 0) throw new AppError("School not found", 404);
         const schoolId = school[0].id;
 
         await conn.beginTransaction();
@@ -168,7 +171,7 @@ const deleteSchoolService = async (uuid) => {
         await conn.query("DELETE FROM tbl_schools WHERE id = ?", [schoolId]);
 
         await conn.commit();
-        return { message: "School permanently delete kar di gayi" };
+        return { message: "School permanently deleted" };
     } catch (error) {
         await conn.rollback();
         throw error;

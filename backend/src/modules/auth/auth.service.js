@@ -8,7 +8,7 @@ const {
 const AppError = require("../../utils/error.utils");
 
 const loginService = async (email, password, role) => {
-  // Step 1 — Email se user dhundo
+  // Step 1 — Find user by email
   let user;
   let table = role === "super_admin" ? "tbl_super_admins" : "tbl_admins";
 
@@ -25,20 +25,20 @@ const loginService = async (email, password, role) => {
 
   user = rows[0];
 
-  // Step 2 — Password check karo
+  // Step 2 — Check the password
   const isPasswordValid = await bcrypt.compare(password, user.password);
 
   if (!isPasswordValid) {
     throw new AppError("Invalid email or password", 401);
   }
 
-  // Step 3 — Admin ke liye school check karo
+  // Step 3 — For admin, check the school
   if (role === "admin") {
     if (user.status === "suspended") {
       throw new AppError("Your account has been suspended", 403);
     }
 
-    // School bhi active hai ya nahi check karo
+    // Check whether the school is also active
     const [schoolRows] = await pool.query(
       `SELECT status FROM tbl_schools WHERE id = ?`,
       [user.school_id],
@@ -49,7 +49,7 @@ const loginService = async (email, password, role) => {
     }
   }
 
-  // Step 4 — Tokens banao
+  // Step 4 — Generate tokens
  const payload = {
     id: parseInt(user.id),
     role: role,
@@ -61,13 +61,13 @@ if (role === 'admin') {
   const accessToken = generateAccessToken(payload);
   const refreshToken = generateRefreshToken(payload);
 
-  // Step 5 — Refresh token database mein save karo
+  // Step 5 — Save the refresh token in the database
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
   await pool.query(
-    `INSERT INTO tbl_refresh_tokens 
-        (token, admin_id, super_admin_id, expires_at) 
+    `INSERT INTO tbl_refresh_tokens
+        (token, admin_id, super_admin_id, expires_at)
         VALUES (?, ?, ?, ?)`,
     [
       refreshToken,
@@ -77,12 +77,12 @@ if (role === 'admin') {
     ],
   );
 
-  // Step 6 — Last login update karo
+  // Step 6 — Update last login
   await pool.query(`UPDATE ${table} SET last_login = NOW() WHERE id = ?`, [
     user.id,
   ]);
 
-  // Step 7 — Safe user data return karo (password nahi)
+  // Step 7 — Return safe user data (not the password)
   const { password: _, ...safeUser } = user;
 
   return { accessToken, refreshToken, user: safeUser };
@@ -104,9 +104,9 @@ const refreshTokenService = async (refreshToken) => {
     throw new AppError("No refresh token provided", 401);
   }
 
-  // Database mein check karo
+  // Check in the database
   const [rows] = await pool.query(
-    `SELECT * FROM tbl_refresh_tokens 
+    `SELECT * FROM tbl_refresh_tokens
         WHERE token = ? AND is_revoked = 0 AND expires_at > NOW()`,
     [refreshToken],
   );
@@ -117,11 +117,11 @@ const refreshTokenService = async (refreshToken) => {
 
   const tokenData = rows[0];
 
-  // Role aur id determine karo
+  // Determine the role and id
   const role = tokenData.super_admin_id ? "super_admin" : "admin";
   const userId = tokenData.super_admin_id || tokenData.admin_id;
 
-  // Naya access token banao
+  // Generate a new access token
   const payload = {
     id: parseInt(userId),
     role,

@@ -4,7 +4,10 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
+import { getFontFamily } from "../../constants/fonts";
+import { COLLAGE_LAYOUTS, DEFAULT_COLLAGE_LAYOUT } from "../../utils/sportsCollage";
 
 const PAGES = [
     { key: 'sportsAt', label: 'Sports at School' },
@@ -60,38 +63,33 @@ const ImageLightbox = ({ data, onClose, tc }) => {
 };
 
 // ── Masonry gallery for "Sports at School" page — 7-photo hero block + simple grid for the rest ──
-const SportsAtGallery = ({ images, tc, onImageClick }) => {
+const SportsAtGallery = ({ images, layout, tc, onImageClick }) => {
     if (!images || images.length === 0) return null;
 
-    const heroImages = images.slice(0, 7);
-    const restImages = images.slice(7);
-
-    // Explicit grid-line placement so every cell fills the 4-col × 3-row block with no gaps/overlap
-    const heroSlots = [
-        { gridColumn: '1 / 2', gridRow: '1 / 4' }, // tall left
-        { gridColumn: '2 / 4', gridRow: '1 / 2' }, // wide top-middle
-        { gridColumn: '4 / 5', gridRow: '1 / 3' }, // tall right-upper
-        { gridColumn: '2 / 3', gridRow: '2 / 3' },
-        { gridColumn: '3 / 4', gridRow: '2 / 4' }, // tall middle-right
-        { gridColumn: '2 / 3', gridRow: '3 / 4' },
-        { gridColumn: '4 / 5', gridRow: '3 / 4' },
-    ];
+    const layoutDef = COLLAGE_LAYOUTS[layout] || COLLAGE_LAYOUTS[DEFAULT_COLLAGE_LAYOUT];
+    const slots = layoutDef.slots;
+    const heroImages = images.slice(0, slots.length);
+    // Overflow photos only ever show for the full 7-photo layout — the 4 and 5 layouts
+    // stay a clean, fixed-size collage even if extra photos exist from a previous layout.
+    const restImages = layout === '7' ? images.slice(slots.length).filter(Boolean) : [];
 
     return (
         <div style={{ width: '100%' }}>
-            <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridTemplateRows: 'repeat(3, 160px)',
+            <div className="sports-collage-grid" style={{
+                display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols}, 1fr)`,
+                ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows}, var(--collage-rh, ${layoutDef.rowHeight}px))`, '--collage-rh': `${layoutDef.rowHeight}px` }),
                 gap: '14px', width: '100%'
             }}>
-                {heroImages.map((img, i) => (
-                    <div key={i} onClick={() => onImageClick(img)} style={{ ...heroSlots[i], borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', cursor: 'zoom-in' }}>
+                {heroImages.map((img, i) => img && (
+                    <div key={i} onClick={() => onImageClick(img)}
+                        style={{ ...(layoutDef.square ? { aspectRatio: '1' } : slots[i]), borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', cursor: 'zoom-in' }}>
                         <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                 ))}
             </div>
 
             {restImages.length > 0 && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginTop: '14px' }}>
+                <div className="sports-rest-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginTop: '14px' }}>
                     {restImages.map((img, i) => (
                         <div key={i} onClick={() => onImageClick(img)} style={{ height: '160px', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', cursor: 'zoom-in' }}>
                             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -113,24 +111,27 @@ const SingleImageSlider = ({ images, tc, onImageClick }) => {
 
     return (
         <div>
-            <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', aspectRatio: '4/5', boxShadow: '0 20px 50px rgba(0,0,0,0.12)' }}>
-                <img key={idx} src={images[idx]} alt="" onClick={() => onImageClick(images[idx])}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in', animation: 'fadeIn 0.3s ease' }} />
-                {images.length > 1 && (
-                    <>
-                        <button onClick={prev}
-                            style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(255,255,255,0.85)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', backdropFilter: 'blur(8px)', cursor: 'pointer' }}>
-                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                        </button>
-                        <button onClick={next}
-                            style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', width: '42px', height: '42px', borderRadius: '50%', background: 'rgba(255,255,255,0.85)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', backdropFilter: 'blur(8px)', cursor: 'pointer' }}>
-                            <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                        </button>
-                        <div style={{ position: 'absolute', bottom: '14px', right: '14px', padding: '5px 12px', borderRadius: '20px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(8px)' }}>
-                            {idx + 1} / {images.length}
-                        </div>
-                    </>
-                )}
+            <div className="sport-frame">
+                <div className="sport-frame-inner" style={{ aspectRatio: '4/5' }}>
+                    <img key={idx} src={images[idx]} alt="" onClick={() => onImageClick(images[idx])}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'zoom-in', animation: 'fadeIn 0.3s ease' }} />
+                    <div className="sport-frame-stripe"></div>
+                    {images.length > 1 && (
+                        <>
+                            <button className="sport-nav-btn" onClick={prev}
+                                style={{ position: 'absolute', left: '6px', top: '50%' }}>
+                                <svg width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            <button className="sport-nav-btn" onClick={next}
+                                style={{ position: 'absolute', right: '6px', top: '50%' }}>
+                                <svg width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                            <div style={{ position: 'absolute', bottom: '15px', right: '14px', padding: '5px 12px', borderRadius: '20px', background: 'rgba(0,0,0,0.55)', color: '#fff', fontSize: '12px', fontWeight: 600, backdropFilter: 'blur(8px)', zIndex: 2 }}>
+                                {idx + 1} / {images.length}
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
             {images.length > 1 && (
                 <div style={{ display: 'flex', gap: '8px', marginTop: '14px', justifyContent: 'center' }}>
@@ -147,16 +148,16 @@ const SingleImageSlider = ({ images, tc, onImageClick }) => {
 // ── Reusable "event style" card — image floats inside the same bounded block as the
 // description (same technique as the About page's History section), so both live in
 // ONE contained box and the text never spills outside it. ──
-const EventStyleCard = ({ heading, description, images, tc, onImageClick }) => {
+const EventStyleCard = ({ heading, description, images, tc, bc, onImageClick }) => {
     const words = (heading || '').trim().split(' ');
     const lastWord = words.pop();
     const restText = words.join(' ');
     const hasImages = images?.length > 0;
 
     return (
-        <div style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '20px', padding: '2rem', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
+        <div style={{ background: bc.card, border: '1px solid #f1f5f9', borderRadius: '20px', padding: '2rem', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
             {hasImages && (
-                <div style={{ float: 'right', width: '340px', marginLeft: '2rem', marginBottom: '1rem' }}>
+                <div className="sports-float-img" style={{ float: 'right', width: '340px', marginLeft: '2rem', marginBottom: '1rem' }}>
                     <SingleImageSlider images={images} tc={tc} onImageClick={onImageClick} />
                 </div>
             )}
@@ -206,28 +207,34 @@ const EventImageCarousel = ({ images, tc }) => {
     );
 };
 
-// ── Carousel for awards page photo gallery ──
+// ── Carousel for awards page photo gallery — sober, premium hero banner ──
 const PhotoCarousel = ({ images, tc }) => {
     const [idx, setIdx] = useState(0);
     if (!images || images.length === 0) return null;
     return (
-        <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.12)', height: '500px' }}>
+        <div className="awards-carousel">
             {images.map((img, i) => (
-                <img key={i} src={img} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === idx ? 1 : 0, transition: 'opacity 0.8s ease' }} />
+                <img key={i} src={img} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === idx ? 1 : 0, transition: 'opacity 1s ease' }} />
             ))}
+            <div className="awards-carousel-scrim"></div>
             {images.length > 1 && (
                 <>
-                    <button onClick={() => setIdx(p => p === 0 ? images.length - 1 : p - 1)}
-                        style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                    <button className="sport-nav-btn" onClick={() => setIdx(p => p === 0 ? images.length - 1 : p - 1)}
+                        style={{ position: 'absolute', left: '18px', top: '50%' }}>
+                        <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
                     </button>
-                    <button onClick={() => setIdx(p => (p + 1) % images.length)}
-                        style={{ position: 'absolute', right: '20px', top: '50%', transform: 'translateY(-50%)', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.9)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
-                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
+                    <button className="sport-nav-btn" onClick={() => setIdx(p => (p + 1) % images.length)}
+                        style={{ position: 'absolute', right: '18px', top: '50%' }}>
+                        <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                     </button>
-                    <div style={{ position: 'absolute', bottom: '16px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px' }}>
+                    <div style={{ position: 'absolute', bottom: '22px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px', zIndex: 2 }}>
                         {images.map((_, i) => (
-                            <div key={i} onClick={() => setIdx(i)} style={{ width: i === idx ? '24px' : '8px', height: '8px', borderRadius: '4px', background: i === idx ? tc.primary : 'rgba(255,255,255,0.7)', cursor: 'pointer', transition: 'all 0.3s' }}></div>
+                            <div key={i} className="awards-dot" onClick={() => setIdx(i)}
+                                style={{
+                                    width: i === idx ? '28px' : '6px', height: '6px', borderRadius: '3px',
+                                    background: i === idx ? `linear-gradient(90deg, ${tc.primary}, ${tc.secondary})` : 'rgba(255,255,255,0.45)',
+                                    boxShadow: i === idx ? `0 0 14px ${tc.primary}80` : 'none',
+                                }}></div>
                         ))}
                     </div>
                 </>
@@ -281,17 +288,11 @@ const SportsPublic = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
     const navbarSolid = scrollY > 60;
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Sports page not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                ← Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'sports')) return <NotPublished tc={tc} slug={slug} label="Sports" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Sports" />;
 
     const pageData = content[activePageKey];
     if (!pageData) return null;
@@ -300,7 +301,6 @@ const SportsPublic = () => {
     const proud = (pageData.proud || []).filter(p => p.photo || p.name);
     const yearlyAwards = (pageData.yearlyAwards || []).filter(y => y.year && y.pdfUrl);
     const events = pageData.events || [];
-    const parallaxOffset = Math.min(scrollY * 0.4, 200);
 
     return (
         <>
@@ -310,9 +310,8 @@ const SportsPublic = () => {
                 html { scroll-behavior: smooth; }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes float3d { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
                 @keyframes imgTickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-                body { background: #ffffff; }
+                body { background: ${bc.surface}; }
                 .premium-heading {
                     font-family: 'Playfair Display', Georgia, serif;
                     font-style: italic;
@@ -320,14 +319,60 @@ const SportsPublic = () => {
                 }
                 .img-ticker-track { display: flex; width: max-content; animation: imgTickerScroll 30s linear infinite; }
                 .img-ticker-track:hover { animation-play-state: paused; }
+                .sport-frame {
+                    position: relative; border-radius: 20px; overflow: hidden; background: #0f172a;
+                    box-shadow: 0 22px 46px rgba(15,23,42,0.18), inset 0 0 0 1px rgba(255,255,255,0.08);
+                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease;
+                }
+                .sport-frame:hover { transform: translateY(-6px); box-shadow: 0 32px 64px rgba(15,23,42,0.26), inset 0 0 0 1px rgba(255,255,255,0.16); }
+                .sport-frame-inner { position: relative; width: 100%; height: 100%; }
+                .sport-frame-inner img { transition: transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+                .sport-frame:hover .sport-frame-inner img { transform: scale(1.07); }
+                .sport-frame-stripe { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; z-index: 2; background: linear-gradient(90deg, ${tc.primary}, ${tc.secondary}); }
+                .sport-nav-btn { background: none; border: none; padding: 8px; cursor: pointer; color: #fff; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.65)); transition: transform 0.2s ease, opacity 0.2s ease; opacity: 0.85; transform: translateY(-50%); }
+                .sport-nav-btn:hover { opacity: 1; transform: translateY(-50%) scale(1.18); }
+
+                /* ── Awards page hero carousel ── */
+                .awards-carousel { position: relative; border-radius: 22px; overflow: hidden; height: 520px; background: #0f172a;
+                    box-shadow: 0 34px 70px -22px rgba(15,23,42,0.4), inset 0 0 0 1px rgba(255,255,255,0.07); }
+                .awards-carousel-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.5) 100%); pointer-events: none; }
+                .awards-dot { transition: all 0.3s ease; cursor: pointer; }
                 .sidebar-link { transition: all 0.2s; }
-                .cert-card { transition: transform 0.3s ease; }
-                .cert-card:hover { transform: translateY(-6px); }
-                .proud-card { transition: transform 0.3s ease; }
-                .proud-card:hover { transform: translateY(-6px); }
+
+                /* ── Certification cards — sharp, sober, premium ── */
+                .cert-card {
+                    position: relative; border-radius: 16px; overflow: hidden; background: #ffffff;
+                    border: 1px solid rgba(15,23,42,0.08);
+                    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+                    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease, border-color 0.4s ease;
+                }
+                .cert-card:hover { transform: translateY(-8px); box-shadow: 0 30px 55px -22px rgba(15,23,42,0.32); border-color: rgba(15,23,42,0.14); }
+                .cert-card-photo { position: relative; height: 172px; overflow: hidden; background: linear-gradient(135deg,#eef1f5,#e2e7ed); }
+                .cert-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+                .cert-card:hover .cert-card-photo img { transform: scale(1.08); }
+                .cert-card-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0) 55%, rgba(15,23,42,0.32) 100%); }
+                .cert-card-seal {
+                    position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 50%;
+                    background: rgba(255,255,255,0.92); backdrop-filter: blur(6px);
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 4px 12px rgba(15,23,42,0.18);
+                }
+
+                /* ── Making Us Proud cards — dark editorial "player card" ── */
+                .proud-card {
+                    position: relative; border-radius: 18px; overflow: hidden; background: #0f172a;
+                    box-shadow: 0 1px 3px rgba(15,23,42,0.08);
+                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease;
+                }
+                .proud-card:hover { transform: translateY(-8px); box-shadow: 0 34px 65px -20px rgba(15,23,42,0.4); }
+                .proud-card-photo { position: relative; height: 340px; overflow: hidden; background: #1c2536; }
+                .proud-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+                .proud-card:hover .proud-card-photo img { transform: scale(1.06); }
+                .proud-card-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,11,18,0) 28%, rgba(8,11,18,0.55) 55%, rgba(5,7,12,0.97) 100%); }
+
                 .year-badge { transition: background 0.2s; cursor: pointer; }
                 .year-badge:hover { background: ${tc.light} !important; }
-                .rte-content { overflow-wrap: break-word; }
+                .rte-content { overflow-wrap: normal; word-break: normal; }
                 .rte-content p { margin-bottom: 0.6em; }
                 .rte-content p:last-child { margin-bottom: 0; }
                 .rte-content strong { font-weight: 700; }
@@ -336,70 +381,65 @@ const SportsPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                .rte-content .ql-font-inter { font-family: 'Inter', system-ui, sans-serif; }
+                .rte-content .ql-font-poppins { font-family: 'Poppins', sans-serif; }
+                .rte-content .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+                .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+                .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
+                .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @media (max-width: 900px) {
+                    .sports-3col-grid { grid-template-columns: repeat(2,1fr) !important; }
+                }
+                @media (max-width: 780px) {
+                    .sports-float-img { float: none !important; width: 100% !important; max-width: 360px; margin: 0 auto 1.5rem !important; }
+                }
+                @media (max-width: 640px) {
+                    .sports-3col-grid { grid-template-columns: 1fr !important; }
+                    .sports-rest-grid { grid-template-columns: repeat(2,1fr) !important; }
+                    .sports-collage-grid { --collage-rh: 130px !important; }
+                    .awards-carousel { height: 320px !important; }
+                }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="sports" />
 
-                {/* ── Hero Banner with Parallax ── */}
-                <div style={{ height: '90vh', position: 'relative', overflow: 'hidden' }}>
-                    {pageData.banner ? (
-                        <img src={pageData.banner} alt=""
-                            style={{
-                                position: 'absolute', top: `-${parallaxOffset}px`, left: 0, width: '100%', height: '120%',
-                                objectFit: 'cover', transform: `scale(${1 + scrollY * 0.0003})`
-                            }} />
-                    ) : (
-                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}></div>
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 60%, #ffffff 100%)' }}></div>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
 
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 2rem' }}>
-                        <p style={{
-                            fontSize: '13px', color: '#fff', letterSpacing: '0.3em', textTransform: 'uppercase',
-                            marginBottom: '20px', opacity: Math.max(1 - scrollY / 300, 0), textShadow: '0 2px 10px rgba(0,0,0,0.3)'
-                        }}>
-                            {school.name}
-                        </p>
-                        <h1 style={{
-                            fontSize: 'clamp(40px, 7vw, 96px)', fontWeight: 900, letterSpacing: '-2.5px', lineHeight: 1,
-                            color: '#ffffff', textShadow: '0 4px 30px rgba(0,0,0,0.3)',
-                            opacity: Math.max(1 - scrollY / 400, 0), transform: `translateY(${scrollY * 0.2}px)`,
-                            fontStyle: pageData.headingItalic ? 'italic' : 'normal',
-                        }}>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 style={{ fontFamily: pageData.headingFont ? getFontFamily(pageData.headingFont) : "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: pageData.headingColor || '#ffffff', letterSpacing: '-1px', marginBottom: '10px', fontStyle: pageData.headingItalic ? 'italic' : 'normal' }}>
                             {pageData.heading || PAGES.find(p => p.key === activePageKey)?.label}
                         </h1>
-                    </div>
-
-                    <div style={{ position: 'absolute', bottom: '2.5rem', left: '50%', transform: 'translateX(-50%)', opacity: Math.max(1 - scrollY / 150, 0) }}>
-                        <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" viewBox="0 0 24 24" style={{ animation: 'float3d 2s ease-in-out infinite' }}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/>
-                        </svg>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
                 </div>
 
                 {/* ── Body — single centered column, wider to reduce excess side margins ── */}
-<div style={{ padding: '5rem 2.5rem 7rem', background: '#ffffff', width: '100%', boxSizing: 'border-box' }}>
+<div style={{ padding: '5rem clamp(1.25rem,5vw,2.5rem) 7rem', background: bc.surface, width: '100%', boxSizing: 'border-box' }}>
     <div style={{ maxWidth: '1140px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
 
                         {/* Main content */}
                         <div>
                             <Reveal style={{ textAlign: 'left' }}>
-                                {(() => {
-                                    const headingText = pageData.heading || PAGES.find(p => p.key === activePageKey)?.label || '';
+                                {pageData.heading && pageData.heading.trim() && (() => {
+                                    const headingText = pageData.heading;
                                     const words = headingText.trim().split(' ');
                                     const lastWord = words.pop();
                                     const restText = words.join(' ');
                                     return (
                                         <h2 style={{
-                                            fontFamily: "'Inter', system-ui, sans-serif",
+                                            fontFamily: pageData.headingFont ? getFontFamily(pageData.headingFont) : "'Inter', system-ui, sans-serif",
                                             fontSize: 'clamp(28px,3.5vw,38px)', fontWeight: 800, letterSpacing: '-0.5px',
-                                            lineHeight: 1.2, marginBottom: '1.1rem', color: '#0f172a',
+                                            lineHeight: 1.2, marginBottom: '1.1rem', color: pageData.headingColor || '#0f172a',
                                             fontStyle: pageData.headingItalic ? 'italic' : 'normal',
                                         }}>
                                             {restText ? `${restText} ` : ''}<span style={{ color: tc.primary }}>{lastWord}</span>
@@ -420,6 +460,7 @@ const SportsPublic = () => {
                                 <Reveal delay={0.1}>
                                     <SportsAtGallery
                                         images={pageData.images}
+                                        layout={pageData.collageLayout || DEFAULT_COLLAGE_LAYOUT}
                                         tc={tc}
                                         onImageClick={(img) => setLightbox({ image: img })}
                                     />
@@ -436,6 +477,7 @@ const SportsPublic = () => {
                                                 description={sp.description}
                                                 images={sp.images}
                                                 tc={tc}
+                                                bc={bc}
                                                 onImageClick={(img) => setLightbox({ image: img })}
                                             />
                                         </Reveal>
@@ -453,6 +495,7 @@ const SportsPublic = () => {
                                                 description={ev.description}
                                                 images={ev.images}
                                                 tc={tc}
+                                                bc={bc}
                                                 onImageClick={(img) => setLightbox({ image: img })}
                                             />
                                         </Reveal>
@@ -475,18 +518,23 @@ const SportsPublic = () => {
                                         <Reveal delay={0.15}>
                                             <div style={{ textAlign: 'center' }}>
                                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Certifications</p>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '20px', textAlign: 'left' }}>
-                                                    {certifications.map((cert, i) => (
+                                                <div className="sports-3col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '22px', textAlign: 'left' }}>
+                                                    {certifications.map((cert) => (
                                                         <div key={cert.id} className="cert-card" onClick={() => setLightbox({ image: cert.image, title: cert.title, info: cert.info })}
-                                                            style={{ border: '1px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', cursor: cert.image ? 'zoom-in' : 'default' }}>
+                                                            style={{ cursor: cert.image ? 'zoom-in' : 'default' }}>
                                                             {cert.image && (
-                                                                <div style={{ height: '160px', background: tc.light, overflow: 'hidden' }}>
-                                                                    <img src={cert.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                <div className="cert-card-photo">
+                                                                    <img src={cert.image} alt="" />
+                                                                    <div className="cert-card-scrim"></div>
+                                                                    <div className="cert-card-seal">
+                                                                        <svg width="16" height="16" fill="none" stroke={tc.primary} strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a5 5 0 100-10 5 5 0 000 10z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8.5 13.5L7 21l5-2.5 5 2.5-1.5-7.5"/></svg>
+                                                                    </div>
                                                                 </div>
                                                             )}
-                                                            <div style={{ padding: '1rem' }}>
-                                                                {cert.title && <p style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{cert.title}</p>}
-                                                                {cert.info && <p style={{ fontSize: '12px', color: '#64748b' }}>{cert.info}</p>}
+                                                            <div style={{ padding: '1.15rem 1.25rem 1.3rem' }}>
+                                                                <p style={{ fontSize: '10px', color: tc.primary, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px', opacity: 0.85 }}>Certification</p>
+                                                                {cert.title && <p style={{ fontSize: '15.5px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.2px', marginBottom: '5px' }}>{cert.title}</p>}
+                                                                {cert.info && <p style={{ fontSize: '12.5px', color: '#64748b', lineHeight: 1.6 }}>{cert.info}</p>}
                                                             </div>
                                                         </div>
                                                     ))}
@@ -500,37 +548,25 @@ const SportsPublic = () => {
                                         <Reveal delay={0.2}>
                                             <div style={{ textAlign: 'center' }}>
                                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Making Us Proud</p>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px', textAlign: 'left' }}>
+                                                <div className="sports-3col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px', textAlign: 'left' }}>
                                                     {proud.map((stu) => (
-                                                        <div key={stu.id} className="proud-card" style={{
-                                                            borderRadius: '22px', overflow: 'hidden',
-                                                            boxShadow: '0 10px 30px rgba(0,0,0,0.1)', background: '#ffffff'
-                                                        }}>
-                                                            {/* Photo header with decorative badge icon — themed to the school's color */}
-                                                            <div style={{ position: 'relative', height: '320px', background: tc.light, overflow: 'hidden' }}>
-                                                                {stu.photo && (
-                                                                    <img src={stu.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                                )}
-                                                                <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                                                    <div style={{ width: '26px', height: '26px', borderRadius: '7px', background: 'rgba(255,255,255,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                        <svg width="13" height="13" fill={tc.primary} viewBox="0 0 24 24"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/></svg>
-                                                                    </div>
+                                                        <div key={stu.id} className="proud-card">
+                                                            {/* Photo with name/achievement overlaid on a dark scrim — editorial "player card" look */}
+                                                            <div className="proud-card-photo">
+                                                                {stu.photo && <img src={stu.photo} alt="" />}
+                                                                <div className="proud-card-scrim"></div>
+                                                                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '1.25rem 1.4rem 1.1rem', zIndex: 1 }}>
+                                                                    {stu.name && <p style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', textShadow: '0 2px 10px rgba(0,0,0,0.85)' }}>{stu.name}</p>}
+                                                                    {stu.achievement && <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.88)', fontWeight: 600, letterSpacing: '0.03em', lineHeight: 1.5, textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>{stu.achievement}</p>}
                                                                 </div>
                                                             </div>
-                                                            {/* White info section */}
-                                                            <div style={{ padding: '1.1rem 1.25rem 0.9rem' }}>
-                                                                {stu.name && <p style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '4px' }}>{stu.name}</p>}
-                                                                {stu.achievement && <p style={{ fontSize: '12px', color: tc.primary, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', lineHeight: 1.5 }}>{stu.achievement}</p>}
-                                                            </div>
-                                                            {/* Colored footer bar — themed to the school's primary color */}
+                                                            {/* Colored footer bar — themed to the school's colors */}
                                                             <div style={{
-                                                                background: tc.primary, padding: '10px 18px',
+                                                                background: `linear-gradient(90deg, ${tc.primary}, ${tc.secondary})`, padding: '9px 18px',
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                                                             }}>
-                                                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{school.name}</span>
-                                                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                                    <svg width="11" height="11" fill="#ffffff" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
-                                                                </div>
+                                                                <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{school.name}</span>
+                                                                <svg width="13" height="13" fill="#ffffff" viewBox="0 0 24 24" opacity="0.9"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -555,7 +591,7 @@ const SportsPublic = () => {
                                                         <tbody>
                                                             {yearlyAwards.map((yr, i) => (
                                                                 <tr key={yr.id} className="year-badge" onClick={() => window.open(yr.pdfUrl, '_blank')}
-                                                                    style={{ borderTop: i > 0 ? '1px solid #f1f5f9' : 'none', background: '#ffffff' }}>
+                                                                    style={{ borderTop: i > 0 ? '1px solid #f1f5f9' : 'none', background: bc.card }}>
                                                                     <td style={{ padding: '14px 22px', fontSize: '14.5px', fontWeight: 700, color: '#0f172a' }}>{yr.year}</td>
                                                                     <td style={{ padding: '14px 22px', fontSize: '13.5px', fontWeight: 600, color: tc.primary }}>
                                                                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { GOOGLE_FONTS_URL, getFontFamily } from "../../constants/fonts";
-import { NAVBAR_ITEMS } from "../../constants/publicNav";
+import { NAVBAR_ITEMS, isModuleEnabled } from "../../constants/publicNav";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import { isLevelComplete } from "../../utils/courseLevels";
 
@@ -17,17 +17,39 @@ const ChevronRight = ({ color }) => (
     </svg>
 );
 
+const MenuIcon = ({ color }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round">
+        <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+);
+
+const CloseIcon = ({ color }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round">
+        <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+);
+
+const ChevronDownSm = ({ color, open }) => (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"
+        style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }}>
+        <path d="M6 9l6 6 6-6" />
+    </svg>
+);
+
 // ── Shared top navbar — logo/name on the left, Home + hover dropdowns on the right.
 // Dropdown items with subItems (Infrastructure, Courses, and the top-level Sports item)
 // open a nested flyout to the right on hover, instead of listing everything inline. ──
-const Navbar = ({ school, slug, tc, scrollY = 0, activeKey }) => {
+const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false }) => {
     const navigate = useNavigate();
-    const navbarSolid = scrollY > 60;
+    const navbarSolid = forceSolid || scrollY > 60;
     const navFont = getFontFamily(school.nav_font);
     const [openTop, setOpenTop] = useState(null);
     const [openSub, setOpenSub] = useState(null);
     const [coursesContent, setCoursesContent] = useState(null);
     const [infraContent, setInfraContent] = useState(null);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [mobileGroup, setMobileGroup] = useState(null);
+    const [mobileSub, setMobileSub] = useState(null);
     const topCloseTimer = useRef(null);
     const subCloseTimer = useRef(null);
 
@@ -37,12 +59,39 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey }) => {
         getPublicModuleContentApi(school.id, 'infrastructure').then(res => setInfraContent(res.data || {})).catch(() => setInfraContent({}));
     }, [school?.id]);
 
+    // Lock background scroll while the mobile drawer is open.
+    useEffect(() => {
+        document.body.style.overflow = mobileOpen ? 'hidden' : '';
+        return () => { document.body.style.overflow = ''; };
+    }, [mobileOpen]);
+
     const openTopMenu = (label) => { clearTimeout(topCloseTimer.current); setOpenTop(label); setOpenSub(null); };
     const scheduleTopClose = () => { topCloseTimer.current = setTimeout(() => { setOpenTop(null); setOpenSub(null); }, 150); };
     const openSubMenu = (key) => { clearTimeout(subCloseTimer.current); setOpenSub(key); };
     const scheduleSubClose = () => { subCloseTimer.current = setTimeout(() => setOpenSub(null), 150); };
     const keepOpen = () => { clearTimeout(topCloseTimer.current); clearTimeout(subCloseTimer.current); };
-    const go = (path) => { setOpenTop(null); setOpenSub(null); navigate(path); };
+    const go = (path) => {
+        setOpenTop(null); setOpenSub(null);
+        setMobileOpen(false); setMobileGroup(null); setMobileSub(null);
+        navigate(path);
+    };
+    const toggleMobileGroup = (label) => { setMobileGroup(prev => prev === label ? null : label); setMobileSub(null); };
+    const toggleMobileSub = (key) => { setMobileSub(prev => prev === key ? null : key); };
+
+    // 'home' always stays in the nav — there's no fallback UI for a disabled landing page,
+    // so unselecting it isn't treated as removable the way other modules are.
+    // 'gallery-video' isn't its own module_key — it's the Video Gallery tab of the 'gallery' module.
+    const navEnabled = (key) => {
+        if (key === 'home') return true;
+        return isModuleEnabled(school, key === 'gallery-video' ? 'gallery' : key);
+    };
+
+    const visibleNavItems = NAVBAR_ITEMS
+        .map(item => item.links ? { ...item, links: item.links.filter(l => navEnabled(l.key)) } : item)
+        .filter(item => {
+            if (item.links) return item.links.length > 0;
+            return navEnabled(item.key);
+        });
 
     const getSubItems = (link) => {
         if (link.dynamicSubItems === 'courses') {
@@ -95,34 +144,55 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey }) => {
     return (
         <>
             <link rel="stylesheet" href={GOOGLE_FONTS_URL} />
-            <nav style={{
+            <style>{`
+                @media (max-width: 960px) {
+                    .navbar-desktop-items { display: none !important; }
+                    .navbar-hamburger { display: flex !important; }
+                }
+                @media (max-width: 480px) {
+                    .navbar-logo-box { width: 42px !important; height: 42px !important; }
+                    .navbar-school-name { font-size: 14px !important; }
+                    .navbar-inner { padding: 0 1.1rem !important; }
+                }
+                .mobile-drawer-row { transition: background 0.15s ease; }
+                .mobile-drawer-row:active { background: #f8fafc; }
+                @keyframes mobileDrawerIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+            `}</style>
+            <nav className="navbar-inner" style={{
                 position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
                 height: '92px', padding: '0 3rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: navbarSolid ? 'rgba(255,255,255,0.95)' : 'transparent',
-                backdropFilter: navbarSolid ? 'blur(16px)' : 'none',
-                borderBottom: navbarSolid ? '1px solid #f1f5f9' : 'none',
+                background: (navbarSolid || mobileOpen) ? 'rgba(255,255,255,0.95)' : 'transparent',
+                backdropFilter: (navbarSolid || mobileOpen) ? 'blur(16px)' : 'none',
+                borderBottom: (navbarSolid || mobileOpen) ? '1px solid #f1f5f9' : 'none',
                 transition: 'all 0.3s ease',
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '18px', cursor: 'pointer' }} onClick={() => navigate(`/school/${slug}`)}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', minWidth: 0, flexShrink: 1 }} onClick={() => go(`/school/${slug}`)}>
                     {school.logo_url ? (
-                        <img src={school.logo_url} alt={school.name} style={{ height: '60px', width: '60px', objectFit: 'contain' }} />
+                        <img className="navbar-logo-box" src={school.logo_url} alt={school.name} style={{ height: '54px', width: '54px', objectFit: 'contain', flexShrink: 0 }} />
                     ) : (
-                        <div style={{ width: '60px', height: '60px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '10px' }}></div>
+                        <div className="navbar-logo-box" style={{ width: '54px', height: '54px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '10px', flexShrink: 0 }}></div>
                     )}
-                    <p style={{ fontFamily: navFont, fontSize: '19px', fontWeight: 700, color: textColor, letterSpacing: '0.05em', textTransform: 'uppercase', transition: 'color 0.3s' }}>
+                    <p className="navbar-school-name" style={{ fontFamily: navFont, fontSize: '17px', fontWeight: 700, color: (mobileOpen ? '#0f172a' : textColor), letterSpacing: '0.03em', textTransform: 'uppercase', transition: 'color 0.3s', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
                         {school.name}
                     </p>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-                    {NAVBAR_ITEMS.map(item => {
-                        // ── Plain link (Home, Public Disclosure) ──
+                {/* ── Mobile hamburger toggle — hidden on desktop, shown ≤960px ── */}
+                <button className="navbar-hamburger" onClick={() => setMobileOpen(o => !o)}
+                    style={{ display: 'none', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '9px', border: 'none', background: 'transparent', cursor: 'pointer', flexShrink: 0 }}
+                    aria-label={mobileOpen ? 'Close menu' : 'Open menu'}>
+                    {mobileOpen ? <CloseIcon color="#0f172a" /> : <MenuIcon color={textColor} />}
+                </button>
+
+                <div className="navbar-desktop-items" style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', flexShrink: 0 }}>
+                    {visibleNavItems.map(item => {
+                        // ── Plain link (Home, Mandatory Public Disclosure) ──
                         if (item.path && !item.links && !item.subItems) {
                             const isActive = activeKey === item.key;
                             return (
                                 <span key={item.key} onClick={() => go(item.path(slug))}
-                                    style={{ cursor: 'pointer', fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: isActive ? tc.secondary : textColor, paddingBottom: '6px', borderBottom: '2px solid transparent', transition: 'color 0.25s ease' }}>
+                                    style={{ cursor: 'pointer', fontSize: '12.5px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: isActive ? tc.secondary : textColor, paddingBottom: '6px', borderBottom: '2px solid transparent', transition: 'color 0.25s ease' }}>
                                     {item.label}
                                 </span>
                             );
@@ -134,7 +204,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey }) => {
                             const isActive = activeKey === item.key;
                             return (
                                 <div key={item.label} onMouseEnter={() => openTopMenu(item.label)} onMouseLeave={scheduleTopClose} style={{ position: 'relative' }}>
-                                    <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: isActive ? tc.secondary : textColor, paddingBottom: '6px', borderBottom: isOpen ? `2px solid ${tc.secondary}` : '2px solid transparent', transition: 'color 0.25s ease, border-color 0.25s ease' }}
+                                    <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: '12.5px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: isActive ? tc.secondary : textColor, paddingBottom: '6px', borderBottom: isOpen ? `2px solid ${tc.secondary}` : '2px solid transparent', transition: 'color 0.25s ease, border-color 0.25s ease' }}
                                         onClick={() => go(item.path(slug))}>
                                         {item.label}
                                         <ChevronDown />
@@ -158,7 +228,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey }) => {
                         const groupHasActive = item.links.some(l => l.key === activeKey);
                         return (
                             <div key={item.label} onMouseEnter={() => openTopMenu(item.label)} onMouseLeave={scheduleTopClose} style={{ position: 'relative' }}>
-                                <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: '13px', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: groupHasActive ? tc.secondary : textColor, paddingBottom: '6px', borderBottom: isOpen ? `2px solid ${tc.secondary}` : '2px solid transparent', transition: 'color 0.25s ease, border-color 0.25s ease' }}>
+                                <span style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', fontSize: '12.5px', fontWeight: 700, letterSpacing: '0.02em', whiteSpace: 'nowrap', textTransform: 'uppercase', color: groupHasActive ? tc.secondary : textColor, paddingBottom: '6px', borderBottom: isOpen ? `2px solid ${tc.secondary}` : '2px solid transparent', transition: 'color 0.25s ease, border-color 0.25s ease' }}>
                                     {item.label}
                                     <ChevronDown />
                                 </span>
@@ -202,6 +272,106 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey }) => {
                     })}
                 </div>
             </nav>
+
+            {/* ── Mobile drawer — tap-based accordion version of the same nav data,
+                since hover-based dropdowns don't work on touch devices. ── */}
+            {mobileOpen && (
+                <div style={{
+                    position: 'fixed', top: '92px', left: 0, right: 0, bottom: 0, zIndex: 999,
+                    background: '#ffffff', overflowY: 'auto', animation: 'mobileDrawerIn 0.2s ease',
+                    padding: '0.5rem 0 2rem',
+                }}>
+                    {visibleNavItems.map(item => {
+                        // Plain link
+                        if (item.path && !item.links && !item.subItems) {
+                            const isActive = activeKey === item.key;
+                            return (
+                                <div key={item.key} onClick={() => go(item.path(slug))} className="mobile-drawer-row"
+                                    style={{ padding: '15px 1.5rem', fontSize: '14.5px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                                    {item.label}
+                                </div>
+                            );
+                        }
+
+                        // Single top-level flyout (Sports) — tap label to navigate, tap chevron to expand subitems
+                        if (item.subItems && !item.links) {
+                            const isExpanded = mobileGroup === item.label;
+                            const isActive = activeKey === item.key;
+                            return (
+                                <div key={item.label} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <div className="mobile-drawer-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 1.5rem' }}>
+                                        <span onClick={() => go(item.path(slug))} style={{ fontSize: '14.5px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', cursor: 'pointer' }}>
+                                            {item.label}
+                                        </span>
+                                        <span onClick={() => toggleMobileGroup(item.label)} style={{ padding: '6px', cursor: 'pointer', color: '#94a3b8' }}>
+                                            <ChevronDownSm color="#94a3b8" open={isExpanded} />
+                                        </span>
+                                    </div>
+                                    {isExpanded && (
+                                        <div style={{ background: '#f8fafc', padding: '4px 0' }}>
+                                            {item.subItems.map(sub => (
+                                                <div key={sub.label} onClick={() => go(sub.path(slug))} className="mobile-drawer-row"
+                                                    style={{ padding: '12px 1.5rem 12px 2.5rem', fontSize: '13.5px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+                                                    {sub.label}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        }
+
+                        // Group dropdown (About Us, Academics, Gallery, News & Events, Admissions)
+                        const isExpanded = mobileGroup === item.label;
+                        const groupHasActive = item.links.some(l => l.key === activeKey);
+                        return (
+                            <div key={item.label} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                <div onClick={() => toggleMobileGroup(item.label)} className="mobile-drawer-row"
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 1.5rem', cursor: 'pointer' }}>
+                                    <span style={{ fontSize: '14.5px', fontWeight: 700, color: groupHasActive ? tc.primary : '#0f172a' }}>{item.label}</span>
+                                    <ChevronDownSm color="#94a3b8" open={isExpanded} />
+                                </div>
+                                {isExpanded && (
+                                    <div style={{ background: '#f8fafc', padding: '4px 0' }}>
+                                        {item.links.map(link => {
+                                            const isCourses = link.key === 'courses';
+                                            const subItems = getSubItems(link);
+                                            const hasSub = subItems?.length > 0;
+                                            const isSubExpanded = mobileSub === link.key;
+                                            const isActive = activeKey === link.key;
+                                            return (
+                                                <div key={link.key}>
+                                                    <div className="mobile-drawer-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 1.5rem 12px 2.5rem' }}>
+                                                        <span onClick={() => { if (!isCourses) go(link.path(slug)); else if (hasSub) toggleMobileSub(link.key); }}
+                                                            style={{ fontSize: '13.5px', fontWeight: 600, color: isActive ? tc.primary : '#334155', cursor: 'pointer' }}>
+                                                            {link.label}
+                                                        </span>
+                                                        {hasSub && (
+                                                            <span onClick={() => toggleMobileSub(link.key)} style={{ padding: '6px', cursor: 'pointer', color: '#94a3b8' }}>
+                                                                <ChevronDownSm color="#94a3b8" open={isSubExpanded} />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {hasSub && isSubExpanded && (
+                                                        <div style={{ background: '#eef2f7', padding: '4px 0' }}>
+                                                            {subItems.map(sub => (
+                                                                <div key={sub.label} onClick={() => go(sub.path(slug))} className="mobile-drawer-row"
+                                                                    style={{ padding: '11px 1.5rem 11px 3.5rem', fontSize: '13px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+                                                                    {sub.label}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
         </>
     );
 };

@@ -17,46 +17,40 @@ const getSchoolProfileService = async (schoolId) => {
     );
 
     if (schools.length === 0) {
-        throw new AppError("School nahi mili", 404);
+        throw new AppError("School not found", 404);
     }
 
     return schools[0];
 };
 
 // ── Update School Profile ────────────────────────────
+// Only columns actually present as keys in `data` are written — this lets callers
+// send a partial payload (e.g. just `{ welcome_banner_enabled }`) without wiping
+// other fields, while still allowing an explicit `null`/'' to clear a field (e.g.
+// "Remove Logo" sends `{ logo_url: null }`). A COALESCE-based UPDATE can't do the
+// latter since COALESCE(NULL, logo_url) just keeps the old value.
 const updateSchoolProfileService = async (schoolId, data) => {
-    const {
-        name, phone, address, city, state, pincode,
-        map_url, facebook, instagram, youtube, twitter, linkedin,
-        hero_video_url, hero_video_title, logo_url, intro_message
-    } = data;
+    const allowedFields = [
+        'name', 'phone', 'phone2', 'address', 'city', 'state', 'pincode',
+        'map_url', 'facebook', 'instagram', 'youtube', 'twitter', 'linkedin',
+        'hero_video_url', 'hero_video_title', 'logo_url', 'intro_message',
+        'welcome_banner_enabled', 'welcome_banner_url', 'welcome_banner_link',
+        'footer_bg_url'
+    ];
 
-    await pool.query(
-        `UPDATE tbl_schools 
-        SET 
-            name = COALESCE(?, name),
-            phone = COALESCE(?, phone),
-            address = COALESCE(?, address),
-            city = COALESCE(?, city),
-            state = COALESCE(?, state),
-            pincode = COALESCE(?, pincode),
-            map_url = COALESCE(?, map_url),
-            facebook = COALESCE(?, facebook),
-            instagram = COALESCE(?, instagram),
-            youtube = COALESCE(?, youtube),
-            twitter = COALESCE(?, twitter),
-            linkedin = COALESCE(?, linkedin),
-            hero_video_url = COALESCE(?, hero_video_url),
-            hero_video_title = COALESCE(?, hero_video_title),
-            logo_url = COALESCE(?, logo_url),
-            intro_message = COALESCE(?, intro_message)
-        WHERE id = ?`,
-        [
-            name, phone, address, city, state, pincode,
-            map_url, facebook, instagram, youtube, twitter, linkedin,
-            hero_video_url, hero_video_title, logo_url, intro_message, schoolId
-        ]
+    const fieldsToUpdate = allowedFields.filter((field) =>
+        Object.prototype.hasOwnProperty.call(data, field)
     );
+
+    if (fieldsToUpdate.length > 0) {
+        const setClause = fieldsToUpdate.map((field) => `${field} = ?`).join(', ');
+        const values = fieldsToUpdate.map((field) => data[field]);
+
+        await pool.query(
+            `UPDATE tbl_schools SET ${setClause} WHERE id = ?`,
+            [...values, schoolId]
+        );
+    }
 
     const [updated] = await pool.query('SELECT * FROM tbl_schools WHERE id = ?', [schoolId]);
     return updated[0];
@@ -64,17 +58,18 @@ const updateSchoolProfileService = async (schoolId, data) => {
 
 // ── Update School Settings ───────────────────────────
 const updateSchoolSettingsService = async (schoolId, data) => {
-    const { theme, logo_url, nav_font, heading_font } = data;
+    const { theme, base_theme, logo_url, nav_font, heading_font } = data;
 
     await pool.query(
         `UPDATE tbl_schools
         SET
             theme = COALESCE(?, theme),
+            base_theme = COALESCE(?, base_theme),
             logo_url = COALESCE(?, logo_url),
             nav_font = COALESCE(?, nav_font),
             heading_font = COALESCE(?, heading_font)
         WHERE id = ?`,
-        [theme, logo_url, nav_font, heading_font, schoolId]
+        [theme, base_theme, logo_url, nav_font, heading_font, schoolId]
     );
 
     const [updated] = await pool.query('SELECT * FROM tbl_schools WHERE id = ?', [schoolId]);
@@ -84,7 +79,7 @@ const updateSchoolSettingsService = async (schoolId, data) => {
 // ── Select Modules ───────────────────────────────────
 const selectModulesService = async (schoolId, modules) => {
     if (!modules || !Array.isArray(modules) || modules.length === 0) {
-        throw new AppError("Kam se kam ek module select karo", 400);
+        throw new AppError("Select at least one module", 400);
     }
 
     const validModules = [
@@ -117,7 +112,7 @@ const getSelectedModulesService = async (schoolId) => {
     );
 
     if (schools.length === 0) {
-        throw new AppError("School nahi mili", 404);
+        throw new AppError("School not found", 404);
     }
 
     return {
@@ -133,13 +128,15 @@ const getSelectedModulesService = async (schoolId) => {
 // ── Get Public School ────────────────────────────────
 const getPublicSchoolService = async (slug) => {
     const [rows] = await pool.query(
-        `SELECT 
-            s.id, s.name, s.slug, s.email, s.phone, s.address,
-            s.city, s.state, s.pincode, s.logo_url, s.theme,
+        `SELECT
+            s.id, s.name, s.slug, s.email, s.phone, s.phone2, s.address,
+            s.city, s.state, s.pincode, s.logo_url, s.theme, s.base_theme,
             s.nav_font, s.heading_font,
             s.selected_modules, s.status, s.map_url,
             s.facebook, s.instagram, s.youtube, s.twitter, s.linkedin,
-            s.hero_video_url, s.hero_video_title, s.intro_message
+            s.hero_video_url, s.hero_video_title, s.intro_message,
+            s.welcome_banner_enabled, s.welcome_banner_url, s.welcome_banner_link,
+            s.footer_bg_url
         FROM tbl_schools s
         WHERE s.slug = ? AND s.status = 'active'`,
         [slug]

@@ -5,14 +5,30 @@
 // opportunity, so text wraps only at spaces like normal words.
 const NB_HYPHEN = '‑';
 
-// Replaces "-" outside of HTML tags only, so URLs/attributes inside RTE HTML
-// (e.g. Cloudinary URLs, which routinely contain hyphens) are left untouched.
+// Pasting from Word/Google Docs into the RTE routinely lands every inter-word
+// space as a non-breaking space instead of a normal one. Quill's HTML output
+// serializes that as the literal 6-character entity "&nbsp;" (not the raw
+// U+00A0 codepoint), and that's exactly what ends up saved in tbl_module_content.
+// A non-breaking space is, by spec, never a valid line-wrap point — so a whole
+// paragraph of nbsp-joined "words" becomes one unbreakable run that either
+// overflows its box (overflow-wrap: normal) or gets force-broken at arbitrary
+// character positions (overflow-wrap: break-word), which looks like a word
+// split in half. Converting both forms back to a normal space restores
+// ordinary word-by-word wrapping.
+const NBSP_CHAR_RE = / /g;
+const NBSP_ENTITY_RE = /&nbsp;/gi;
+
+// Replaces "-" and stray nbsp (both the raw character and the "&nbsp;" entity
+// text) outside of HTML tags only, so URLs/attributes inside RTE HTML (e.g.
+// Cloudinary URLs, which routinely contain hyphens) are left untouched.
 export const noBreakHyphens = (str) => {
     if (!str || typeof str !== 'string') return str;
     if (/^https?:\/\//i.test(str.trim())) return str; // whole-string URL fields (photo, pdfUrl, etc.)
     return str
         .split(/(<[^>]*>)/g)
-        .map((part, i) => (i % 2 === 0 ? part.replace(/-/g, NB_HYPHEN) : part))
+        .map((part, i) => (i % 2 === 0
+            ? part.replace(/-/g, NB_HYPHEN).replace(NBSP_CHAR_RE, ' ').replace(NBSP_ENTITY_RE, ' ')
+            : part))
         .join('');
 };
 

@@ -9,7 +9,10 @@ import toast from "react-hot-toast";
 import RichTextEditor from "../../../components/common/RichTextEditor";
 import ImageCropModal from "../../../components/common/ImageCropModal";
 import ItalicToggle from "../../../components/common/ItalicToggle";
+import HeadingStyleField from "../../../components/common/HeadingStyleField";
+import ReorderButtons from "../../../components/common/ReorderButtons";
 import useSchoolStore from "../../../store/schoolStore";
+import { moveItem } from "../../../utils/reorder";
 
 const hexToRgba = (hex, alpha) => {
   const h = hex.replace("#", "");
@@ -18,32 +21,52 @@ const hexToRgba = (hex, alpha) => {
 };
 
 const defaultContent = {
-  bannerImage: "",
   visionMissionItems: [],
   history: "",
   historyImage: "",
+  historyGalleryImages: [],
+  historyHeading: "",
+  historyHeadingColor: "",
+  historyHeadingFont: "",
+  historyHeadingItalic: false,
   foundedYear: "",
   leadershipMembers: [],
+  leadershipHeading: "",
+  leadershipHeadingColor: "",
+  leadershipHeadingFont: "",
+  leadershipHeadingItalic: false,
   values: [
     { title: "", description: "" },
     { title: "", description: "" },
     { title: "", description: "" },
     { title: "", description: "" },
   ],
+  affiliationsHeading: "",
+  affiliationsHeadingColor: "",
+  affiliationsHeadingFont: "",
+  affiliationsHeadingItalic: false,
+  affiliations: [],
+  awardsHeading: "",
+  awardsHeadingColor: "",
+  awardsHeadingFont: "",
+  awardsHeadingItalic: false,
+  awards: [],
 };
 
-const CROP_ASPECTS = { banner: 16 / 9, history: 3 / 4, leader: 4 / 5 };
+const CROP_ASPECTS = { history: null, leader: null, historyGallery: null, affiliation: null, award: null };
 
 const AboutUs = () => {
-  const { tc } = useSchoolStore();
+  const { tc, bc } = useSchoolStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
-  const [activeSection, setActiveSection] = useState("banner");
+  const [activeSection, setActiveSection] = useState("vision");
   const [content, setContent] = useState(defaultContent);
+  const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [uploading, setUploading] = useState({});
-  const [cropTarget, setCropTarget] = useState(null); // { mode: 'banner' | 'history' | 'leader', id?, src }
+  const [cropTarget, setCropTarget] = useState(null); // { mode: 'history' | 'leader' | 'historyGallery', id?, src }
+  const [galleryQueue, setGalleryQueue] = useState([]); // remaining files still waiting to be cropped
 
   useEffect(() => {
     fetchContent();
@@ -90,6 +113,7 @@ const AboutUs = () => {
         }
 
         setContent(merged);
+        setSavedSnapshot(JSON.stringify(merged));
         setIsPublished(res.data.is_published === 1);
       }
     } catch (e) {
@@ -112,7 +136,7 @@ const AboutUs = () => {
   // ── Vision & Mission items ──
   const addVisionItem = () => {
     const item = { id: `vm-${Date.now()}`, heading: "", text: "" };
-    setContent((prev) => ({ ...prev, visionMissionItems: [...prev.visionMissionItems, item] }));
+    setContent((prev) => ({ ...prev, visionMissionItems: [item, ...prev.visionMissionItems] }));
   };
   const updateVisionItem = (id, field, value) => {
     setContent((prev) => ({
@@ -123,11 +147,14 @@ const AboutUs = () => {
   const removeVisionItem = (id) => {
     setContent((prev) => ({ ...prev, visionMissionItems: prev.visionMissionItems.filter((it) => it.id !== id) }));
   };
+  const moveVisionItem = (idx, dir) => {
+    setContent((prev) => ({ ...prev, visionMissionItems: moveItem(prev.visionMissionItems, idx, dir) }));
+  };
 
   // ── Leadership members ──
   const addLeader = () => {
-    const item = { id: `leader-${Date.now()}`, photo: "", name: "", designation: "", message: "" };
-    setContent((prev) => ({ ...prev, leadershipMembers: [...prev.leadershipMembers, item] }));
+    const item = { id: `leader-${Date.now()}`, photo: "", name: "", designation: "", message: "", nameColor: "", nameFont: "", designationColor: "", designationFont: "" };
+    setContent((prev) => ({ ...prev, leadershipMembers: [item, ...prev.leadershipMembers] }));
   };
   const updateLeader = (id, field, value) => {
     setContent((prev) => ({
@@ -138,23 +165,93 @@ const AboutUs = () => {
   const removeLeader = (id) => {
     setContent((prev) => ({ ...prev, leadershipMembers: prev.leadershipMembers.filter((m) => m.id !== id) }));
   };
+  const moveLeader = (idx, dir) => {
+    setContent((prev) => ({ ...prev, leadershipMembers: moveItem(prev.leadershipMembers, idx, dir) }));
+  };
 
-  // ── Crop-based image upload flow (banner / history image / leader photos) ──
+  // ── Affiliations & Certifications ──
+  const addAffiliation = () => {
+    const item = { id: `aff-${Date.now()}`, image: "", heading: "", link: "" };
+    setContent((prev) => ({ ...prev, affiliations: [item, ...prev.affiliations] }));
+  };
+  const updateAffiliation = (id, field, value) => {
+    setContent((prev) => ({
+      ...prev,
+      affiliations: prev.affiliations.map((it) => (it.id === id ? { ...it, [field]: value } : it)),
+    }));
+  };
+  const removeAffiliation = (id) => {
+    setContent((prev) => ({ ...prev, affiliations: prev.affiliations.filter((it) => it.id !== id) }));
+  };
+  const moveAffiliation = (idx, dir) => {
+    setContent((prev) => ({ ...prev, affiliations: moveItem(prev.affiliations, idx, dir) }));
+  };
+
+  // ── Awards & Recognition ──
+  const addAward = () => {
+    const item = { id: `awd-${Date.now()}`, image: "", heading: "", name: "", designation: "" };
+    setContent((prev) => ({ ...prev, awards: [item, ...prev.awards] }));
+  };
+  const updateAward = (id, field, value) => {
+    setContent((prev) => ({
+      ...prev,
+      awards: prev.awards.map((it) => (it.id === id ? { ...it, [field]: value } : it)),
+    }));
+  };
+  const removeAward = (id) => {
+    setContent((prev) => ({ ...prev, awards: prev.awards.filter((it) => it.id !== id) }));
+  };
+  const moveAward = (idx, dir) => {
+    setContent((prev) => ({ ...prev, awards: moveItem(prev.awards, idx, dir) }));
+  };
+
+  // ── History gallery images (horizontal strip below the history text) ──
+  // Each file is cropped one at a time (freeform, no locked aspect) before upload;
+  // once confirmed, the next queued file automatically opens in the crop modal.
+  const HISTORY_GALLERY_MAX = 3;
+
+  const startGalleryUpload = (files) => {
+    if (files.length === 0) return;
+    const remaining = HISTORY_GALLERY_MAX - (content.historyGalleryImages || []).length;
+    if (remaining <= 0) return;
+    const toUse = files.slice(0, remaining);
+    if (files.length > remaining) toast.error(`Only ${HISTORY_GALLERY_MAX} images allowed — added first ${remaining}`);
+    setGalleryQueue(toUse.slice(1));
+    setCropTarget({ mode: "historyGallery", src: URL.createObjectURL(toUse[0]) });
+  };
+
+  const removeHistoryGalleryImage = (idx) => {
+    setContent((prev) => ({ ...prev, historyGalleryImages: prev.historyGalleryImages.filter((_, i) => i !== idx) }));
+  };
+
+  // ── Crop-based image upload flow (history image / leader photos / history gallery) ──
   const onCropConfirmed = async (croppedFile) => {
     const target = cropTarget;
     setCropTarget(null);
-    const key = target.mode === "leader" ? `leader-${target.id}` : target.mode;
+    const key = target.mode === "leader" ? `leader-${target.id}`
+      : target.mode === "affiliation" ? `affiliation-${target.id}`
+      : target.mode === "award" ? `award-${target.id}`
+      : target.mode;
     setUploading((prev) => ({ ...prev, [key]: true }));
     try {
       const res = await uploadContentImageApi(croppedFile);
-      if (target.mode === "banner") handleChange("bannerImage", res.data.url);
-      else if (target.mode === "history") handleChange("historyImage", res.data.url);
+      if (target.mode === "history") handleChange("historyImage", res.data.url);
       else if (target.mode === "leader") updateLeader(target.id, "photo", res.data.url);
+      else if (target.mode === "affiliation") updateAffiliation(target.id, "image", res.data.url);
+      else if (target.mode === "award") updateAward(target.id, "image", res.data.url);
+      else if (target.mode === "historyGallery") {
+        setContent((prev) => ({ ...prev, historyGalleryImages: [...(prev.historyGalleryImages || []), res.data.url] }));
+      }
       toast.success("Image uploaded!");
     } catch (e) {
       toast.error("Failed to upload image");
     } finally {
       setUploading((prev) => ({ ...prev, [key]: false }));
+      if (target.mode === "historyGallery" && galleryQueue.length > 0) {
+        const [next, ...rest] = galleryQueue;
+        setGalleryQueue(rest);
+        setCropTarget({ mode: "historyGallery", src: URL.createObjectURL(next) });
+      }
     }
   };
 
@@ -171,6 +268,7 @@ const AboutUs = () => {
         content,
         publish ? 1 : isPublished ? 1 : 0,
       );
+      setSavedSnapshot(JSON.stringify(content));
       if (publish) {
         // Save never touches is_published — flip it server-side only if not already live.
         let current = await fetchPublishedFlag();
@@ -208,15 +306,15 @@ const AboutUs = () => {
   const inputStyle = {
     width: "100%",
     padding: "11px 14px",
-    border: "0.5px solid #e2e8f0",
+    border: "1px solid #e5e9f0",
     borderRadius: "10px",
     fontSize: "13.5px",
     color: "#0f172a",
     outline: "none",
     boxSizing: "border-box",
-    background: "#ffffff",
+    background: "#f8fafc",
     fontFamily: "system-ui, sans-serif",
-    transition: "border 0.2s, box-shadow 0.2s",
+    transition: "border 0.2s, box-shadow 0.2s, background 0.2s",
   };
 
   const labelStyle = {
@@ -231,8 +329,8 @@ const AboutUs = () => {
 
   const cardStyle = {
     background: "#ffffff",
-    border: "0.5px solid #f1f5f9",
-    borderRadius: "8px",
+    border: "1px solid #f1f5f9",
+    borderRadius: "14px",
     overflow: "hidden",
     boxShadow: "0 2px 12px rgba(0,0,0,0.04)",
   };
@@ -271,15 +369,6 @@ const AboutUs = () => {
 
   const sections = [
     {
-      key: "banner",
-      label: "Banner Image",
-      icon: (
-        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-    },
-    {
       key: "vision",
       label: "Vision & Mission",
       icon: (
@@ -316,10 +405,31 @@ const AboutUs = () => {
         </svg>
       ),
     },
+    {
+      key: "awards",
+      label: "Awards & Recognition",
+      icon: (
+        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+        </svg>
+      ),
+    },
+    {
+      key: "affiliations",
+      label: "Affiliation & Certification",
+      icon: (
+        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      ),
+    },
   ];
 
-  const CropImageBox = ({ label, value, uploadKey, aspectHint, onFileSelected }) => {
+  const CropImageBox = ({ label, value, uploadKey, aspectHint, onFileSelected, onRemove, previewAspect, previewMaxWidth }) => {
     const isUploading = uploading[uploadKey];
+    // previewAspect/previewMaxWidth make the field preview the same shape (e.g. portrait 3/4)
+    // as the image renders on the live site, instead of the default wide banner box.
+    const shaped = !!previewAspect;
 
     return (
       <div>
@@ -335,7 +445,9 @@ const AboutUs = () => {
             background: value ? "transparent" : "#fafafa",
             overflow: "hidden",
             position: "relative",
-            minHeight: value ? "160px" : "auto",
+            ...(shaped
+              ? { width: previewMaxWidth || "260px", aspectRatio: previewAspect, display: "flex", flexDirection: "column", alignItems: value ? "stretch" : "center", justifyContent: value ? "stretch" : "center" }
+              : { minHeight: value ? "160px" : "auto" }),
           }}
         >
           {isUploading ? (
@@ -344,8 +456,8 @@ const AboutUs = () => {
               <p style={{ fontSize: "12px", color: "#64748b" }}>Uploading...</p>
             </div>
           ) : value ? (
-            <div style={{ position: "relative" }}>
-              <img src={value} alt={label} style={{ width: "100%", height: "160px", objectFit: "cover", display: "block" }} />
+            <div style={shaped ? { position: "relative", width: "100%", height: "100%" } : { position: "relative" }}>
+              <img src={value} alt={label} style={shaped ? { width: "100%", height: "100%", objectFit: "cover", display: "block" } : { width: "100%", height: "160px", objectFit: "cover", display: "block" }} />
               <div
                 style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)", opacity: 0, transition: "opacity 0.2s", display: "flex", alignItems: "center", justifyContent: "center" }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = 1)}
@@ -353,12 +465,17 @@ const AboutUs = () => {
               >
                 <span style={{ color: "#fff", fontSize: "12px", fontWeight: 600 }}>Click to change</span>
               </div>
+              {onRemove && (
+                <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(); }}
+                  style={{ position: "absolute", top: "8px", right: "8px", width: "24px", height: "24px", background: "rgba(15,23,42,0.7)", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                  title="Remove image">×</button>
+              )}
             </div>
           ) : (
             <>
               <div style={{ fontSize: "28px", marginBottom: "8px" }}>🖼️</div>
               <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Click to upload — crop tool will open</p>
-              <p style={{ fontSize: "11px", color: "#94a3b8" }}>{aspectHint || "JPG, PNG, WEBP · Max 5MB"}</p>
+              <p style={{ fontSize: "11px", color: "#94a3b8" }}>{aspectHint ? `${aspectHint} · JPG, PNG, WEBP · Max 5MB` : "JPG, PNG, WEBP · Max 5MB"}</p>
             </>
           )}
         </div>
@@ -377,6 +494,8 @@ const AboutUs = () => {
     );
   };
 
+  const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
+
   if (loading) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "60vh" }}>
@@ -394,16 +513,21 @@ const AboutUs = () => {
       <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .au-section { animation: fadeInUp 0.35s ease forwards; }
-                .au-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
+                .au-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .au-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .au-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-      <div style={{ fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ fontFamily: "system-ui, sans-serif", background: bc.surface, margin: "-24px", padding: "24px", minHeight: "100vh" }}>
         {/* Hero Header */}
-        <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: "10px", padding: "2.25rem 2.5rem", marginBottom: "1.75rem", position: "relative", overflow: "hidden", boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-          <div style={{ position: "absolute", width: "300px", height: "300px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: "-140px", right: "4%", pointerEvents: "none" }}></div>
+        <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: "22px", padding: "2.25rem 2.5rem", marginBottom: "1.75rem", position: "relative", overflow: "hidden", boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+          <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "24px 24px", pointerEvents: "none" }}></div>
+          <div className="au-hero-orb" style={{ position: "absolute", width: "300px", height: "300px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: "-140px", right: "4%", pointerEvents: "none" }}></div>
           <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div>
+            <div className="au-hero-item">
               <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>Admin / Pages / About Us</p>
               <h1 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", marginBottom: "8px", letterSpacing: "-0.4px" }}>About Us</h1>
               <p style={{ fontSize: "13.5px", color: "rgba(255,255,255,0.45)", lineHeight: 1.6, maxWidth: "420px" }}>
@@ -415,6 +539,32 @@ const AboutUs = () => {
               <span style={{ fontSize: "12px", color: isPublished ? "#86efac" : "rgba(255,255,255,0.5)", fontWeight: 500 }}>{isPublished ? "Published" : "Draft"}</span>
             </div>
           </div>
+        </div>
+
+        {/* Top Action Bar */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "1.75rem" }}>
+          <button onClick={() => handleSave(false)} disabled={saving} style={{ padding: "11px 24px", background: isDirty ? "#fefce8" : "#ffffff", color: isDirty ? "#a16207" : "#64748b", border: isDirty ? "1px solid #fde68a" : "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px", fontWeight: isDirty ? 700 : 500, cursor: "pointer" }}>
+            {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
+          </button>
+          {isPublished ? (
+            <button onClick={handleUnpublish} style={{ padding: "11px 24px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+              Unpublish
+            </button>
+          ) : (
+            <button onClick={() => handleSave(true)} disabled={publishing} style={{ padding: "11px 28px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer", boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: "flex", alignItems: "center", gap: "8px" }}>
+              {publishing ? (
+                <>
+                  <svg style={{ animation: "spin 1s linear infinite", width: "14px", height: "14px" }} viewBox="0 0 24 24" fill="none">
+                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                  Publishing...
+                </>
+              ) : (
+                "Publish Page"
+              )}
+            </button>
+          )}
         </div>
 
         {/* Section Tabs */}
@@ -444,52 +594,6 @@ const AboutUs = () => {
             </button>
           ))}
         </div>
-
-        {/* ── Banner Tab ── */}
-        {activeSection === "banner" && (
-          <div className="au-section" style={cardStyle}>
-            <div style={cardHeaderStyle}>
-              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
-                  <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Page Banner</p>
-                  <p style={{ fontSize: "11px", color: "#94a3b8" }}>Wide hero image shown at the top of the About Us page</p>
-                </div>
-              </div>
-            </div>
-            <div style={{ padding: "2rem" }}>
-              <CropImageBox
-                label="Banner Image"
-                value={content.bannerImage}
-                uploadKey="banner"
-                aspectHint="You'll be able to crop to a 16:9 widescreen banner after upload"
-                onFileSelected={(file) => setCropTarget({ mode: "banner", src: URL.createObjectURL(file) })}
-              />
-              <div style={{ marginTop: "16px", padding: "16px 18px", background: "linear-gradient(135deg,#fdf0f5,#fff5f8)", borderRadius: "8px", border: "1px solid #f9c4d4" }}>
-                <p style={{ fontSize: "12px", fontWeight: 600, color: tc.primary, marginBottom: "10px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  How to choose the best banner image
-                </p>
-                {[
-                  "Upload any size photo — you'll crop it to fit the 16:9 banner next",
-                  "Use bright, high-resolution photos — campus, students or building exteriors work best",
-                  "Keep important subjects centered in your crop — edges may get trimmed on smaller screens",
-                  "Avoid images with heavy text or logos already on them",
-                ].map((tip, i) => (
-                  <p key={i} style={{ fontSize: "11.5px", color: "#9f1239", marginBottom: "4px", lineHeight: 1.6 }}>
-                    • {tip}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* ── Vision & Mission Tab ── */}
         {activeSection === "vision" && (
@@ -527,7 +631,10 @@ const AboutUs = () => {
                     </div>
                     <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Item {i + 1}</p>
                   </div>
-                  <button onClick={() => removeVisionItem(item.id)} style={removeButtonStyle}>Remove</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <ReorderButtons index={i} length={content.visionMissionItems.length} onMove={moveVisionItem} vertical={false} />
+                    <button onClick={() => removeVisionItem(item.id)} style={removeButtonStyle}>Remove</button>
+                  </div>
                 </div>
                 <div style={{ padding: "1.5rem 1.75rem", display: "flex", flexDirection: "column", gap: "14px" }}>
                   <div>
@@ -538,11 +645,16 @@ const AboutUs = () => {
                         type="text"
                         value={item.heading}
                         onChange={(e) => updateVisionItem(item.id, "heading", e.target.value)}
-                        placeholder="e.g. Vision, Mission, Motto, Our Goals..."
+                        placeholder="Enter Heading"
                         style={{ ...inputStyle, fontStyle: item.headingItalic ? "italic" : "normal" }}
                       />
                       <ItalicToggle active={!!item.headingItalic} onToggle={() => updateVisionItem(item.id, "headingItalic", !item.headingItalic)} />
                     </div>
+                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>Examples: Vision, Mission, Motto, Our Goals</p>
+                    <HeadingStyleField
+                      color={item.headingColor} onColorChange={(val) => updateVisionItem(item.id, "headingColor", val)}
+                      font={item.headingFont} onFontChange={(val) => updateVisionItem(item.id, "headingFont", val)}
+                    />
                   </div>
                   <div>
                     <label style={labelStyle}>Text</label>
@@ -551,6 +663,8 @@ const AboutUs = () => {
                       onChange={(val) => updateVisionItem(item.id, "text", val)}
                       placeholder="Write the statement for this item..."
                       minHeight="100px"
+                      fontSize="14px"
+                      fontFamily="'Inter', system-ui, sans-serif"
                     />
                   </div>
                 </div>
@@ -575,32 +689,109 @@ const AboutUs = () => {
                 </div>
               </div>
             </div>
-            <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "20px" }}>
-              <CropImageBox
-                label="History Section Image"
-                value={content.historyImage}
-                uploadKey="history"
-                aspectHint="You'll be able to crop to a portrait (3:4) shape after upload · Shows beside the history text"
-                onFileSelected={(file) => setCropTarget({ mode: "history", src: URL.createObjectURL(file) })}
-              />
+            <div style={{ padding: "2rem", display: "flex", flexDirection: "column", gap: "24px" }}>
               <div>
-                <label style={labelStyle}>Founded Year</label>
-                <input
-                  className="au-input"
-                  type="text"
-                  value={content.foundedYear}
-                  onChange={(e) => handleChange("foundedYear", e.target.value)}
-                  placeholder="e.g. 1998"
-                  style={{ ...inputStyle, maxWidth: "200px" }}
+                <label style={labelStyle}>Section Heading</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    className="au-input"
+                    type="text"
+                    value={content.historyHeading}
+                    onChange={(e) => handleChange("historyHeading", e.target.value)}
+                    placeholder="Enter Section Heading"
+                    style={{ ...inputStyle, maxWidth: "420px", fontStyle: content.historyHeadingItalic ? "italic" : "normal" }}
+                  />
+                  <ItalicToggle active={!!content.historyHeadingItalic} onToggle={() => handleChange("historyHeadingItalic", !content.historyHeadingItalic)} />
+                </div>
+                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "6px" }}>Leave blank to keep the default "Our History" heading.</p>
+                <HeadingStyleField
+                  color={content.historyHeadingColor} onColorChange={(val) => handleChange("historyHeadingColor", val)}
+                  font={content.historyHeadingFont} onFontChange={(val) => handleChange("historyHeadingFont", val)}
                 />
               </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "1.75rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                  <CropImageBox
+                    label="History Image (Vertical Photo)"
+                    value={content.historyImage}
+                    uploadKey="history"
+                    aspectHint="Crop is freely adjustable from every side after upload — pick exactly how much to keep · Shows beside the history text"
+                    onFileSelected={(file) => setCropTarget({ mode: "history", src: URL.createObjectURL(file) })}
+                    onRemove={() => handleChange("historyImage", "")}
+                    previewAspect="3/4"
+                    previewMaxWidth="260px"
+                  />
+                  <div>
+                    <label style={labelStyle}>Founded Year</label>
+                    <input
+                      className="au-input"
+                      type="text"
+                      value={content.foundedYear}
+                      onChange={(e) => handleChange("foundedYear", e.target.value)}
+                      placeholder="Enter Founded Year"
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label style={labelStyle}>Our Story</label>
+                  <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "6px" }}>
+                    Box width matches the text column next to the history image on the live page.
+                  </p>
+                  <RichTextEditor
+                    value={content.history}
+                    onChange={(val) => handleChange("history", val)}
+                    placeholder="Tell the story of how your school began, key milestones, and how it has grown over the years..."
+                    minHeight="220px"
+                    maxWidth="918px"
+                    fontSize="16px"
+                    fontFamily="'Inter', system-ui, sans-serif"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label style={labelStyle}>Our Story</label>
-                <RichTextEditor
-                  value={content.history}
-                  onChange={(val) => handleChange("history", val)}
-                  placeholder="Tell the story of how your school began, key milestones, and how it has grown over the years..."
-                  minHeight="220px"
+                <label style={labelStyle}>History Gallery Images (Horizontal)</label>
+                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
+                  Shown as a horizontal strip below the history text — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each. Max {HISTORY_GALLERY_MAX} images ({(content.historyGalleryImages || []).length}/{HISTORY_GALLERY_MAX} used).
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "1.25rem" }}>
+                  {(content.historyGalleryImages || []).map((img, i) => (
+                    <div key={i} style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9" }}>
+                      <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <button
+                        onClick={() => removeHistoryGalleryImage(i)}
+                        style={{ position: "absolute", top: "6px", right: "6px", width: "24px", height: "24px", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", borderRadius: "50%", cursor: "pointer", fontSize: "14px", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                {(content.historyGalleryImages || []).length < HISTORY_GALLERY_MAX && (
+                  <div
+                    onClick={() => document.getElementById("history-gallery-input").click()}
+                    style={{ border: "1.5px dashed #e2e8f0", borderRadius: "12px", padding: "1.5rem", textAlign: "center", cursor: "pointer", background: "#fafafa" }}
+                  >
+                    {uploading.historyGallery ? (
+                      <p style={{ fontSize: "13px", color: "#64748b" }}>Uploading...</p>
+                    ) : (
+                      <p style={{ fontSize: "13px", color: "#64748b" }}>+ Click to add images (up to {HISTORY_GALLERY_MAX - (content.historyGalleryImages || []).length} more)</p>
+                    )}
+                  </div>
+                )}
+                <input
+                  id="history-gallery-input"
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files);
+                    e.target.value = "";
+                    startGalleryUpload(files);
+                  }}
+                  style={{ display: "none" }}
                 />
               </div>
             </div>
@@ -625,6 +816,25 @@ const AboutUs = () => {
                 </div>
                 <button onClick={addLeader} style={addButtonStyle}>+ Add Member</button>
               </div>
+              <div style={{ padding: "1.5rem 1.75rem" }}>
+                <label style={labelStyle}>Section Heading</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    className="au-input"
+                    type="text"
+                    value={content.leadershipHeading}
+                    onChange={(e) => handleChange("leadershipHeading", e.target.value)}
+                    placeholder="Enter Section Heading"
+                    style={{ ...inputStyle, maxWidth: "420px", fontStyle: content.leadershipHeadingItalic ? "italic" : "normal" }}
+                  />
+                  <ItalicToggle active={!!content.leadershipHeadingItalic} onToggle={() => handleChange("leadershipHeadingItalic", !content.leadershipHeadingItalic)} />
+                </div>
+                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "6px" }}>Leave blank to keep the default "Leadership Message" heading.</p>
+                <HeadingStyleField
+                  color={content.leadershipHeadingColor} onColorChange={(val) => handleChange("leadershipHeadingColor", val)}
+                  font={content.leadershipHeadingFont} onFontChange={(val) => handleChange("leadershipHeadingFont", val)}
+                />
+              </div>
             </div>
 
             {content.leadershipMembers.length === 0 && (
@@ -642,7 +852,10 @@ const AboutUs = () => {
                     </div>
                     <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Member {i + 1}</p>
                   </div>
-                  <button onClick={() => removeLeader(m.id)} style={removeButtonStyle}>Remove</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <ReorderButtons index={i} length={content.leadershipMembers.length} onMove={moveLeader} vertical={false} />
+                    <button onClick={() => removeLeader(m.id)} style={removeButtonStyle}>Remove</button>
+                  </div>
                 </div>
                 <div style={{ padding: "1.5rem 1.75rem", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1.75rem" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
@@ -652,6 +865,7 @@ const AboutUs = () => {
                       uploadKey={`leader-${m.id}`}
                       aspectHint="Portrait crop (4:5) after upload"
                       onFileSelected={(file) => setCropTarget({ mode: "leader", id: m.id, src: URL.createObjectURL(file) })}
+                      onRemove={() => updateLeader(m.id, "photo", "")}
                     />
                     <div>
                       <label style={labelStyle}>Name</label>
@@ -660,8 +874,12 @@ const AboutUs = () => {
                         type="text"
                         value={m.name}
                         onChange={(e) => updateLeader(m.id, "name", e.target.value)}
-                        placeholder="e.g. Mrs. Sunita Sharma"
+                        placeholder="Enter Full Name"
                         style={inputStyle}
+                      />
+                      <HeadingStyleField
+                        color={m.nameColor} onColorChange={(val) => updateLeader(m.id, "nameColor", val)}
+                        font={m.nameFont} onFontChange={(val) => updateLeader(m.id, "nameFont", val)}
                       />
                     </div>
                     <div>
@@ -671,18 +889,28 @@ const AboutUs = () => {
                         type="text"
                         value={m.designation}
                         onChange={(e) => updateLeader(m.id, "designation", e.target.value)}
-                        placeholder="e.g. Principal"
+                        placeholder="Enter Designation"
                         style={inputStyle}
+                      />
+                      <HeadingStyleField
+                        color={m.designationColor} onColorChange={(val) => updateLeader(m.id, "designationColor", val)}
+                        font={m.designationFont} onFontChange={(val) => updateLeader(m.id, "designationFont", val)}
                       />
                     </div>
                   </div>
                   <div>
                     <label style={labelStyle}>Message</label>
+                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "6px" }}>
+                      Box width matches the text column next to the leader's photo on the live page.
+                    </p>
                     <RichTextEditor
                       value={m.message}
                       onChange={(val) => updateLeader(m.id, "message", val)}
                       placeholder="Write a warm welcome message about the school's philosophy and commitment to students..."
                       minHeight="220px"
+                      maxWidth="878px"
+                      fontSize="17px"
+                      fontFamily="'Inter', system-ui, sans-serif"
                     />
                   </div>
                 </div>
@@ -712,7 +940,7 @@ const AboutUs = () => {
                       type="text"
                       value={v.title}
                       onChange={(e) => handleValueChange(i, "title", e.target.value)}
-                      placeholder="e.g. Integrity"
+                      placeholder="Enter Value Title"
                       style={inputStyle}
                     />
                   </div>
@@ -731,38 +959,224 @@ const AboutUs = () => {
           </div>
         )}
 
-        {/* Bottom Save Bar */}
-        <div style={{ marginTop: "1.5rem", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
-          <button onClick={() => handleSave(false)} disabled={saving} style={{ padding: "11px 24px", background: "#ffffff", color: "#64748b", border: "1px solid #e2e8f0", borderRadius: "6px", fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>
-            {saving ? "Saving..." : "Save Draft"}
-          </button>
-          {isPublished ? (
-            <button onClick={handleUnpublish} style={{ padding: "11px 24px", background: "#fef2f2", color: "#dc2626", border: "1px solid #fecaca", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-              Unpublish
-            </button>
-          ) : (
-            <button onClick={() => handleSave(true)} disabled={publishing} style={{ padding: "11px 28px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: 600, cursor: "pointer", boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: "flex", alignItems: "center", gap: "8px" }}>
-              {publishing ? (
-                <>
-                  <svg style={{ animation: "spin 1s linear infinite", width: "14px", height: "14px" }} viewBox="0 0 24 24" fill="none">
-                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                  </svg>
-                  Publishing...
-                </>
-              ) : (
-                "Publish Page"
-              )}
-            </button>
-          )}
-        </div>
+        {/* ── Affiliation & Certification Tab ── */}
+        {/* ── Awards & Recognition Tab ── */}
+        {activeSection === "awards" && (
+          <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div style={cardStyle}>
+              <div style={cardHeaderStyle}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                    <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Awards & Recognition</p>
+                    <p style={{ fontSize: "11px", color: "#94a3b8" }}>Awards won by the school or its staff — e.g. Best Director Award. Add as many as you like.</p>
+                  </div>
+                </div>
+                <button onClick={addAward} style={addButtonStyle}>+ Add Item</button>
+              </div>
+              <div style={{ padding: "1.5rem 1.75rem" }}>
+                <label style={labelStyle}>Section Heading</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    className="au-input"
+                    type="text"
+                    value={content.awardsHeading}
+                    onChange={(e) => handleChange("awardsHeading", e.target.value)}
+                    placeholder="Enter Section Heading"
+                    style={{ ...inputStyle, maxWidth: "420px", fontStyle: content.awardsHeadingItalic ? "italic" : "normal" }}
+                  />
+                  <ItalicToggle active={!!content.awardsHeadingItalic} onToggle={() => handleChange("awardsHeadingItalic", !content.awardsHeadingItalic)} />
+                </div>
+                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "6px" }}>Leave blank to keep the default "Awards & Recognition" heading.</p>
+                <HeadingStyleField
+                  color={content.awardsHeadingColor} onColorChange={(val) => handleChange("awardsHeadingColor", val)}
+                  font={content.awardsHeadingFont} onFontChange={(val) => handleChange("awardsHeadingFont", val)}
+                />
+              </div>
+            </div>
+
+            {content.awards.length === 0 && (
+              <div style={{ ...cardStyle, padding: "2.5rem", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", color: "#94a3b8" }}>No items yet — click "+ Add Item" above to add one (e.g. Best Director Award).</p>
+              </div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem" }}>
+              {content.awards.map((item, i) => (
+                <div key={item.id} style={{ ...cardStyle }}>
+                  <div style={{ ...cardHeaderStyle, padding: "0.85rem 1rem" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ width: "24px", height: "24px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: "7px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "11px", fontWeight: 700, flexShrink: 0 }}>
+                        {i + 1}
+                      </div>
+                      <p style={{ fontSize: "12.5px", fontWeight: 600, color: "#0f172a" }}>Item {i + 1}</p>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                      <ReorderButtons index={i} length={content.awards.length} onMove={moveAward} vertical={false} />
+                      <button onClick={() => removeAward(item.id)} style={{ ...removeButtonStyle, padding: "5px 9px" }}>Remove</button>
+                    </div>
+                  </div>
+                  <div style={{ padding: "1.1rem" }}>
+                    <CropImageBox
+                      label="Photo"
+                      value={item.image}
+                      uploadKey={`award-${item.id}`}
+                      aspectHint="Square crop works best"
+                      onFileSelected={(file) => setCropTarget({ mode: "award", id: item.id, src: URL.createObjectURL(file) })}
+                      onRemove={() => updateAward(item.id, "image", "")}
+                      previewAspect="1/1"
+                      previewMaxWidth="100%"
+                    />
+                    <div style={{ marginTop: "0.9rem" }}>
+                      <label style={labelStyle}>Name</label>
+                      <input
+                        className="au-input"
+                        type="text"
+                        value={item.name || ""}
+                        onChange={(e) => updateAward(item.id, "name", e.target.value)}
+                        placeholder="Enter Name"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ marginTop: "0.9rem" }}>
+                      <label style={labelStyle}>Designation</label>
+                      <input
+                        className="au-input"
+                        type="text"
+                        value={item.designation || ""}
+                        onChange={(e) => updateAward(item.id, "designation", e.target.value)}
+                        placeholder="Enter Designation"
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ marginTop: "0.9rem" }}>
+                      <label style={labelStyle}>Award / Heading</label>
+                      <input
+                        className="au-input"
+                        type="text"
+                        value={item.heading}
+                        onChange={(e) => updateAward(item.id, "heading", e.target.value)}
+                        placeholder="Enter Heading"
+                        style={inputStyle}
+                      />
+                      <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>e.g. Best Director Award</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Affiliation & Certification Tab ── */}
+        {activeSection === "affiliations" && (
+          <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div style={cardStyle}>
+              <div style={cardHeaderStyle}>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#78350f,#f59e0b)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(245,158,11,0.3)" }}>
+                    <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Affiliation & Certification</p>
+                    <p style={{ fontSize: "11px", color: "#94a3b8" }}>Board affiliations, certifications, memberships — e.g. CBSE Affiliation, NCC. Add as many as you like.</p>
+                  </div>
+                </div>
+                <button onClick={addAffiliation} style={addButtonStyle}>+ Add Item</button>
+              </div>
+              <div style={{ padding: "1.5rem 1.75rem" }}>
+                <label style={labelStyle}>Section Heading</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <input
+                    className="au-input"
+                    type="text"
+                    value={content.affiliationsHeading}
+                    onChange={(e) => handleChange("affiliationsHeading", e.target.value)}
+                    placeholder="Enter Section Heading"
+                    style={{ ...inputStyle, maxWidth: "420px", fontStyle: content.affiliationsHeadingItalic ? "italic" : "normal" }}
+                  />
+                  <ItalicToggle active={!!content.affiliationsHeadingItalic} onToggle={() => handleChange("affiliationsHeadingItalic", !content.affiliationsHeadingItalic)} />
+                </div>
+                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "6px" }}>Leave blank to keep the default "Affiliation & Certification" heading.</p>
+                <HeadingStyleField
+                  color={content.affiliationsHeadingColor} onColorChange={(val) => handleChange("affiliationsHeadingColor", val)}
+                  font={content.affiliationsHeadingFont} onFontChange={(val) => handleChange("affiliationsHeadingFont", val)}
+                />
+              </div>
+            </div>
+
+            {content.affiliations.length === 0 && (
+              <div style={{ ...cardStyle, padding: "2.5rem", textAlign: "center" }}>
+                <p style={{ fontSize: "13px", color: "#94a3b8" }}>No items yet — click "+ Add Item" above to add one (e.g. CBSE Affiliation, NCC).</p>
+              </div>
+            )}
+
+            {content.affiliations.map((item, i) => (
+              <div key={item.id} style={cardStyle}>
+                <div style={cardHeaderStyle}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: "32px", height: "32px", background: "linear-gradient(135deg,#78350f,#f59e0b)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: "13px", fontWeight: 700 }}>
+                      {i + 1}
+                    </div>
+                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Item {i + 1}</p>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <ReorderButtons index={i} length={content.affiliations.length} onMove={moveAffiliation} vertical={false} />
+                    <button onClick={() => removeAffiliation(item.id)} style={removeButtonStyle}>Remove</button>
+                  </div>
+                </div>
+                <div style={{ padding: "1.5rem 1.75rem", display: "grid", gridTemplateColumns: "160px 1fr", gap: "1.75rem", alignItems: "start" }}>
+                  <CropImageBox
+                    label="Image"
+                    value={item.image}
+                    uploadKey={`affiliation-${item.id}`}
+                    aspectHint="Square crop works best (logo/badge/certificate)"
+                    onFileSelected={(file) => setCropTarget({ mode: "affiliation", id: item.id, src: URL.createObjectURL(file) })}
+                    onRemove={() => updateAffiliation(item.id, "image", "")}
+                    previewAspect="1/1"
+                    previewMaxWidth="160px"
+                  />
+                  <div>
+                    <label style={labelStyle}>Heading</label>
+                    <input
+                      className="au-input"
+                      type="text"
+                      value={item.heading}
+                      onChange={(e) => updateAffiliation(item.id, "heading", e.target.value)}
+                      placeholder="Enter Heading"
+                      style={inputStyle}
+                    />
+                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>Examples: CBSE Affiliation, NCC, ISO Certified</p>
+                    <label style={{ ...labelStyle, marginTop: "1rem" }}>Link URL (optional)</label>
+                    <input
+                      className="au-input"
+                      type="text"
+                      value={item.link || ""}
+                      onChange={(e) => updateAffiliation(item.id, "link", e.target.value)}
+                      placeholder="Enter Link URL"
+                      style={inputStyle}
+                    />
+                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>e.g. the certifying board's website — makes the card clickable on your site.</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
       </div>
 
       {cropTarget && (
         <ImageCropModal
           imageSrc={cropTarget.src}
           aspect={CROP_ASPECTS[cropTarget.mode]}
-          onCancel={() => setCropTarget(null)}
+          onCancel={() => { setCropTarget(null); setGalleryQueue([]); }}
           onCropComplete={onCropConfirmed}
         />
       )}

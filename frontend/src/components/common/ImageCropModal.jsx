@@ -4,7 +4,11 @@ import 'react-image-crop/dist/ReactCrop.css';
 
 // aspect = width/height ratio for the crop box, e.g. 16/9 for banners, 1 for square.
 // Pass aspect={null} to allow free-form cropping (no fixed ratio).
-const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete }) => {
+// accent/accentLight = confirm-button gradient colors, so callers can match their own theme
+// (e.g. Super Admin's indigo/violet vs. School Admin's default pink).
+// outputFormat = 'image/jpeg' (default, smaller files) or 'image/png' — use png for logos/anything
+// with transparency, since exporting a transparent PNG as JPEG flattens the alpha to black.
+const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete, accent = '#8b2252', accentLight = '#c9687e', confirmTextColor = '#fff', outputFormat = 'image/jpeg' }) => {
     const [crop, setCrop] = useState();
     const [completedCrop, setCompletedCrop] = useState();
     const imgRef = useRef(null);
@@ -47,12 +51,13 @@ const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete })
             canvas.height
         );
 
+        const ext = outputFormat === 'image/png' ? 'png' : 'jpg';
         return new Promise((resolve) => {
             canvas.toBlob((blob) => {
                 if (!blob) { resolve(null); return; }
-                const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' });
+                const file = new File([blob], `cropped-image.${ext}`, { type: outputFormat });
                 resolve(file);
-            }, 'image/jpeg', 0.92);
+            }, outputFormat, 0.92);
         });
     };
 
@@ -104,8 +109,9 @@ const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete })
                         Cancel
                     </button>
                     <button onClick={handleConfirm}
-                        style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#8b2252,#c9687e)', color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(139,34,82,0.3)' }}>
-                        ✓ Use This Crop
+                        style={{ padding: '10px 24px', background: `linear-gradient(135deg,${accent},${accentLight})`, color: confirmTextColor, border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${accent}4d`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Use This Crop
                     </button>
                 </div>
             </div>

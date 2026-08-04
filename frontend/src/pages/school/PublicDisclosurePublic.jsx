@@ -4,7 +4,9 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
+import { getFontFamily } from "../../constants/fonts";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -28,10 +30,6 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-// Fixed palette matching the reference site closely, independent of school theme —
-// the salmon-pink header + indigo heading look is specifically what was asked for.
-const PD_HEADER = '#dd8c8c';
-const PD_STRIPE = '#fdf1f1';
 const PD_HEADING = '#1e1b4b';
 
 const IconPdf = ({ size = 16, color = '#ffffff' }) => (
@@ -42,7 +40,7 @@ const IconPdf = ({ size = 16, color = '#ffffff' }) => (
 );
 
 // ── A single category — letter + name heading, then a styled table ──
-const CategoryTable = ({ category, letter }) => {
+const CategoryTable = ({ category, tc, bc }) => {
     const rows = category.type === 'info'
         ? (category.rows || []).filter(r => r.label)
         : (category.rows || []).filter(r => r.label && (r.pdfUrl || r.linkUrl || r.description));
@@ -55,18 +53,18 @@ const CategoryTable = ({ category, letter }) => {
                 fontSize: 'clamp(22px,2.6vw,28px)', fontWeight: 800, color: PD_HEADING,
                 letterSpacing: '-0.3px', marginBottom: '1.25rem'
             }}>
-                {letter}. {(category.name || 'Untitled').toUpperCase()}
+                {(category.name || 'Untitled').toUpperCase()}
             </h2>
 
-            <div style={{ borderRadius: '10px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
+            <div style={{ borderRadius: '4px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.06)', border: '1.5px solid #94a3b8' }}>
                 {/* Header row */}
                 <div style={{
                     display: 'grid',
                     gridTemplateColumns: category.type === 'info' ? '70px 1.6fr 1.6fr' : '70px 2fr 1.4fr',
-                    background: PD_HEADER
+                    background: tc.primary
                 }}>
-                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>S.No.</span>
-                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
+                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.22)' }}>S.No.</span>
+                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.22)' }}>
                         {category.type === 'info' ? 'Information' : 'Documents/ Information'}
                     </span>
                     <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
@@ -79,11 +77,11 @@ const CategoryTable = ({ category, letter }) => {
                     <div key={row.id} style={{
                         display: 'grid',
                         gridTemplateColumns: category.type === 'info' ? '70px 1.6fr 1.6fr' : '70px 2fr 1.4fr',
-                        background: i % 2 === 0 ? PD_STRIPE : '#ffffff',
-                        borderTop: '1px solid #f8eaea'
+                        background: i % 2 === 0 ? tc.light : bc.card,
+                        borderTop: '1px solid #cbd5e1'
                     }}>
-                        <span style={{ padding: '16px', fontSize: '13.5px', color: '#0f172a', fontWeight: 600 }}>{i + 1}</span>
-                        <span style={{ padding: '16px', fontSize: '13.5px', color: '#1e293b', fontWeight: 600, lineHeight: 1.6 }}>{row.label}</span>
+                        <span style={{ padding: '16px', fontSize: '13.5px', color: '#0f172a', fontWeight: 600, borderRight: '1px solid #cbd5e1' }}>{i + 1}</span>
+                        <span style={{ padding: '16px', fontSize: '13.5px', color: '#1e293b', fontWeight: 600, lineHeight: 1.6, borderRight: '1px solid #cbd5e1' }}>{row.label}</span>
                         {category.type === 'info' ? (
                             <span style={{ padding: '16px', fontSize: '13.5px', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
                                 {row.details || '—'}
@@ -100,7 +98,7 @@ const CategoryTable = ({ category, letter }) => {
                                     <a href={row.linkUrl} target="_blank" rel="noopener noreferrer"
                                         style={{
                                             display: 'inline-flex', alignItems: 'center', gap: '6px', width: 'fit-content',
-                                            padding: '6px 14px', background: PD_HEADER, color: '#ffffff', borderRadius: '20px',
+                                            padding: '6px 14px', background: tc.primary, color: '#ffffff', borderRadius: '20px',
                                             fontSize: '12px', fontWeight: 700, textDecoration: 'none', letterSpacing: '0.02em',
                                         }}>
                                         Click Here
@@ -180,16 +178,10 @@ const PublicDisclosurePublic = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Public Disclosure page not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                ← Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'disclosure')) return <NotPublished tc={tc} slug={slug} label="Mandatory Public Disclosure" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Mandatory Public Disclosure" />;
 
     const categories = content.categories || [];
 
@@ -201,7 +193,7 @@ const PublicDisclosurePublic = () => {
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes pulseBtn { 0%,100% { box-shadow: 0 8px 24px rgba(220,38,38,0.35); } 50% { box-shadow: 0 12px 32px rgba(220,38,38,0.5); } }
-                body { background: #ffffff; }
+                body { background: ${bc.surface}; }
                 .pd-cta-btn { transition: transform 0.2s ease; animation: pulseBtn 2.5s ease-in-out infinite; }
                 .pd-cta-btn:hover { transform: translateY(-3px); }
                 .rte-content p { margin-bottom: 0.8em; }
@@ -213,37 +205,39 @@ const PublicDisclosurePublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                .rte-content .ql-font-inter { font-family: 'Inter', system-ui, sans-serif; }
+                .rte-content .ql-font-poppins { font-family: 'Poppins', sans-serif; }
+                .rte-content .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+                .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+                .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
+                .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="disclosure" />
 
-                {/* ── Banner ── */}
-                <div style={{ height: '55vh', position: 'relative', overflow: 'hidden' }}>
-                    {content.banner ? (
-                        <img src={content.banner} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.dark},${tc.primary})` }}></div>
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.42)' }}></div>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 2rem' }}>
-                        <div>
-                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '16px' }}>{school.name}</p>
-                            <h1 style={{ fontSize: 'clamp(36px,5.5vw,68px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, color: '#ffffff', textShadow: '0 4px 30px rgba(0,0,0,0.4)', fontStyle: content.headingItalic ? 'italic' : 'normal' }}>
-                                {content.heading || 'Public Disclosure'}
-                            </h1>
-                        </div>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 style={{ fontFamily: content.headingFont ? getFontFamily(content.headingFont) : "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: content.headingColor || '#ffffff', letterSpacing: '-1px', marginBottom: '10px', fontStyle: content.headingItalic ? 'italic' : 'normal' }}>
+                            {content.heading || 'Mandatory Public Disclosure'}
+                        </h1>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
                 </div>
 
                 {/* ── Description ── */}
                 {content.description && (
-                    <div style={{ padding: '3.5rem 3rem 0' }}>
+                    <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 0' }}>
                         <Reveal>
                             <div className="rte-content" style={{ maxWidth: '820px', margin: '0 auto', fontSize: '15px', color: '#475569', lineHeight: 1.9, textAlign: 'center' }}
                                 dangerouslySetInnerHTML={{ __html: content.description }} />
@@ -252,20 +246,20 @@ const PublicDisclosurePublic = () => {
                 )}
 
                 {/* ── Category Tables ── */}
-                <div style={{ padding: '3.5rem 3rem 2rem' }}>
+                <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 2rem' }}>
                     <div style={{ maxWidth: '980px', margin: '0 auto' }}>
-                        {categories.map((cat, i) => (
-                            <CategoryTable key={cat.id} category={cat} letter={String.fromCharCode(65 + i)} />
+                        {categories.map((cat) => (
+                            <CategoryTable key={cat.id} category={cat} tc={tc} bc={bc} />
                         ))}
                     </div>
                 </div>
 
                 {/* ── Standalone Mandatory Disclosure PDF button ── */}
                 {content.disclosurePdf?.pdfUrl && (
-                    <div style={{ padding: '2rem 3rem 6rem', textAlign: 'center' }}>
+                    <div style={{ padding: '2rem clamp(1.25rem,6vw,3rem) 6rem', textAlign: 'center' }}>
                         <Reveal>
                             <h2 style={{ fontSize: 'clamp(20px,2.4vw,26px)', fontWeight: 800, color: PD_HEADING, marginBottom: '1.5rem' }}>
-                                {String.fromCharCode(65 + categories.length)}. {(content.disclosurePdf.label || 'Mandatory Public Disclosure').toUpperCase()}
+                                {(content.disclosurePdf.label || 'Mandatory Public Disclosure').toUpperCase()}
                             </h2>
                             <a href={content.disclosurePdf.pdfUrl} target="_blank" rel="noopener noreferrer" className="pd-cta-btn"
                                 style={{
@@ -280,16 +274,6 @@ const PublicDisclosurePublic = () => {
                         </Reveal>
                     </div>
                 )}
-
-                {/* ── Footer CTA ── */}
-                <div style={{ padding: '5rem', background: tc.light, textAlign: 'center' }}>
-                    <Reveal>
-                        <button onClick={() => navigate(`/school/${slug}`)}
-                            style={{ padding: '14px 36px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 10px 30px ${tc.primary}30`, letterSpacing: '0.05em' }}>
-                            ← Back to Home
-                        </button>
-                    </Reveal>
-                </div>
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

@@ -64,7 +64,7 @@ const togglePublishService = async (schoolId, moduleKey) => {
 // ── Get Public Module Content ────────────────────────
 const getPublicModuleContentService = async (schoolId, moduleKey) => {
     const [rows] = await pool.query(
-        `SELECT content FROM tbl_module_content 
+        `SELECT content FROM tbl_module_content
          WHERE school_id = ? AND module_key = ? AND is_published = 1`,
         [schoolId, moduleKey]
     );
@@ -76,9 +76,20 @@ const getPublicModuleContentService = async (schoolId, moduleKey) => {
         : rows[0].content;
 };
 
+// ── Get Published Module Keys — used by the public site to only show nav/footer
+//    links for modules the school has actually published (not just enabled) ──
+const getPublishedModuleKeysService = async (schoolId) => {
+    const [rows] = await pool.query(
+        `SELECT module_key FROM tbl_module_content WHERE school_id = ? AND is_published = 1`,
+        [schoolId]
+    );
+    return rows.map(r => r.module_key);
+};
+
 module.exports = {
     getModuleContentService,
     saveModuleContentService,
     togglePublishService,
     getPublicModuleContentService,
+    getPublishedModuleKeysService,
 };

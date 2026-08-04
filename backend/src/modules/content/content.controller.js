@@ -3,6 +3,7 @@ const {
     saveModuleContentService,
     togglePublishService,
     getPublicModuleContentService,
+    getPublishedModuleKeysService,
 } = require('./content.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
 
@@ -55,6 +56,15 @@ const getPublicModuleContent = async (req, res) => {
     }
 };
 
+const getPublishedModules = async (req, res) => {
+    try {
+        const moduleKeys = await getPublishedModuleKeysService(req.params.schoolId);
+        return sendSuccess(res, 'Published modules fetched', moduleKeys);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 const uploadContentImageHandler = async (req, res) => {
     try {
         if (!req.file) {
@@ -93,6 +103,7 @@ module.exports = {
     saveModuleContent,
     togglePublish,
     getPublicModuleContent,
+    getPublishedModules,
     uploadContentImageHandler,
     uploadPdfHandler,
     uploadVideoHandler,

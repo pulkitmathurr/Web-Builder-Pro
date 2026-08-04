@@ -3,8 +3,12 @@ import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadCont
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
+import HeadingStyleField from '../../../components/common/HeadingStyleField';
+import ReorderButtons from '../../../components/common/ReorderButtons';
 import useSchoolStore from '../../../store/schoolStore';
+import { moveItem } from '../../../utils/reorder';
 import toast from 'react-hot-toast';
+import { COLLAGE_LAYOUTS, SHAPE_LABELS, DEFAULT_COLLAGE_LAYOUT } from '../../../utils/sportsCollage';
 
 const hexToRgba = (hex, alpha) => {
     const h = hex.replace('#', '');
@@ -19,25 +23,27 @@ const PAGES = [
     { key: 'awards', label: 'Sports Awards & Achievements' },
 ];
 
-const defaultPageData = { banner: '', heading: '', description: '', images: [] };
+const defaultPageData = { heading: '', description: '', images: [] };
 
 const defaultContent = {
-    sportsAt: { ...defaultPageData },
-    sportsOffered: { banner: '', heading: '', description: '', offeredSports: [] },
-    sportingEvents: { banner: '', heading: '', description: '', events: [] },
-    awards: { banner: '', heading: '', description: '', images: [], certifications: [], proud: [], yearlyAwards: [] },
+    sportsAt: { ...defaultPageData, collageLayout: DEFAULT_COLLAGE_LAYOUT },
+    sportsOffered: { heading: '', description: '', offeredSports: [] },
+    sportingEvents: { heading: '', description: '', events: [] },
+    awards: { heading: '', description: '', images: [], certifications: [], proud: [], yearlyAwards: [] },
 };
 
 const Sports = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [activePage, setActivePage] = useState('sportsAt');
     const [uploading, setUploading] = useState({});
-    const [bannerCropSrc, setBannerCropSrc] = useState(null);
+    const [cropTarget, setCropTarget] = useState(null); // { mode: 'grid'|'sport'|'event'|'cert', field?, id?, src }
+    const [imageQueue, setImageQueue] = useState([]); // remaining files still waiting to be cropped, for whichever target is active
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -50,9 +56,11 @@ const Sports = () => {
                     if (k === 'sportingEvents') merged[k] = { ...defaultContent.sportingEvents, ...res.data.content[k] };
                     else if (k === 'sportsOffered') merged[k] = { ...defaultContent.sportsOffered, ...res.data.content[k] };
                     else if (k === 'awards') merged[k] = { ...defaultContent.awards, ...res.data.content[k] };
+                    else if (k === 'sportsAt') merged[k] = { ...defaultContent.sportsAt, ...res.data.content[k] };
                     else merged[k] = { ...defaultPageData, ...res.data.content[k] };
                 });
                 setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
             }
         } catch (e) {
@@ -71,6 +79,7 @@ const Sports = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('sports', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -104,29 +113,68 @@ const Sports = () => {
         setContent(prev => ({ ...prev, [activePage]: { ...prev[activePage], [field]: value } }));
     };
 
-    const uploadBanner = async (file) => {
-        setUploading(prev => ({ ...prev, banner: true }));
-        try {
-            const res = await uploadContentImageApi(file);
-            updateField('banner', res.data.url);
-            toast.success('Banner uploaded!');
-        } catch (e) { toast.error('Failed to upload'); }
-        finally { setUploading(prev => ({ ...prev, banner: false })); }
+    // Each file is cropped one at a time (freeform, adjustable from every side) before
+    // upload. Once confirmed, the next queued file automatically opens in the crop modal.
+    const startCropQueue = (files, target) => {
+        if (files.length === 0) return;
+        setImageQueue(files.slice(1));
+        setCropTarget({ ...target, src: URL.createObjectURL(files[0]) });
     };
 
-    const addImages = async (files, field = 'images') => {
-        setUploading(prev => ({ ...prev, [field]: true }));
+    const onCropConfirmed = async (croppedFile) => {
+        const target = cropTarget;
+        setCropTarget(null);
+        const key = target.mode === 'grid' ? target.field
+            : target.mode === 'collageSlot' ? `collage-${target.idx}`
+            : target.mode === 'sport' ? `sport-${target.id}`
+            : target.mode === 'event' ? `event-${target.id}`
+            : `cert-${target.id}`;
+        setUploading(prev => ({ ...prev, [key]: true }));
         try {
-            const urls = [];
-            for (const file of files) {
-                const res = await uploadContentImageApi(file);
-                urls.push(res.data.url);
+            const res = await uploadContentImageApi(croppedFile);
+            if (target.mode === 'grid') {
+                const current = content[activePage][target.field] || [];
+                updateField(target.field, [...current, res.data.url]);
+            } else if (target.mode === 'collageSlot') {
+                const current = [...(content[activePage].images || [])];
+                while (current.length <= target.idx) current.push('');
+                current[target.idx] = res.data.url;
+                updateField('images', current);
+            } else if (target.mode === 'sport') {
+                const list = content[activePage].offeredSports || [];
+                const i = list.findIndex(s => s.id === target.id);
+                if (i !== -1) {
+                    const updated = [...list];
+                    updated[i] = { ...updated[i], images: [...(updated[i].images || []), res.data.url] };
+                    updateField('offeredSports', updated);
+                }
+            } else if (target.mode === 'event') {
+                const list = content[activePage].events || [];
+                const i = list.findIndex(e => e.id === target.id);
+                if (i !== -1) {
+                    const updated = [...list];
+                    updated[i] = { ...updated[i], images: [...(updated[i].images || []), res.data.url] };
+                    updateField('events', updated);
+                }
+            } else if (target.mode === 'cert') {
+                const list = content[activePage].certifications || [];
+                const i = list.findIndex(c => c.id === target.id);
+                if (i !== -1) {
+                    const updated = [...list];
+                    updated[i] = { ...updated[i], image: res.data.url };
+                    updateField('certifications', updated);
+                }
             }
-            const current = content[activePage][field] || [];
-            updateField(field, [...current, ...urls]);
-            toast.success(`${urls.length} image(s) added!`);
-        } catch (e) { toast.error('Failed to upload'); }
-        finally { setUploading(prev => ({ ...prev, [field]: false })); }
+        } catch (e) {
+            toast.error('Failed to upload');
+        } finally {
+            setUploading(prev => ({ ...prev, [key]: false }));
+            if (target.mode !== 'cert' && imageQueue.length > 0) {
+                const [next, ...rest] = imageQueue;
+                setImageQueue(rest);
+                setCropTarget({ ...target, src: URL.createObjectURL(next) });
+            }
+        }
     };
 
     const removeImage = (idx, field = 'images') => {
@@ -134,39 +182,25 @@ const Sports = () => {
         updateField(field, current.filter((_, i) => i !== idx));
     };
 
+    // Collage slots are addressed by fixed position (slot 3's photo must stay slot 3's
+    // photo) so clearing one blanks it in place instead of shifting the others up.
+    const clearCollageSlot = (idx) => {
+        const current = [...(content[activePage].images || [])];
+        if (idx < current.length) current[idx] = '';
+        updateField('images', current);
+    };
+
     const inputStyle = {
-        width: '100%', padding: '11px 14px', border: '0.5px solid #e2e8f0',
+        width: '100%', padding: '11px 14px', border: '1px solid #e5e9f0',
         borderRadius: '10px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border 0.2s, box-shadow 0.2s, background 0.2s',
     };
 
     const labelStyle = {
         display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b',
         marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
     };
-
-    const ImageUploadBox = ({ label, value, field, hint }) => (
-        <div>
-            <label style={labelStyle}>{label}</label>
-            <div onClick={() => document.getElementById(`upload-${field}`).click()}
-                style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: value ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: value ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: value ? '160px' : 'auto' }}>
-                {uploading[field] ? (
-                    <div style={{ padding: '2rem' }}><div style={{ width: '24px', height: '24px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div></div>
-                ) : value ? (
-                    <img src={value} alt="" style={{ width: '100%', height: '160px', objectFit: 'cover', display: 'block' }} />
-                ) : (
-                    <p style={{ fontSize: '13px', color: '#64748b' }}>🖼️ {hint || 'Click to upload'}</p>
-                )}
-            </div>
-            <input id={`upload-${field}`} type="file" accept="image/*"
-                onChange={e => {
-                    const f = e.target.files[0];
-                    e.target.value = '';
-                    if (f) setBannerCropSrc(URL.createObjectURL(f));
-                }}
-                style={{ display: 'none' }} />
-        </div>
-    );
 
     const ImageGrid = ({ field = 'images', label = 'Images' }) => (
         <div>
@@ -182,13 +216,116 @@ const Sports = () => {
             </div>
             <div onClick={() => document.getElementById(`grid-${field}`).click()}
                 style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-                {uploading[field] ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add images (multiple allowed)</p>}
+                {uploading[field] ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : (
+                    <>
+                        <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add images (multiple allowed)</p>
+                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.</p>
+                    </>
+                )}
             </div>
             <input id={`grid-${field}`} type="file" accept="image/*" multiple
-                onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) addImages(files, field); }}
+                onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startCropQueue(files, { mode: 'grid', field }); }}
                 style={{ display: 'none' }} />
         </div>
     );
+
+    // ── Sports at School collage builder — lets the admin pick the 4/5/7-photo
+    // layout and upload straight into a specific slot, so they always know whether
+    // that slot renders vertical (tall) or horizontal (wide) before cropping. ──
+    const CollageBuilder = () => {
+        const images = content.sportsAt.images || [];
+        const layout = content.sportsAt.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+        const layoutDef = COLLAGE_LAYOUTS[layout];
+        const slots = layoutDef.slots;
+        const extraImages = images.slice(slots.length);
+
+        const removeExtraImage = (extraIdx) => {
+            const current = [...images];
+            current.splice(slots.length + extraIdx, 1);
+            updateField('images', current);
+        };
+
+        return (
+            <div>
+                <label style={labelStyle}>Collage Layout</label>
+                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '10px' }}>
+                    Pick how many photos make up the collage, then click a slot to upload the photo for that exact spot — its shape tells you whether to keep it vertical or horizontal. You'll get a crop tool that's freely adjustable from every side (same as Infrastructure's photos). JPG, PNG, WEBP · Max 5MB each.
+                </p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    {Object.keys(COLLAGE_LAYOUTS).map(n => (
+                        <button key={n} onClick={() => updateField('collageLayout', n)}
+                            style={{ padding: '8px 18px', borderRadius: '8px', border: layout === n ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', background: layout === n ? tc.light : '#ffffff', color: layout === n ? tc.primary : '#64748b', fontSize: '12.5px', fontWeight: layout === n ? 600 : 500, cursor: 'pointer' }}>
+                            {n} Photos
+                        </button>
+                    ))}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows},110px)` }), gap: '10px', marginBottom: '1.25rem' }}>
+                    {slots.map((slot, i) => {
+                        const url = images[i];
+                        const uploadKey = `collage-${i}`;
+                        return (
+                            <div key={i}
+                                onClick={() => document.getElementById(`collage-slot-${i}`).click()}
+                                style={{ ...(layoutDef.square ? { aspectRatio: '1' } : { gridColumn: slot.gridColumn, gridRow: slot.gridRow }), position: 'relative', borderRadius: '10px', overflow: 'hidden', border: url ? '1px solid #e2e8f0' : '1.5px dashed #cbd5e1', background: url ? 'transparent' : '#fafafa', cursor: 'pointer' }}>
+                                {uploading[uploadKey] ? (
+                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                    </div>
+                                ) : url ? (
+                                    <>
+                                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                        <div style={{ position: 'absolute', top: '6px', left: '6px', padding: '2px 8px', background: 'rgba(0,0,0,0.55)', borderRadius: '6px', fontSize: '10px', color: '#fff', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</div>
+                                        <button onClick={e => { e.stopPropagation(); clearCollageSlot(i); }}
+                                            style={{ position: 'absolute', top: '6px', right: '6px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                    </>
+                                ) : (
+                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px', textAlign: 'center' }}>
+                                        <span style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</span>
+                                        <span style={{ fontSize: '10px', color: '#cbd5e1' }}>+ Upload</span>
+                                    </div>
+                                )}
+                                <input id={`collage-slot-${i}`} type="file" accept="image/*" onClick={e => e.stopPropagation()}
+                                    onChange={e => {
+                                        const f = e.target.files[0];
+                                        e.target.value = '';
+                                        if (f) startCropQueue([f], { mode: 'collageSlot', idx: i, aspect: null });
+                                    }}
+                                    style={{ display: 'none' }} />
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Extra/overflow photos only apply to the full 7-photo layout — the 4 and 5
+                    layouts are meant to stay a clean, fixed-size collage with nothing extra. */}
+                {layout === '7' && (
+                    <>
+                        <label style={labelStyle}>Extra Photos (optional)</label>
+                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '10px' }}>Shown in a plain row below the collage — freely cropped, no fixed shape. JPG, PNG, WEBP · Max 5MB each.</p>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
+                            {extraImages.map((img, i) => (
+                                <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
+                                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <button onClick={() => removeExtraImage(i)}
+                                        style={{ position: 'absolute', top: '6px', right: '6px', width: '24px', height: '24px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                </div>
+                            ))}
+                        </div>
+                        <div onClick={() => document.getElementById('collage-extra-input').click()}
+                            style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
+                            {uploading.images ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add extra images (multiple allowed)</p>}
+                        </div>
+                        <input id="collage-extra-input" type="file" accept="image/*" multiple
+                            onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startCropQueue(files, { mode: 'grid', field: 'images' }); }}
+                            style={{ display: 'none' }} />
+                    </>
+                )}
+            </div>
+        );
+    };
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -204,16 +341,25 @@ const Sports = () => {
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .sports-section { animation: fadeInUp 0.35s ease forwards; }
+                @media (max-width: 560px) {
+                    .sports-award-row { grid-template-columns: 1fr !important; }
+                }
+                .sports-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .sports-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .sports-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="sports-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                        <div className="sports-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Sports</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Sports</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
@@ -225,6 +371,25 @@ const Sports = () => {
                             <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
                         </div>
                     </div>
+                </div>
+
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.5rem' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
                 </div>
 
                 {/* Page Tabs */}
@@ -240,21 +405,25 @@ const Sports = () => {
                 {/* ── Sports at School (simple page) ── */}
                 {activePage === 'sportsAt' && (
                     <div className="sports-section" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                        <ImageUploadBox label="Banner Image" value={pageData.banner} field="banner" hint="Recommended: 1920×1080" />
                         <div>
                             <label style={labelStyle}>Heading</label>
                             <div style={{ display: 'flex', gap: '8px' }}>
-                                <input type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
-                                    placeholder="e.g. Sports at Our School" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
+                                <input className="sports-input" type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
+                                    placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
                                 <ItalicToggle active={!!pageData.headingItalic} onToggle={() => updateField('headingItalic', !pageData.headingItalic)} />
                             </div>
+                            <HeadingStyleField
+                                color={pageData.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                font={pageData.headingFont} onFontChange={val => updateField('headingFont', val)}
+                            />
                         </div>
                         <div>
                             <label style={labelStyle}>Description</label>
                             <RichTextEditor value={pageData.description} onChange={val => updateField('description', val)}
-                                placeholder="Describe this..." minHeight="150px" />
+                                placeholder="Describe this..." minHeight="150px"
+                                maxWidth="1170px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
                         </div>
-                        <ImageGrid field="images" label="Gallery Images — collage completes at 7, then every +4 (7, 11, 15...)" />
+                        <CollageBuilder />
                     </div>
                 )}
 
@@ -262,46 +431,42 @@ const Sports = () => {
                 {activePage === 'sportsOffered' && (
                     <div className="sports-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                            <ImageUploadBox label="Banner Image" value={pageData.banner} field="banner" hint="Recommended: 1920×1080" />
-                            <div>
+                                <div>
                                 <label style={labelStyle}>Heading</label>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
-                                        placeholder="e.g. Sports Offered" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
+                                    <input className="sports-input" type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
+                                        placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
                                     <ItalicToggle active={!!pageData.headingItalic} onToggle={() => updateField('headingItalic', !pageData.headingItalic)} />
                                 </div>
+                                <HeadingStyleField
+                                    color={pageData.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                    font={pageData.headingFont} onFontChange={val => updateField('headingFont', val)}
+                                />
                             </div>
                             <div>
                                 <label style={labelStyle}>Description</label>
                                 <RichTextEditor value={pageData.description} onChange={val => updateField('description', val)}
-                                    placeholder="Overview of the sports offered at our school..." minHeight="120px" />
+                                    placeholder="Overview of the sports offered at our school..." minHeight="120px"
+                                    maxWidth="1170px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
                             </div>
                         </div>
 
+                        <button onClick={() => updateField('offeredSports', [{ id: `sport-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.offeredSports || [])])}
+                            style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                            + Add Sport
+                        </button>
+
                         {/* Offered sports list */}
                         {(pageData.offeredSports || []).map((sp, idx) => (
-                            <SportItemCard key={sp.id} sport={sp} index={idx}
+                            <SportItemCard key={sp.id} sport={sp} index={idx} length={(pageData.offeredSports || []).length}
+                                onMove={(i, dir) => updateField('offeredSports', moveItem(pageData.offeredSports, i, dir))}
                                 onUpdate={(field, val) => {
                                     const updated = [...pageData.offeredSports];
                                     updated[idx] = { ...updated[idx], [field]: val };
                                     updateField('offeredSports', updated);
                                 }}
                                 onRemove={() => updateField('offeredSports', pageData.offeredSports.filter((_, i) => i !== idx))}
-                                onAddImages={async (files) => {
-                                    setUploading(prev => ({ ...prev, [`sport-${sp.id}`]: true }));
-                                    try {
-                                        const urls = [];
-                                        for (const file of files) {
-                                            const res = await uploadContentImageApi(file);
-                                            urls.push(res.data.url);
-                                        }
-                                        const updated = [...pageData.offeredSports];
-                                        updated[idx] = { ...updated[idx], images: [...(updated[idx].images || []), ...urls] };
-                                        updateField('offeredSports', updated);
-                                        toast.success(`${urls.length} image(s) added!`);
-                                    } catch (e) { toast.error('Failed to upload'); }
-                                    finally { setUploading(prev => ({ ...prev, [`sport-${sp.id}`]: false })); }
-                                }}
+                                onAddImages={(files) => startCropQueue(files, { mode: 'sport', id: sp.id })}
                                 onRemoveImage={(imgIdx) => {
                                     const updated = [...pageData.offeredSports];
                                     updated[idx] = { ...updated[idx], images: updated[idx].images.filter((_, i) => i !== imgIdx) };
@@ -310,11 +475,6 @@ const Sports = () => {
                                 uploading={uploading[`sport-${sp.id}`]}
                             />
                         ))}
-
-                        <button onClick={() => updateField('offeredSports', [...(pageData.offeredSports || []), { id: `sport-${Date.now()}`, heading: '', description: '', images: [] }])}
-                            style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                            + Add Sport
-                        </button>
                     </div>
                 )}
 
@@ -322,46 +482,42 @@ const Sports = () => {
                 {activePage === 'sportingEvents' && (
                     <div className="sports-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                            <ImageUploadBox label="Banner Image" value={pageData.banner} field="banner" hint="Recommended: 1920×1080" />
-                            <div>
+                                <div>
                                 <label style={labelStyle}>Heading</label>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
-                                        placeholder="e.g. Sporting Events" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
+                                    <input className="sports-input" type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
+                                        placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
                                     <ItalicToggle active={!!pageData.headingItalic} onToggle={() => updateField('headingItalic', !pageData.headingItalic)} />
                                 </div>
+                                <HeadingStyleField
+                                    color={pageData.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                    font={pageData.headingFont} onFontChange={val => updateField('headingFont', val)}
+                                />
                             </div>
                             <div>
                                 <label style={labelStyle}>Description</label>
                                 <RichTextEditor value={pageData.description} onChange={val => updateField('description', val)}
-                                    placeholder="Overview of events organized throughout the year..." minHeight="120px" />
+                                    placeholder="Overview of events organized throughout the year..." minHeight="120px"
+                                    maxWidth="1170px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
                             </div>
                         </div>
 
+                        <button onClick={() => updateField('events', [{ id: `ev-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.events || [])])}
+                            style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                            + Add Sporting Event
+                        </button>
+
                         {/* Events list */}
                         {(pageData.events || []).map((ev, idx) => (
-                            <EventCard key={ev.id} event={ev} index={idx}
+                            <EventCard key={ev.id} event={ev} index={idx} length={(pageData.events || []).length}
+                                onMove={(i, dir) => updateField('events', moveItem(pageData.events, i, dir))}
                                 onUpdate={(field, val) => {
                                     const updated = [...pageData.events];
                                     updated[idx] = { ...updated[idx], [field]: val };
                                     updateField('events', updated);
                                 }}
                                 onRemove={() => updateField('events', pageData.events.filter((_, i) => i !== idx))}
-                                onAddImages={async (files) => {
-                                    setUploading(prev => ({ ...prev, [`event-${ev.id}`]: true }));
-                                    try {
-                                        const urls = [];
-                                        for (const file of files) {
-                                            const res = await uploadContentImageApi(file);
-                                            urls.push(res.data.url);
-                                        }
-                                        const updated = [...pageData.events];
-                                        updated[idx] = { ...updated[idx], images: [...(updated[idx].images || []), ...urls] };
-                                        updateField('events', updated);
-                                        toast.success(`${urls.length} image(s) added!`);
-                                    } catch (e) { toast.error('Failed to upload'); }
-                                    finally { setUploading(prev => ({ ...prev, [`event-${ev.id}`]: false })); }
-                                }}
+                                onAddImages={(files) => startCropQueue(files, { mode: 'event', id: ev.id })}
                                 onRemoveImage={(imgIdx) => {
                                     const updated = [...pageData.events];
                                     updated[idx] = { ...updated[idx], images: updated[idx].images.filter((_, i) => i !== imgIdx) };
@@ -370,11 +526,6 @@ const Sports = () => {
                                 uploading={uploading[`event-${ev.id}`]}
                             />
                         ))}
-
-                        <button onClick={() => updateField('events', [...(pageData.events || []), { id: `ev-${Date.now()}`, heading: '', description: '', images: [] }])}
-                            style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                            + Add Sporting Event
-                        </button>
                     </div>
                 )}
 
@@ -382,19 +533,23 @@ const Sports = () => {
                 {activePage === 'awards' && (
                     <div className="sports-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                            <ImageUploadBox label="Banner Image" value={pageData.banner} field="banner" hint="Recommended: 1920×1080" />
-                            <div>
+                                <div>
                                 <label style={labelStyle}>Heading</label>
                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                    <input type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
-                                        placeholder="e.g. Sports Awards & Achievements" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
+                                    <input className="sports-input" type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
+                                        placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
                                     <ItalicToggle active={!!pageData.headingItalic} onToggle={() => updateField('headingItalic', !pageData.headingItalic)} />
                                 </div>
+                                <HeadingStyleField
+                                    color={pageData.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                    font={pageData.headingFont} onFontChange={val => updateField('headingFont', val)}
+                                />
                             </div>
                             <div>
                                 <label style={labelStyle}>Description</label>
                                 <RichTextEditor value={pageData.description} onChange={val => updateField('description', val)}
-                                    placeholder="Overview of our sports achievements..." minHeight="120px" />
+                                    placeholder="Overview of our sports achievements..." minHeight="120px"
+                                    maxWidth="1170px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
                             </div>
                             <ImageGrid field="images" label="Photo Carousel Images" />
                         </div>
@@ -402,43 +557,40 @@ const Sports = () => {
                         {/* Certifications */}
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Certifications</p>
-                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px', marginBottom: '1rem' }}>
+                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB each.</p>
+                            <button onClick={() => updateField('certifications', [{ id: `cert-${Date.now()}`, image: '', title: '', info: '' }, ...(pageData.certifications || [])])}
+                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                                + Add Certification
+                            </button>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
                                 {(pageData.certifications || []).map((cert, i) => (
-                                    <CertCard key={cert.id} cert={cert}
+                                    <CertCard key={cert.id} cert={cert} index={i} length={(pageData.certifications || []).length}
+                                        onMove={(idx, dir) => updateField('certifications', moveItem(pageData.certifications, idx, dir))}
                                         onUpdate={(field, val) => {
                                             const updated = [...pageData.certifications];
                                             updated[i] = { ...updated[i], [field]: val };
                                             updateField('certifications', updated);
                                         }}
                                         onRemove={() => updateField('certifications', pageData.certifications.filter((_, idx) => idx !== i))}
-                                        onUpload={async (file) => {
-                                            setUploading(prev => ({ ...prev, [`cert-${cert.id}`]: true }));
-                                            try {
-                                                const res = await uploadContentImageApi(file);
-                                                const updated = [...pageData.certifications];
-                                                updated[i] = { ...updated[i], image: res.data.url };
-                                                updateField('certifications', updated);
-                                            } catch (e) { toast.error('Failed'); }
-                                            finally { setUploading(prev => ({ ...prev, [`cert-${cert.id}`]: false })); }
-                                        }}
+                                        onUpload={(file) => startCropQueue([file], { mode: 'cert', id: cert.id })}
                                         uploading={uploading[`cert-${cert.id}`]}
                                     />
                                 ))}
                             </div>
-                            <button onClick={() => updateField('certifications', [...(pageData.certifications || []), { id: `cert-${Date.now()}`, image: '', title: '', info: '' }])}
-                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                                + Add Certification
-                            </button>
                         </div>
 
                         {/* Making Us Proud */}
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Making Us Proud</p>
-                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Student photos with achievement details</p>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px', marginBottom: '1rem' }}>
+                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Student photos with achievement details. Square photo works best · JPG, PNG, WEBP · Max 5MB each.</p>
+                            <button onClick={() => updateField('proud', [{ id: `proud-${Date.now()}`, photo: '', name: '', achievement: '' }, ...(pageData.proud || [])])}
+                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                                + Add Student
+                            </button>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
                                 {(pageData.proud || []).map((stu, i) => (
-                                    <ProudCard key={stu.id} student={stu}
+                                    <ProudCard key={stu.id} student={stu} index={i} length={(pageData.proud || []).length}
+                                        onMove={(idx, dir) => updateField('proud', moveItem(pageData.proud, idx, dir))}
                                         onUpdate={(field, val) => {
                                             const updated = [...pageData.proud];
                                             updated[i] = { ...updated[i], [field]: val };
@@ -459,16 +611,16 @@ const Sports = () => {
                                     />
                                 ))}
                             </div>
-                            <button onClick={() => updateField('proud', [...(pageData.proud || []), { id: `proud-${Date.now()}`, photo: '', name: '', achievement: '' }])}
-                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                                + Add Student
-                            </button>
                         </div>
 
                         {/* Yearly Award PDFs */}
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Yearly Award PDFs</p>
                             <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Add a year and upload the award winners PDF — shown in sidebar, opens PDF on click</p>
+                            <button onClick={() => updateField('yearlyAwards', [...(pageData.yearlyAwards || []), { id: `yr-${Date.now()}`, year: '', pdfUrl: '' }])}
+                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                                + Add Year
+                            </button>
                             {(pageData.yearlyAwards || []).map((yr, i) => (
                                 <YearlyAwardRow key={yr.id} yearItem={yr}
                                     onUpdate={(field, val) => {
@@ -482,40 +634,18 @@ const Sports = () => {
                                     onUploadEnd={() => setUploading(prev => ({ ...prev, [`pdf-${yr.id}`]: false }))}
                                 />
                             ))}
-                            <button onClick={() => updateField('yearlyAwards', [...(pageData.yearlyAwards || []), { id: `yr-${Date.now()}`, year: '', pdfUrl: '' }])}
-                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                                + Add Year
-                            </button>
                         </div>
                     </div>
                 )}
 
-                {/* Bottom Save Bar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
-                </div>
             </div>
 
-            {bannerCropSrc && (
+            {cropTarget && (
                 <ImageCropModal
-                    imageSrc={bannerCropSrc}
-                    aspect={16 / 9}
-                    onCancel={() => setBannerCropSrc(null)}
-                    onCropComplete={(croppedFile) => { setBannerCropSrc(null); uploadBanner(croppedFile); }}
+                    imageSrc={cropTarget.src}
+                    aspect={cropTarget.aspect ?? null}
+                    onCancel={() => { setCropTarget(null); setImageQueue([]); }}
+                    onCropComplete={onCropConfirmed}
                 />
             )}
         </>
@@ -523,28 +653,33 @@ const Sports = () => {
 };
 
 // ── Event Card Component (used for Sporting Events) ──
-const EventCard = ({ event, index, onUpdate, onRemove, onAddImages, onRemoveImage, uploading }) => {
+const EventCard = ({ event, index, length, onMove, onUpdate, onRemove, onAddImages, onRemoveImage, uploading }) => {
     const { tc } = useSchoolStore();
-    const inputStyle = { width: '100%', padding: '10px 13px', border: '0.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const inputStyle = { width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' };
 
     return (
         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>Event #{index + 1}</p>
-                <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
+                    <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
                     <label style={labelStyle}>Event Heading</label>
-                    <input type="text" value={event.heading} onChange={e => onUpdate('heading', e.target.value)} placeholder="e.g. Annual Sports Day 2024" style={inputStyle} />
+                    <input className="sports-input" type="text" value={event.heading} onChange={e => onUpdate('heading', e.target.value)} placeholder="Enter Event Heading" style={inputStyle} />
                 </div>
                 <div>
                     <label style={labelStyle}>Description</label>
-                    <RichTextEditor value={event.description} onChange={val => onUpdate('description', val)} placeholder="Describe this event..." minHeight="80px" />
+                    <RichTextEditor value={event.description} onChange={val => onUpdate('description', val)} placeholder="Describe this event..." minHeight="80px"
+                        maxWidth="734px" fontSize="14.5px" fontFamily="'Inter', system-ui, sans-serif" />
                 </div>
                 <div>
                     <label style={labelStyle}>Event Images (carousel)</label>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(event.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -567,28 +702,33 @@ const EventCard = ({ event, index, onUpdate, onRemove, onAddImages, onRemoveImag
 };
 
 // ── Sport Item Card Component (used for Sports Offered) — identical pattern to EventCard, relabeled ──
-const SportItemCard = ({ sport, index, onUpdate, onRemove, onAddImages, onRemoveImage, uploading }) => {
+const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAddImages, onRemoveImage, uploading }) => {
     const { tc } = useSchoolStore();
-    const inputStyle = { width: '100%', padding: '10px 13px', border: '0.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const inputStyle = { width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' };
 
     return (
         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>Sport #{index + 1}</p>
-                <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
+                    <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
                     <label style={labelStyle}>Sport Name</label>
-                    <input type="text" value={sport.heading} onChange={e => onUpdate('heading', e.target.value)} placeholder="e.g. Football, Basketball, Swimming" style={inputStyle} />
+                    <input className="sports-input" type="text" value={sport.heading} onChange={e => onUpdate('heading', e.target.value)} placeholder="Enter Heading" style={inputStyle} />
                 </div>
                 <div>
                     <label style={labelStyle}>Description</label>
-                    <RichTextEditor value={sport.description} onChange={val => onUpdate('description', val)} placeholder="Describe this sport, facilities, coaching, achievements..." minHeight="80px" />
+                    <RichTextEditor value={sport.description} onChange={val => onUpdate('description', val)} placeholder="Describe this sport, facilities, coaching, achievements..." minHeight="80px"
+                        maxWidth="734px" fontSize="14.5px" fontFamily="'Inter', system-ui, sans-serif" />
                 </div>
                 <div>
                     <label style={labelStyle}>Sport Images (carousel)</label>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(sport.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -611,9 +751,9 @@ const SportItemCard = ({ sport, index, onUpdate, onRemove, onAddImages, onRemove
 };
 
 // ── Certification Card ──
-const CertCard = ({ cert, onUpdate, onRemove, onUpload, uploading }) => {
+const CertCard = ({ cert, index, length, onMove, onUpdate, onRemove, onUpload, uploading }) => {
     const { tc } = useSchoolStore();
-    const inputStyle = { width: '100%', padding: '8px 10px', border: '0.5px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #e5e9f0', borderRadius: '8px', fontSize: '12px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     return (
         <div style={{ border: '0.5px solid #f1f5f9', borderRadius: '12px', overflow: 'hidden' }}>
             <div onClick={() => document.getElementById(`cert-img-${cert.id}`).click()}
@@ -625,17 +765,20 @@ const CertCard = ({ cert, onUpdate, onRemove, onUpload, uploading }) => {
             <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <input type="text" value={cert.title} onChange={e => onUpdate('title', e.target.value)} placeholder="Title" style={inputStyle} />
                 <input type="text" value={cert.info} onChange={e => onUpdate('info', e.target.value)} placeholder="Basic info" style={inputStyle} />
-                <button onClick={onRemove} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
+                    <button onClick={onRemove} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                </div>
             </div>
         </div>
     );
 };
 
 // ── Making Us Proud Card ──
-const ProudCard = ({ student, onUpdate, onRemove, onUpload, uploading }) => {
+const ProudCard = ({ student, index, length, onMove, onUpdate, onRemove, onUpload, uploading }) => {
     const { tc } = useSchoolStore();
     const [cropSrc, setCropSrc] = useState(null);
-    const inputStyle = { width: '100%', padding: '8px 10px', border: '0.5px solid #e2e8f0', borderRadius: '6px', fontSize: '12px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #e5e9f0', borderRadius: '8px', fontSize: '12px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     return (
         <div style={{ border: '0.5px solid #f1f5f9', borderRadius: '12px', overflow: 'hidden' }}>
             <div onClick={() => document.getElementById(`proud-img-${student.id}`).click()}
@@ -653,12 +796,15 @@ const ProudCard = ({ student, onUpdate, onRemove, onUpload, uploading }) => {
             <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <input type="text" value={student.name} onChange={e => onUpdate('name', e.target.value)} placeholder="Student Name" style={inputStyle} />
                 <input type="text" value={student.achievement} onChange={e => onUpdate('achievement', e.target.value)} placeholder="Achievement" style={inputStyle} />
-                <button onClick={onRemove} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
+                    <button onClick={onRemove} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                </div>
             </div>
             {cropSrc && (
                 <ImageCropModal
                     imageSrc={cropSrc}
-                    aspect={1}
+                    aspect={null}
                     onCancel={() => setCropSrc(null)}
                     onCropComplete={(croppedFile) => { setCropSrc(null); onUpload(croppedFile); }}
                 />
@@ -669,7 +815,7 @@ const ProudCard = ({ student, onUpdate, onRemove, onUpload, uploading }) => {
 
 // ── Yearly Award PDF Row ──
 const YearlyAwardRow = ({ yearItem, onUpdate, onRemove, uploading, onUploadStart, onUploadEnd }) => {
-    const inputStyle = { width: '100%', padding: '9px 12px', border: '0.5px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#ffffff' };
+    const inputStyle = { width: '100%', padding: '9px 12px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
 
     const handlePdfUpload = async (file) => {
         onUploadStart();
@@ -685,8 +831,8 @@ const YearlyAwardRow = ({ yearItem, onUpdate, onRemove, uploading, onUploadStart
     };
 
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '160px 1fr 100px', gap: '10px', alignItems: 'center', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
-            <input type="text" value={yearItem.year} onChange={e => onUpdate('year', e.target.value)} placeholder="e.g. 2022-23" style={inputStyle} />
+        <div className="sports-award-row" style={{ display: 'grid', gridTemplateColumns: '160px 1fr 100px', gap: '10px', alignItems: 'center', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
+            <input className="sports-input" type="text" value={yearItem.year} onChange={e => onUpdate('year', e.target.value)} placeholder="Enter Year" style={inputStyle} />
             <div onClick={() => document.getElementById(`pdf-${yearItem.id}`).click()}
                 style={{ padding: '9px 12px', border: '1px dashed #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: yearItem.pdfUrl ? '#15803d' : '#64748b', background: yearItem.pdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
                 {uploading ? 'Uploading...' : yearItem.pdfUrl ? '✓ PDF uploaded — click to change' : '📄 Click to upload PDF'}

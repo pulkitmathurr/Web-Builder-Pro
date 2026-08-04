@@ -4,17 +4,26 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 
 const LEVEL_LABELS = {
-    primary: 'Primary School Faculty',
-    middle: 'Middle School Faculty',
-    high: 'High School Faculty',
-    senior: 'Senior School Faculty',
+    pgt: 'PGT Faculty',
+    tgt: 'TGT Faculty',
+    prt: 'PRT Faculty',
+    ntt: 'NTT Faculty',
     general: 'General Faculty',
 };
 
-const LEVEL_ORDER = ['primary', 'middle', 'high', 'senior', 'general'];
+const LEVEL_ORDER = ['pgt', 'tgt', 'prt', 'ntt', 'general'];
+
+const TEACHES_AT_LABELS = {
+    pgt: 'PGT',
+    tgt: 'TGT',
+    prt: 'PRT',
+    ntt: 'NTT',
+    general: 'General (All Levels)',
+};
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -38,152 +47,127 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-// ── Single level section — active profile + thumbnail carousel ──
-const BIO_CLAMP_HEIGHT = 210;
+const CARDS_PER_PAGE = 5;
+const AUTO_SLIDE_MS = 4000;
 
-const LevelSection = ({ levelKey, members, tc }) => {
-    const [activeIndex, setActiveIndex] = useState(0);
-    const [carouselStart, setCarouselStart] = useState(0);
-    const [bioExpanded, setBioExpanded] = useState(false);
-    const active = members[activeIndex];
-    const visibleThumbs = members.slice(carouselStart, carouselStart + 4);
+// ── Single level section — 5-card grid; auto-advancing slideshow (no arrows) once more than 5 ──
+const LevelSection = ({ levelKey, members, tc, bc }) => {
+    const [page, setPage] = useState(0);
+    const totalPages = Math.ceil(members.length / CARDS_PER_PAGE);
 
-    const canGoBack = carouselStart > 0;
-    const canGoForward = carouselStart + 4 < members.length;
+    useEffect(() => {
+        if (totalPages <= 1) return;
+        const timer = setInterval(() => setPage(p => (p + 1) % totalPages), AUTO_SLIDE_MS);
+        return () => clearInterval(timer);
+    }, [totalPages]);
 
-    const selectMember = (idx) => {
-        setActiveIndex(idx);
-        setBioExpanded(false);
-    };
+    const visibleThumbs = members.slice(page * CARDS_PER_PAGE, page * CARDS_PER_PAGE + CARDS_PER_PAGE);
 
     return (
-        <div style={{ padding: '5rem 5rem', background: '#ffffff', borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ padding: '3.5rem clamp(1.25rem,6vw,5rem)', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>
             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                 <Reveal>
-                    <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '2.5rem' }}>{LEVEL_LABELS[levelKey]}</p>
+                    <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.75rem' }}>{LEVEL_LABELS[levelKey]}</p>
                 </Reveal>
 
-                {/* Active profile */}
                 <Reveal delay={0.1}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '3.5rem', alignItems: 'flex-start', marginBottom: '3rem' }}>
-                        {/* Left — info */}
-                        <div style={{ paddingTop: '1rem' }}>
-                            {active.designation && (
-                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', background: tc.primary, padding: '4px 10px', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '12px', display: 'inline-block' }}>
-                                    {active.designation}
-                                </span>
-                            )}
-                            <h3 style={{ fontSize: 'clamp(28px,4vw,44px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-1.5px', lineHeight: 1.05, textTransform: 'uppercase', marginBottom: '16px' }}>
-                                {active.name}
-                            </h3>
-                            <div style={{ display: 'flex', gap: '16px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                                {active.qualification && <span style={{ fontSize: '13px', color: '#64748b' }}>🎓 {active.qualification}</span>}
-                                {active.experience && <span style={{ fontSize: '13px', color: '#64748b' }}>📌 {active.experience}</span>}
-                            </div>
-                            {active.bio && (
-                                <div style={{ position: 'relative', maxWidth: '560px' }}>
-                                    <div className="rte-content" style={{
-                                        fontSize: '14.5px', color: '#475569', lineHeight: 1.8, overflowWrap: 'break-word',
-                                        maxHeight: bioExpanded ? 'none' : `${BIO_CLAMP_HEIGHT}px`,
-                                        overflow: bioExpanded ? 'visible' : 'hidden',
-                                    }}
-                                        dangerouslySetInnerHTML={{ __html: active.bio }} />
-                                    {!bioExpanded && (
-                                        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '50px', background: 'linear-gradient(180deg, rgba(255,255,255,0), #ffffff)', pointerEvents: 'none' }}></div>
-                                    )}
-                                </div>
-                            )}
-                            {active.bio && (
-                                <button onClick={() => setBioExpanded(v => !v)}
-                                    style={{ marginTop: '14px', padding: '9px 20px', background: 'transparent', color: tc.primary, border: `1.5px solid ${tc.primary}`, borderRadius: '8px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
-                                    onMouseEnter={e => { e.currentTarget.style.background = tc.primary; e.currentTarget.style.color = '#fff'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = tc.primary; }}>
-                                    {bioExpanded ? 'Show Less ↑' : 'Read More ↓'}
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Right — photo, framed to line up with the name (not the designation badge) above it */}
-                        <div style={{ paddingTop: active.designation ? '3.25rem' : '1rem' }}>
-                            <div style={{ position: 'relative' }}>
-                                {/* Viewfinder-style corner accents */}
-                                <div style={{ position: 'absolute', top: '-12px', left: '-12px', width: '54px', height: '54px', borderTop: `3px solid ${tc.primary}`, borderLeft: `3px solid ${tc.primary}`, borderRadius: '16px 0 0 0' }}></div>
-                                <div style={{ position: 'absolute', bottom: '-12px', right: '-12px', width: '54px', height: '54px', borderBottom: `3px solid ${tc.primary}`, borderRight: `3px solid ${tc.primary}`, borderRadius: '0 0 16px 0' }}></div>
-
-                                <div style={{
-                                    position: 'relative', height: '380px', borderRadius: '20px', overflow: 'hidden',
-                                    background: `linear-gradient(160deg, ${tc.light}, #ffffff)`,
-                                    boxShadow: '0 30px 60px -15px rgba(0,0,0,0.2), 0 10px 24px rgba(0,0,0,0.06)',
-                                    display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(140px, 190px))`, justifyContent: 'center', gap: '14px' }}>
+                        {visibleThumbs.map((m, idx) => (
+                            <div key={`${page}-${m.id}`} className="faculty-card"
+                                style={{
+                                    borderRadius: '6px',
+                                    border: '1px solid #dde2e8',
+                                    background: bc.card,
+                                    padding: '6px',
+                                    display: 'flex', flexDirection: 'column',
+                                    boxShadow: '0 4px 16px rgba(15,23,42,0.06)',
+                                    animationDelay: `${idx * 0.08}s`,
+                                    '--tc-primary': tc.primary,
                                 }}>
-                                    {active.photo ? (
-                                        <img src={active.photo} alt={active.name} style={{ width: '100%', height: '100%', objectFit: 'contain', objectPosition: 'bottom', display: 'block' }} />
+                                {/* Photo — framed with an inset accent border that sharpens on hover */}
+                                <div className="faculty-card-img" style={{ position: 'relative', overflow: 'hidden', borderRadius: '3px', aspectRatio: '3/4', background: tc.light }}>
+                                    {m.photo ? (
+                                        <img src={m.photo} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                     ) : (
-                                        <span style={{ fontSize: '56px', opacity: 0.3, marginBottom: '2rem' }}>👤</span>
+                                        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <span style={{ fontSize: '28px', opacity: 0.3 }}>👤</span>
+                                        </div>
                                     )}
-                                    {/* Subtle bottom gradient for a premium, editorial finish */}
-                                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '90px', background: 'linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.06))', pointerEvents: 'none' }}></div>
+                                </div>
+                                {/* Name plate */}
+                                <div style={{ flex: '0 0 auto', padding: '8px 4px 3px', textAlign: 'center' }}>
+                                    <p style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>{m.name}</p>
+                                    {m.designation && (
+                                        <p style={{ fontSize: '10px', fontWeight: 700, color: tc.primary, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.designation}</p>
+                                    )}
+                                    {m.experience && (
+                                        <p style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.experience} experience</p>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </Reveal>
-
-                {/* Carousel of small cards */}
-                <Reveal delay={0.2}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <button onClick={() => setCarouselStart(p => Math.max(0, p - 4))} disabled={!canGoBack}
-                            style={{ width: '40px', height: '40px', borderRadius: '50%', background: canGoBack ? tc.light : '#f8fafc', border: 'none', cursor: canGoBack ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', color: canGoBack ? tc.primary : '#cbd5e1', flexShrink: 0 }}>
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                        </button>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', flex: 1 }}>
-                            {visibleThumbs.map((m, idx) => {
-                                const realIndex = carouselStart + idx;
-                                const isActive = realIndex === activeIndex;
-                                return (
-                                    <div key={m.id} onClick={() => selectMember(realIndex)}
-                                        style={{
-                                            cursor: 'pointer', borderRadius: '14px', overflow: 'hidden',
-                                            border: isActive ? `2px solid ${tc.primary}` : '1px solid #f1f5f9',
-                                            background: '#ffffff', transition: 'all 0.2s',
-                                            display: 'flex', flexDirection: 'column', aspectRatio: '1',
-                                            boxShadow: isActive ? `0 8px 20px ${tc.primary}25` : '0 2px 8px rgba(0,0,0,0.04)',
-                                        }}>
-                                        {/* Square image area — 85% */}
-                                        <div style={{ flex: '0 0 85%', background: tc.light, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                            {m.photo ? (
-                                                <img src={m.photo} alt={m.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                            ) : (
-                                                <span style={{ fontSize: '32px', opacity: 0.3 }}>👤</span>
-                                            )}
-                                        </div>
-                                        {/* Connected rectangle — name + designation */}
-                                        <div style={{ flex: '0 0 15%', background: isActive ? tc.primary : '#fafafa', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4px 6px', minHeight: '50px' }}>
-                                            <p style={{ fontSize: '11px', fontWeight: 700, color: isActive ? '#ffffff' : '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', lineHeight: 1.2 }}>{m.name}</p>
-                                            {m.designation && (
-                                                <p style={{ fontSize: '9px', color: isActive ? 'rgba(255,255,255,0.7)' : '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%', marginTop: '2px' }}>{m.designation}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            {/* Fill empty slots to keep grid consistent */}
-                            {visibleThumbs.length < 4 && Array.from({ length: 4 - visibleThumbs.length }).map((_, i) => (
-                                <div key={`empty-${i}`}></div>
-                            ))}
-                        </div>
-
-                        <button onClick={() => setCarouselStart(p => p + 4)} disabled={!canGoForward}
-                            style={{ width: '40px', height: '40px', borderRadius: '50%', background: canGoForward ? tc.light : '#f8fafc', border: 'none', cursor: canGoForward ? 'pointer' : 'default', display: 'flex', alignItems: 'center', justifyContent: 'center', color: canGoForward ? tc.primary : '#cbd5e1', flexShrink: 0 }}>
-                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                        </button>
+                        ))}
                     </div>
                 </Reveal>
             </div>
         </div>
     );
 };
+
+// ── Complete staff directory — auto-built from every member across all levels ──
+const thStyle = { padding: '15px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.22)' };
+const tdStyle = { padding: '14px 20px', fontSize: '13.5px', color: '#334155', whiteSpace: 'nowrap', border: '1px solid #cbd5e1' };
+
+const FacultyTable = ({ members, tc, bc }) => (
+    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 6rem', background: bc.surface }}>
+        <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+            <Reveal>
+                <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                    <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Complete Directory</p>
+                    <h2 style={{ fontSize: 'clamp(26px,3vw,36px)', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px' }}>Staff & Faculty</h2>
+                </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+                <div style={{ background: bc.card, borderRadius: '4px', overflow: 'hidden', boxShadow: '0 12px 40px rgba(15,23,42,0.08)', border: '1.5px solid #94a3b8' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '820px', border: '1px solid #cbd5e1' }}>
+                            <thead>
+                                <tr style={{ background: `linear-gradient(135deg, ${tc.dark}, ${tc.primary})` }}>
+                                    <th style={thStyle}>Name</th>
+                                    <th style={thStyle}>Designation / Subject</th>
+                                    <th style={thStyle}>Teaches At</th>
+                                    <th style={thStyle}>Qualification</th>
+                                    <th style={thStyle}>Experience</th>
+                                    <th style={thStyle}>Udise National Code/ Oasis ID</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {members.map((m, i) => (
+                                    <tr key={m.id} className="faculty-row"
+                                        style={{
+                                            background: i % 2 === 0 ? bc.card : bc.cardAlt,
+                                            animationDelay: `${i * 0.05}s`,
+                                            '--row-hover-bg': tc.light,
+                                        }}>
+                                        <td style={{ ...tdStyle, fontWeight: 700, color: '#0f172a' }}>{m.name || '—'}</td>
+                                        <td style={tdStyle}>{m.designation || '—'}</td>
+                                        <td style={tdStyle}>
+                                            <span style={{ display: 'inline-block', padding: '4px 12px', borderRadius: '20px', background: tc.light, color: tc.primary, fontSize: '11.5px', fontWeight: 700 }}>
+                                                {TEACHES_AT_LABELS[m.level || 'general']}
+                                            </span>
+                                        </td>
+                                        <td style={tdStyle}>{m.qualification || '—'}</td>
+                                        <td style={tdStyle}>{m.experience || '—'}</td>
+                                        <td style={tdStyle}>{m.udiseCode || '—'}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </Reveal>
+        </div>
+    </div>
+);
 
 const FacultyPublic = () => {
     const { slug } = useParams();
@@ -192,7 +176,6 @@ const FacultyPublic = () => {
     const [content, setContent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [scrollY, setScrollY] = useState(0);
-    const [bannerIndex, setBannerIndex] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -200,14 +183,6 @@ const FacultyPublic = () => {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, [slug]);
-
-    useEffect(() => {
-        if (!content?.banners?.length || content.banners.length <= 1) return;
-        const timer = setInterval(() => {
-            setBannerIndex(p => (p + 1) % content.banners.length);
-        }, 5000);
-        return () => clearInterval(timer);
-    }, [content]);
 
     const fetchData = async () => {
         try {
@@ -234,17 +209,11 @@ const FacultyPublic = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
     const navbarSolid = scrollY > 60;
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Faculty page not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                ← Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'faculty')) return <NotPublished tc={tc} slug={slug} label="Faculty" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Faculty" />;
 
     // Group members by level
     const grouped = {};
@@ -262,74 +231,53 @@ const FacultyPublic = () => {
                 html { scroll-behavior: smooth; }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                body { background: #ffffff; }
-                .rte-content p { margin-bottom: 0.6em; }
-                .rte-content p:last-child { margin-bottom: 0; }
-                .rte-content strong { font-weight: 700; }
-                .rte-content em { font-style: italic; }
-                .rte-content u { text-decoration: underline; }
-                .rte-content .ql-size-small { font-size: 0.75em; }
-                .rte-content .ql-size-large { font-size: 1.5em; }
-                .rte-content .ql-size-huge { font-size: 2.5em; }
+                @keyframes facultyCardPop { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                .faculty-card { position: relative; animation: facultyCardPop 0.5s cubic-bezier(0.16,1,0.3,1) both; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease, border-color 0.35s ease; }
+                .faculty-card::before { content: ''; position: absolute; inset: 5px; border: 1px solid transparent; border-radius: 3px; pointer-events: none; transition: border-color 0.35s ease, inset 0.35s ease; }
+                .faculty-card:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgba(15,23,42,0.14); border-color: var(--tc-primary); }
+                .faculty-card:hover::before { border-color: var(--tc-primary); inset: 3px; }
+                .faculty-card-img img { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1); }
+                .faculty-card:hover .faculty-card-img img { transform: scale(1.08); }
+                @keyframes facultyRowFade { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+                .faculty-row { animation: facultyRowFade 0.4s ease both; transition: background 0.2s ease; }
+                .faculty-row:hover { background: var(--row-hover-bg) !important; }
+                .faculty-row td { transition: color 0.2s ease; }
+                body { background: ${bc.surface}; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="faculty" />
 
-                {/* ── Hero Banner — full screen with rotating images ── */}
-                <div style={{ height: '90vh', position: 'relative', overflow: 'hidden' }}>
-                    {content.banners && content.banners.length > 0 ? (
-                        content.banners.map((img, i) => (
-                            <img key={i} src={img} alt=""
-                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: i === bannerIndex ? 1 : 0, transition: 'opacity 1s ease' }} />
-                        ))
-                    ) : (
-                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.dark},${tc.primary})` }}></div>
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 60%, #ffffff 100%)' }}></div>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
 
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 2rem' }}>
-                        <p style={{ fontSize: '13px', color: '#fff', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '20px', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
-                            {school.name}
-                        </p>
-                        <h1 style={{ fontSize: 'clamp(48px, 8vw, 110px)', fontWeight: 900, letterSpacing: '-3px', lineHeight: 1, color: '#ffffff', textShadow: '0 4px 30px rgba(0,0,0,0.3)' }}>
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-1px', marginBottom: '10px' }}>
                             Our Faculty
                         </h1>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
-
-                    {/* Carousel arrows + dots */}
-                    {content.banners && content.banners.length > 1 && (
-                        <>
-                            <button onClick={() => setBannerIndex(p => p === 0 ? content.banners.length - 1 : p - 1)}
-                                style={{ position: 'absolute', left: '30px', top: '50%', transform: 'translateY(-50%)', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', backdropFilter: 'blur(8px)' }}>
-                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                            </button>
-                            <button onClick={() => setBannerIndex(p => (p + 1) % content.banners.length)}
-                                style={{ position: 'absolute', right: '30px', top: '50%', transform: 'translateY(-50%)', width: '50px', height: '50px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', backdropFilter: 'blur(8px)' }}>
-                                <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                            </button>
-                            <div style={{ position: 'absolute', bottom: '2.5rem', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px' }}>
-                                {content.banners.map((_, i) => (
-                                    <div key={i} onClick={() => setBannerIndex(i)} style={{ width: i === bannerIndex ? '24px' : '8px', height: '8px', borderRadius: '4px', background: i === bannerIndex ? '#ffffff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.3s' }}></div>
-                                ))}
-                            </div>
-                        </>
-                    )}
                 </div>
 
-                <div style={{ textAlign: 'center', padding: '3rem 5rem 0', background: '#ffffff' }}>
+                <div style={{ textAlign: 'center', padding: '3rem clamp(1.25rem,6vw,5rem) 0', background: bc.surface }}>
                     <p style={{ fontSize: '16px', color: '#64748b', maxWidth: '500px', margin: '0 auto' }}>Meet the educators who inspire and guide our students every day</p>
                 </div>
 
                 {/* ── Level-wise sections ── */}
                 {activeLevels.map(levelKey => (
-                    <LevelSection key={levelKey} levelKey={levelKey} members={grouped[levelKey]} tc={tc} />
+                    <LevelSection key={levelKey} levelKey={levelKey} members={grouped[levelKey]} tc={tc} bc={bc} />
                 ))}
+
+                {/* ── Complete staff directory table ── */}
+                <FacultyTable members={content.members} tc={tc} bc={bc} />
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

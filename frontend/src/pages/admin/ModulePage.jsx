@@ -22,6 +22,12 @@ const modulePageMap = {
     'alumni': '/admin/module/alumni',
     'disclosure': '/admin/module/disclosure',
     'tc': '/admin/module/tc',
+    'announcements': '/admin/module/announcements',
+    'events': '/admin/module/events',
+    'circulars': '/admin/module/circulars',
+    'calendar': '/admin/module/calendar',
+    'admission': '/admin/module/admission',
+    'career': '/admin/module/career',
 };
 
 const ModulePage = () => {
@@ -29,7 +35,7 @@ const ModulePage = () => {
     const navigate = useNavigate();
     const { tc } = useSchoolStore();
 
-    // Agar dedicated page exist karta hai toh redirect karo
+    // If a dedicated page exists, redirect to it
     useEffect(() => {
         if (modulePageMap[moduleKey]) {
             navigate(modulePageMap[moduleKey], { replace: true });
@@ -54,7 +60,7 @@ const ModulePage = () => {
         );
     }
 
-    // Agar redirect hone wala hai toh kuch render mat karo
+    // If a redirect is about to happen, render nothing
     if (modulePageMap[moduleKey]) return null;
 
     const categoryColors = {
@@ -78,7 +84,7 @@ const ModulePage = () => {
                 <div style={{ background: colors.gradient, borderRadius: '10px', padding: '2.5rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 20px 60px ${colors.shadow}, 0 4px 20px rgba(0,0,0,0.15)` }}>
                     <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${colors.shadow} 0%, transparent 70%)`, top: '-100px', right: '8%', pointerEvents: 'none' }}></div>
                     
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.5rem' }}>
                         <div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: colors.dot }}></div>

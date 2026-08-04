@@ -10,7 +10,6 @@ const ManageSchools = () => {
     const [search, setSearch] = useState('');
     const [filter, setFilter] = useState('all');
     const [deleteTarget, setDeleteTarget] = useState(null);
-    const [confirmName, setConfirmName] = useState('');
     const [deleting, setDeleting] = useState(false);
 
     useEffect(() => { fetchSchools(); }, []);
@@ -43,7 +42,6 @@ const ManageSchools = () => {
             await deleteSchoolApi(deleteTarget.uuid);
             toast.success('School deleted permanently');
             setDeleteTarget(null);
-            setConfirmName('');
             fetchSchools();
         } catch (e) {
             toast.error(e.response?.data?.message || 'Failed to delete school');
@@ -78,7 +76,7 @@ const ManageSchools = () => {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
                 <div style={{ textAlign: 'center' }}>
-                    <div style={{ width: '44px', height: '44px', border: '3px solid rgba(10,10,10,0.1)', borderTop: '3px solid #0a0a0a', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 14px' }}></div>
+                    <div style={{ width: '40px', height: '40px', border: '3px solid #e0e7ff', borderTop: '3px solid #4f6ef7', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 14px' }}></div>
                     <p style={{ color: '#94a3b8', fontSize: '14px' }}>Loading schools...</p>
                 </div>
                 <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -96,56 +94,44 @@ const ManageSchools = () => {
                 .ms-section:nth-child(2) { animation-delay: 0.1s; }
                 .ms-section:nth-child(3) { animation-delay: 0.15s; }
                 .school-row { transition: background 0.15s; }
-                .school-row:hover { background: #fafafa !important; }
+                .school-row:hover { background: #f8fafc !important; }
                 .action-btn { transition: all 0.15s; }
                 .action-btn:hover { transform: translateY(-1px); }
+                .create-btn:hover { background: #3c55d6 !important; }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif' }}>
 
-                {/* ── Hero Header ── */}
-                <div className="ms-section" style={{
-                    background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 40%, #000000 100%)',
-                    borderRadius: '16px', padding: '2.5rem', marginBottom: '1.75rem',
-                    position: 'relative', overflow: 'hidden',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.2)'
-                }}>
-                    <div style={{ position: 'absolute', width: '350px', height: '350px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)', top: '-120px', right: '8%', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
-
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ffffff' }}></div>
-                                <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Super Admin / Schools</p>
-                            </div>
-                            <h1 style={{ fontSize: '30px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', letterSpacing: '-0.5px' }}>
-                                Manage Schools
-                            </h1>
-                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
-                                {schools.length} schools registered on the platform
-                            </p>
-                        </div>
-
-                        {/* Stats */}
-                        <div style={{ display: 'flex', gap: '12px' }}>
-                            {[
-                                { label: 'Total', value: schools.length, color: '#ffffff' },
-                                { label: 'Active', value: schools.filter(s => s.status === 'active').length, color: '#e5e5e5' },
-                                { label: 'Pending', value: schools.filter(s => s.status === 'pending').length, color: '#d4d4d4' },
-                            ].map((s, i) => (
-                                <div key={i} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px', padding: '1rem 1.5rem', textAlign: 'center', backdropFilter: 'blur(8px)' }}>
-                                    <p style={{ fontSize: '28px', fontWeight: 800, color: s.color, lineHeight: 1, marginBottom: '4px' }}>{s.value}</p>
-                                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.label}</p>
-                                </div>
-                            ))}
-                            <button onClick={() => navigate('/super-admin/schools/create')}
-                                style={{ background: 'linear-gradient(135deg,#ffffff,#d4d4d4)', color: '#0a0a0a', border: 'none', borderRadius: '10px', padding: '1rem 1.5rem', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '6px', minWidth: '90px', boxShadow: '0 8px 24px rgba(255,255,255,0.15)' }}>
-                                <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
-                                <span style={{ fontSize: '11px', letterSpacing: '0.05em' }}>New School</span>
-                            </button>
-                        </div>
+                {/* ── Header ── */}
+                <div className="ms-section" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '14px' }}>
+                    <div>
+                        <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px', marginBottom: '4px' }}>
+                            Manage Schools
+                        </h1>
+                        <p style={{ fontSize: '13.5px', color: '#94a3b8' }}>
+                            {schools.length} schools registered on the platform
+                        </p>
                     </div>
+                    <button className="create-btn" onClick={() => navigate('/super-admin/schools/create')}
+                        style={{ padding: '11px 20px', background: '#4f6ef7', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 8px 20px rgba(79,110,247,0.28)', transition: 'background 0.15s' }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                        New School
+                    </button>
+                </div>
+
+                {/* ── Stat Strip ── */}
+                <div className="ms-section" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.5rem' }}>
+                    {[
+                        { label: 'Total', value: schools.length, color: '#4f6ef7', bg: '#eef2ff' },
+                        { label: 'Active', value: schools.filter(s => s.status === 'active').length, color: '#16a34a', bg: '#f0fdf4' },
+                        { label: 'Pending', value: schools.filter(s => s.status === 'pending').length, color: '#d97706', bg: '#fffbeb' },
+                        { label: 'Suspended', value: schools.filter(s => s.status === 'suspended').length, color: '#dc2626', bg: '#fef2f2' },
+                    ].map((s, i) => (
+                        <div key={i} style={{ background: '#ffffff', border: '1px solid #eef1f6', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 2px 10px rgba(15,23,42,0.03)' }}>
+                            <p style={{ fontSize: '21px', fontWeight: 800, color: '#0f172a', lineHeight: 1, marginBottom: '4px' }}>{s.value}</p>
+                            <p style={{ fontSize: '11.5px', color: '#94a3b8' }}>{s.label} Schools</p>
+                        </div>
+                    ))}
                 </div>
 
                 {/* ── Filters ── */}
@@ -157,7 +143,7 @@ const ManageSchools = () => {
                         </svg>
                         <input type="text" placeholder="Search by name or email..."
                             value={search} onChange={e => setSearch(e.target.value)}
-                            style={{ width: '100%', padding: '10px 14px 10px 38px', border: '0.5px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', outline: 'none', color: '#0f172a', boxSizing: 'border-box', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.04)' }} />
+                            style={{ width: '100%', padding: '10px 14px 10px 38px', border: '1px solid #eef1f6', borderRadius: '10px', fontSize: '13px', outline: 'none', color: '#0f172a', boxSizing: 'border-box', background: '#ffffff', boxShadow: '0 2px 6px rgba(0,0,0,0.03)' }} />
                     </div>
 
                     {/* Filter tabs */}
@@ -165,12 +151,12 @@ const ManageSchools = () => {
                         {filterOptions.map(f => (
                             <button key={f.value} onClick={() => setFilter(f.value)}
                                 style={{
-                                    padding: '8px 16px', borderRadius: '10px', border: filter === f.value ? '1.5px solid rgba(10,10,10,0.6)' : '0.5px solid #e2e8f0',
+                                    padding: '8px 16px', borderRadius: '10px', border: filter === f.value ? '1.5px solid #4f6ef7' : '1px solid #eef1f6',
                                     fontSize: '12px', cursor: 'pointer', fontWeight: filter === f.value ? 600 : 400,
-                                    background: filter === f.value ? 'linear-gradient(135deg,#0a0a0a,#262626)' : '#ffffff',
+                                    background: filter === f.value ? '#4f6ef7' : '#ffffff',
                                     color: filter === f.value ? '#ffffff' : '#64748b',
                                     display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.15s',
-                                    boxShadow: filter === f.value ? '0 4px 12px rgba(0,0,0,0.2)' : 'none'
+                                    boxShadow: filter === f.value ? '0 4px 12px rgba(79,110,247,0.28)' : 'none'
                                 }}>
                                 {f.label}
                                 <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '10px', background: filter === f.value ? 'rgba(255,255,255,0.2)' : '#f1f5f9', color: filter === f.value ? '#ffffff' : '#94a3b8', fontWeight: 600 }}>
@@ -182,19 +168,21 @@ const ManageSchools = () => {
                 </div>
 
                 {/* ── Table ── */}
-                <div className="ms-section" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                <div className="ms-section" style={{ background: '#ffffff', border: '1px solid #eef1f6', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(15,23,42,0.03)' }}>
 
                     {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '2.3fr 1.4fr 1fr 0.8fr 1.5fr', padding: '12px 20px', background: 'linear-gradient(135deg,#0a0a0a,#262626)', borderBottom: '0.5px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '2.3fr 1.4fr 1fr 0.8fr 1.5fr', padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #eef1f6' }}>
                         {['School', 'Admin', 'Location', 'Status', 'Actions'].map(h => (
-                            <span key={h} style={{ fontSize: '11px', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>{h}</span>
+                            <span key={h} style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>{h}</span>
                         ))}
                     </div>
 
                     {/* Empty */}
                     {filtered.length === 0 ? (
                         <div style={{ padding: '4rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.2 }}>🏫</div>
+                            <div style={{ width: '56px', height: '56px', background: '#eef2ff', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <svg width="24" height="24" fill="none" stroke="#4f6ef7" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                            </div>
                             <p style={{ fontSize: '15px', fontWeight: 500, color: '#0f172a', marginBottom: '6px' }}>
                                 {search ? 'No schools match your search' : 'No schools yet'}
                             </p>
@@ -203,8 +191,9 @@ const ManageSchools = () => {
                             </p>
                             {!search && (
                                 <button onClick={() => navigate('/super-admin/schools/create')}
-                                    style={{ padding: '10px 24px', background: 'linear-gradient(135deg,#0a0a0a,#333333)', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                                    + Create School
+                                    style={{ padding: '10px 24px', background: '#4f6ef7', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+                                    Create School
                                 </button>
                             )}
                         </div>
@@ -213,14 +202,14 @@ const ManageSchools = () => {
                             const sc = statusConfig[school.status] || statusConfig.pending;
                             return (
                                 <div key={school.id} className="school-row"
-                                    style={{ display: 'grid', gridTemplateColumns: '2.3fr 1.4fr 1fr 0.8fr 1.5fr', padding: '16px 20px', borderBottom: i < filtered.length - 1 ? '0.5px solid #f8fafc' : 'none', alignItems: 'center', background: '#ffffff' }}>
+                                    style={{ display: 'grid', gridTemplateColumns: '2.3fr 1.4fr 1fr 0.8fr 1.5fr', padding: '16px 20px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none', alignItems: 'center' }}>
 
                                     {/* School */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                         {school.logo_url ? (
-                                            <img src={school.logo_url} alt="" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', border: '0.5px solid #f1f5f9' }} />
+                                            <img src={school.logo_url} alt="" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #eef1f6' }} />
                                         ) : (
-                                            <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg,#0a0a0a,#333333)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+                                            <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg,#6d8bff,#4f6ef7)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 10px rgba(79,110,247,0.28)' }}>
                                                 <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>{getInitials(school.name)}</span>
                                             </div>
                                         )}
@@ -244,7 +233,7 @@ const ManageSchools = () => {
 
                                     {/* Status */}
                                     <div>
-                                        <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: sc.bg, color: sc.text, border: `0.5px solid ${sc.border}`, display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
+                                        <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
                                             <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: sc.dot }}></div>
                                             {school.status}
                                         </span>
@@ -255,20 +244,20 @@ const ManageSchools = () => {
                                         {school.status !== 'active' && (
                                             <button className="action-btn"
                                                 onClick={() => handleStatusChange(school.uuid, 'active')}
-                                                style={{ padding: '5px 10px', background: '#f0fdf4', color: '#15803d', border: '0.5px solid #bbf7d0', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                                style={{ padding: '5px 10px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
                                                 Activate
                                             </button>
                                         )}
                                         {school.status !== 'suspended' && (
                                             <button className="action-btn"
                                                 onClick={() => handleStatusChange(school.uuid, 'suspended')}
-                                                style={{ padding: '5px 10px', background: '#fffbeb', color: '#b45309', border: '0.5px solid #fde68a', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                                style={{ padding: '5px 10px', background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
                                                 Suspend
                                             </button>
                                         )}
                                         <button className="action-btn"
-                                            onClick={() => { setDeleteTarget(school); setConfirmName(''); }}
-                                            style={{ padding: '5px 10px', background: 'linear-gradient(135deg,#0a0a0a,#262626)', color: '#ffffff', border: '0.5px solid #0a0a0a', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                            onClick={() => setDeleteTarget(school)}
+                                            style={{ padding: '5px 10px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
                                             Delete
                                         </button>
                                     </div>
@@ -281,7 +270,7 @@ const ManageSchools = () => {
                 {/* Footer */}
                 {filtered.length > 0 && (
                     <p style={{ fontSize: '12px', color: '#94a3b8', marginTop: '12px', textAlign: 'right' }}>
-                        Showing <strong style={{ color: '#0a0a0a' }}>{filtered.length}</strong> of {schools.length} schools
+                        Showing <strong style={{ color: '#4f6ef7' }}>{filtered.length}</strong> of {schools.length} schools
                     </p>
                 )}
             </div>
@@ -289,37 +278,42 @@ const ManageSchools = () => {
             {/* ── Delete Confirmation Modal ── */}
             {deleteTarget && (
                 <div onClick={() => !deleting && setDeleteTarget(null)}
-                    style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                    style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                     <div onClick={e => e.stopPropagation()}
-                        style={{ background: '#ffffff', maxWidth: '440px', width: '100%', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.4)' }}>
-                        <div style={{ padding: '1.75rem', borderBottom: '0.5px solid #f1f5f9' }}>
-                            <p style={{ fontSize: '11px', fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Permanent action</p>
-                            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0a0a0a', marginBottom: '10px' }}>Delete "{deleteTarget.name}"?</h3>
-                            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6 }}>
-                                This permanently deletes the school, its admin account and all of its website content. This cannot be undone.
+                        style={{ background: '#ffffff', maxWidth: '400px', width: '100%', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 30px 80px rgba(15,23,42,0.35)', textAlign: 'center' }}>
+
+                        <div style={{ padding: '2.25rem 2rem 1.5rem' }}>
+                            <div style={{
+                                width: '56px', height: '56px', margin: '0 auto 18px', borderRadius: '16px',
+                                background: 'linear-gradient(135deg,#fef2f2,#fee2e2)', border: '1px solid #fecaca',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center'
+                            }}>
+                                <svg width="24" height="24" fill="none" stroke="#b91c1c" strokeWidth="1.8" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9.5 4h5a1 1 0 011 1v2h-7V5a1 1 0 011-1z" />
+                                </svg>
+                            </div>
+                            <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '10px', letterSpacing: '-0.3px' }}>
+                                Delete this school?
+                            </h3>
+                            <p style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.6, maxWidth: '320px', margin: '0 auto' }}>
+                                <strong style={{ color: '#0f172a', fontWeight: 600 }}>{deleteTarget.name}</strong> and its admin account, along with all website content, will be permanently removed. This action cannot be undone.
                             </p>
                         </div>
-                        <div style={{ padding: '1.75rem' }}>
-                            <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                                Type <strong style={{ color: '#0a0a0a' }}>{deleteTarget.name}</strong> to confirm
-                            </label>
-                            <input type="text" value={confirmName} onChange={e => setConfirmName(e.target.value)}
-                                placeholder={deleteTarget.name}
-                                style={{ width: '100%', padding: '10px 14px', border: '0.5px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', outline: 'none', color: '#0a0a0a', boxSizing: 'border-box' }} />
-                        </div>
-                        <div style={{ padding: '1.25rem 1.75rem', borderTop: '0.5px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+
+                        <div style={{ padding: '1.25rem 1.75rem 1.75rem', display: 'flex', gap: '10px' }}>
                             <button onClick={() => setDeleteTarget(null)} disabled={deleting}
-                                style={{ padding: '10px 20px', background: '#ffffff', color: '#64748b', border: '0.5px solid #e2e8f0', borderRadius: '10px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
+                                style={{ flex: 1, padding: '11px', background: '#f8fafc', color: '#475569', border: '1px solid #eef1f6', borderRadius: '10px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' }}>
                                 Cancel
                             </button>
-                            <button onClick={handleDeleteConfirmed} disabled={deleting || confirmName !== deleteTarget.name}
+                            <button onClick={handleDeleteConfirmed} disabled={deleting}
                                 style={{
-                                    padding: '10px 20px', borderRadius: '10px',
-                                    background: confirmName === deleteTarget.name ? '#b91c1c' : '#fca5a5',
-                                    color: '#ffffff', border: 'none', fontSize: '13px', fontWeight: 600,
-                                    cursor: confirmName === deleteTarget.name && !deleting ? 'pointer' : 'not-allowed',
+                                    flex: 1, padding: '11px', borderRadius: '10px',
+                                    background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                                    color: '#ffffff', border: 'none', fontSize: '13.5px', fontWeight: 600,
+                                    cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.7 : 1,
+                                    boxShadow: '0 4px 14px rgba(185,28,28,0.3)',
                                 }}>
-                                {deleting ? 'Deleting...' : 'Delete Permanently'}
+                                {deleting ? 'Deleting...' : 'Delete School'}
                             </button>
                         </div>
                     </div>

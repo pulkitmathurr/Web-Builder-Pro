@@ -3,7 +3,10 @@ import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadCont
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
+import HeadingStyleField from '../../../components/common/HeadingStyleField';
+import ReorderButtons from '../../../components/common/ReorderButtons';
 import useSchoolStore from '../../../store/schoolStore';
+import { moveItem } from '../../../utils/reorder';
 import toast from 'react-hot-toast';
 
 const hexToRgba = (hex, alpha) => {
@@ -13,9 +16,9 @@ const hexToRgba = (hex, alpha) => {
 };
 
 const defaultContent = {
-    banner: '',
     heading: '',
     description: '',
+    subHeading: 'Awards & Achievements',
     achievements: [],
     certifications: [],
 };
@@ -23,14 +26,15 @@ const defaultContent = {
 const CATEGORIES = ['Academic', 'Sports', 'Cultural', 'Co-Curricular', 'Other'];
 
 const Achievements = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [uploading, setUploading] = useState({});
-    const [cropTarget, setCropTarget] = useState(null); // { mode: 'banner' | 'achievement' | 'cert', id, src }
+    const [cropTarget, setCropTarget] = useState(null); // { mode: 'achievement' | 'cert', id, src }
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -38,7 +42,9 @@ const Achievements = () => {
         try {
             const res = await getModuleContentApi('achievements');
             if (res.data) {
-                setContent({ ...defaultContent, ...res.data.content });
+                const merged = { ...defaultContent, ...res.data.content };
+                setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
             }
         } catch (e) {
@@ -57,6 +63,7 @@ const Achievements = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('achievements', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -88,15 +95,10 @@ const Achievements = () => {
 
     const updateField = (field, value) => setContent(prev => ({ ...prev, [field]: value }));
 
-    // ── Banner crop flow ──
-    const onBannerFileSelected = (file) => {
-        setCropTarget({ mode: 'banner', src: URL.createObjectURL(file) });
-    };
-
     // ── Achievement entries ──
     const addAchievement = () => {
         const newItem = { id: `ach-${Date.now()}`, title: '', name: '', designation: '', quote: '', year: '', category: 'Academic', photo: '' };
-        updateField('achievements', [...content.achievements, newItem]);
+        updateField('achievements', [newItem, ...content.achievements]);
     };
 
     const updateAchievement = (id, field, value) => {
@@ -107,13 +109,17 @@ const Achievements = () => {
         updateField('achievements', content.achievements.filter(a => a.id !== id));
     };
 
+    const moveAchievement = (idx, dir) => {
+        updateField('achievements', moveItem(content.achievements, idx, dir));
+    };
+
     const onAchievementPhotoSelected = (id, file) => {
         setCropTarget({ mode: 'achievement', id, src: URL.createObjectURL(file) });
     };
 
     // ── Certifications ──
     const addCertification = () => {
-        updateField('certifications', [...content.certifications, { id: `cert-${Date.now()}`, image: '', title: '', info: '' }]);
+        updateField('certifications', [{ id: `cert-${Date.now()}`, image: '', title: '', info: '' }, ...content.certifications]);
     };
 
     const updateCertification = (id, field, value) => {
@@ -124,49 +130,49 @@ const Achievements = () => {
         updateField('certifications', content.certifications.filter(c => c.id !== id));
     };
 
-    const onCertImageSelected = async (id, file) => {
-        // Certificates use direct upload (no crop) since they're documents, not photos
-        setUploading(prev => ({ ...prev, [`cert-${id}`]: true }));
-        try {
-            const res = await uploadContentImageApi(file);
-            updateCertification(id, 'image', res.data.url);
-            toast.success('Certificate uploaded');
-        } catch (e) { toast.error('Failed to upload'); }
-        finally { setUploading(prev => ({ ...prev, [`cert-${id}`]: false })); }
+    const moveCertification = (idx, dir) => {
+        updateField('certifications', moveItem(content.certifications, idx, dir));
     };
 
-    // ── Crop confirm handler — routes to the right place based on mode ──
+    const onCertImageSelected = (id, file) => {
+        setCropTarget({ mode: 'cert', id, src: URL.createObjectURL(file) });
+    };
+
+    // ── Crop confirm handler — shared by achievement photos and certification images ──
     const onCropConfirmed = async (croppedFile) => {
         const target = cropTarget;
         setCropTarget(null);
-        const key = target.mode === 'banner' ? 'banner' : target.id;
-        setUploading(prev => ({ ...prev, [key]: true }));
+        const uploadKey = target.mode === 'cert' ? `cert-${target.id}` : target.id;
+        setUploading(prev => ({ ...prev, [uploadKey]: true }));
         try {
             const res = await uploadContentImageApi(croppedFile);
-            if (target.mode === 'banner') {
-                updateField('banner', res.data.url);
-                toast.success('Banner uploaded');
-            } else if (target.mode === 'achievement') {
+            if (target.mode === 'cert') {
+                updateCertification(target.id, 'image', res.data.url);
+                toast.success('Certificate uploaded');
+            } else {
                 updateAchievement(target.id, 'photo', res.data.url);
                 toast.success('Photo uploaded');
             }
         } catch (e) {
             toast.error('Failed to upload');
         } finally {
-            setUploading(prev => ({ ...prev, [key]: false }));
+            setUploading(prev => ({ ...prev, [uploadKey]: false }));
         }
     };
 
     const inputStyle = {
-        width: '100%', padding: '10px 13px', border: '1px solid #e5e7eb',
+        width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0',
         borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
     };
 
     const labelStyle = {
         display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b',
         marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
     };
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -180,17 +186,28 @@ const Achievements = () => {
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .ach-section { animation: fadeInUp 0.35s ease forwards; }
-                input[type=text]:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
+                @media (max-width: 700px) {
+                    .ach-photo-grid { grid-template-columns: 1fr !important; }
+                }
+                @media (max-width: 480px) {
+                    .ach-title-grid { grid-template-columns: 1fr !important; }
+                }
+                input[type=text]:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .ach-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .ach-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="ach-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                        <div className="ach-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Achievements</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Achievements</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
@@ -204,34 +221,48 @@ const Achievements = () => {
                     </div>
                 </div>
 
-                {/* Banner + Heading + Description */}
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.75rem' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
+                </div>
+
+                {/* Heading + Description */}
                 <div className="ach-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
-                    <div style={{ marginBottom: '1.5rem' }}>
-                        <label style={labelStyle}>Banner Image</label>
-                        <div onClick={() => document.getElementById('banner-input').click()}
-                            style={{ border: '1.5px dashed #e5e7eb', borderRadius: '14px', padding: content.banner ? 0 : '2rem', textAlign: 'center', cursor: 'pointer', background: content.banner ? 'transparent' : '#fafafa', overflow: 'hidden', minHeight: content.banner ? '180px' : 'auto' }}>
-                            {uploading.banner ? (
-                                <div style={{ padding: '2rem' }}><div style={{ width: '24px', height: '24px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto' }}></div></div>
-                            ) : content.banner ? (
-                                <img src={content.banner} alt="" style={{ width: '100%', height: '180px', objectFit: 'cover', display: 'block' }} />
-                            ) : (
-                                <p style={{ fontSize: '13px', color: '#64748b' }}>Click to upload banner — crop tool will open</p>
-                            )}
-                        </div>
-                        <input id="banner-input" type="file" accept="image/*"
-                            onChange={e => { const f = e.target.files[0]; if (f) onBannerFileSelected(f); e.target.value = ''; }}
-                            style={{ display: 'none' }} />
-                    </div>
                     <div style={{ marginBottom: '1.25rem' }}>
                         <label style={labelStyle}>Heading</label>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <input type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)} placeholder="e.g. Our Achievements" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
+                            <input type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)} placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
                             <ItalicToggle active={!!content.headingItalic} onToggle={() => updateField('headingItalic', !content.headingItalic)} />
                         </div>
+                        <HeadingStyleField
+                            color={content.headingColor} onColorChange={val => updateField('headingColor', val)}
+                            font={content.headingFont} onFontChange={val => updateField('headingFont', val)}
+                        />
                     </div>
-                    <div>
+                    <div style={{ marginBottom: '1.25rem' }}>
                         <label style={labelStyle}>Description</label>
-                        <RichTextEditor value={content.description} onChange={val => updateField('description', val)} placeholder="A brief overview of the school's achievements..." minHeight="120px" />
+                        <RichTextEditor value={content.description} onChange={val => updateField('description', val)} placeholder="A brief overview of the school's achievements..." minHeight="120px"
+                            maxWidth="1000px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
+                    </div>
+                    <div style={{ paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9' }}>
+                        <label style={labelStyle}>Section Header (shown below the top banner)</label>
+                        <input type="text" value={content.subHeading} onChange={e => updateField('subHeading', e.target.value)}
+                            placeholder="Enter Section Header Text" style={inputStyle} />
+                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '5px' }}>Leave blank to hide this section on the public page.</p>
                     </div>
                 </div>
 
@@ -257,10 +288,13 @@ const Achievements = () => {
                                 <div key={a.id} style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                                         <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>Achievement #{idx + 1}</p>
-                                        <button onClick={() => removeAchievement(a.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <ReorderButtons index={idx} length={content.achievements.length} onMove={moveAchievement} vertical={false} />
+                                            <button onClick={() => removeAchievement(a.id)} style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                                        </div>
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '24px' }}>
+                                    <div className="ach-photo-grid" style={{ display: 'grid', gridTemplateColumns: '200px 1fr', gap: '24px' }}>
                                         {/* Photo */}
                                         <div>
                                             <label style={labelStyle}>Photo</label>
@@ -277,6 +311,7 @@ const Achievements = () => {
                                             <input id={`ach-photo-${a.id}`} type="file" accept="image/*"
                                                 onChange={e => { const f = e.target.files[0]; if (f) onAchievementPhotoSelected(a.id, f); e.target.value = ''; }}
                                                 style={{ display: 'none' }} />
+                                            <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Portrait photo works best · JPG, PNG, WEBP · Max 5MB</p>
                                         </div>
 
                                         {/* Fields */}
@@ -284,22 +319,22 @@ const Achievements = () => {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                                                 <div>
                                                     <label style={labelStyle}>Person Name</label>
-                                                    <input type="text" value={a.name} onChange={e => updateAchievement(a.id, 'name', e.target.value)} placeholder="e.g. Aarav Sharma" style={inputStyle} />
+                                                    <input type="text" value={a.name} onChange={e => updateAchievement(a.id, 'name', e.target.value)} placeholder="Enter Person Name" style={inputStyle} />
                                                 </div>
                                                 <div>
                                                     <label style={labelStyle}>Designation / Class</label>
-                                                    <input type="text" value={a.designation} onChange={e => updateAchievement(a.id, 'designation', e.target.value)} placeholder="e.g. Class 10-A" style={inputStyle} />
+                                                    <input type="text" value={a.designation} onChange={e => updateAchievement(a.id, 'designation', e.target.value)} placeholder="Enter Designation / Class" style={inputStyle} />
                                                 </div>
                                                 <div>
                                                     <label style={labelStyle}>Year</label>
-                                                    <input type="text" value={a.year} onChange={e => updateAchievement(a.id, 'year', e.target.value)} placeholder="e.g. 2024" style={inputStyle} />
+                                                    <input type="text" value={a.year} onChange={e => updateAchievement(a.id, 'year', e.target.value)} placeholder="Enter Year" style={inputStyle} />
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '10px' }}>
+                                            <div className="ach-title-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '10px' }}>
                                                 <div>
                                                     <label style={labelStyle}>Achievement Title</label>
-                                                    <input type="text" value={a.title} onChange={e => updateAchievement(a.id, 'title', e.target.value)} placeholder="e.g. National Science Olympiad Winner" style={inputStyle} />
+                                                    <input type="text" value={a.title} onChange={e => updateAchievement(a.id, 'title', e.target.value)} placeholder="Enter Achievement Title" style={inputStyle} />
                                                 </div>
                                                 <div>
                                                     <label style={labelStyle}>Category</label>
@@ -311,7 +346,8 @@ const Achievements = () => {
 
                                             <div>
                                                 <label style={labelStyle}>Description / Quote</label>
-                                                <RichTextEditor value={a.quote} onChange={val => updateAchievement(a.id, 'quote', val)} placeholder="Write about the achievement in detail..." minHeight="110px" />
+                                                <RichTextEditor value={a.quote} onChange={val => updateAchievement(a.id, 'quote', val)} placeholder="Write about the achievement in detail..." minHeight="110px"
+                                                    maxWidth="850px" fontSize="16.5px" fontFamily="'Inter', system-ui, sans-serif" />
                                             </div>
                                         </div>
                                     </div>
@@ -324,9 +360,12 @@ const Achievements = () => {
                 {/* Certifications */}
                 <div className="ach-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
                     <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Certifications</p>
-                    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1rem' }}>
-                        {content.certifications.map((c) => (
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB each.</p>
+                    <button onClick={addCertification} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e5e7eb', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                        + Add Certification
+                    </button>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px' }}>
+                        {content.certifications.map((c, ci) => (
                             <div key={c.id} style={{ border: '1px solid #f1f5f9', borderRadius: '14px', overflow: 'hidden' }}>
                                 <div onClick={() => document.getElementById(`cert-img-${c.id}`).click()}
                                     style={{ height: '130px', background: '#fafbfc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
@@ -342,41 +381,23 @@ const Achievements = () => {
                                 <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <input type="text" value={c.title} onChange={e => updateCertification(c.id, 'title', e.target.value)} placeholder="Title" style={{ ...inputStyle, fontSize: '12px', padding: '8px 10px' }} />
                                     <input type="text" value={c.info} onChange={e => updateCertification(c.id, 'info', e.target.value)} placeholder="Basic info" style={{ ...inputStyle, fontSize: '12px', padding: '8px 10px' }} />
-                                    <button onClick={() => removeCertification(c.id)} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                        <ReorderButtons index={ci} length={content.certifications.length} onMove={moveCertification} vertical={false} />
+                                        <button onClick={() => removeCertification(c.id)} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <button onClick={addCertification} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e5e7eb', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
-                        + Add Certification
-                    </button>
                 </div>
 
-                {/* Bottom Save Bar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
-                </div>
             </div>
 
-            {/* Crop Modal */}
+            {/* Crop Modal — freeform, adjustable from every side */}
             {cropTarget && (
                 <ImageCropModal
                     imageSrc={cropTarget.src}
-                    aspect={cropTarget.mode === 'banner' ? 16 / 9 : 1}
+                    aspect={null}
                     onCancel={() => setCropTarget(null)}
                     onCropComplete={onCropConfirmed}
                 />

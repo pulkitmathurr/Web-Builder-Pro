@@ -4,7 +4,9 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
+import { getFontFamily } from "../../constants/fonts";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -223,7 +225,7 @@ const LegacyScroll = ({ description, tc }) => {
                             boxShadow: pulled
                                 ? 'inset 0 0 0 1px rgba(201,162,39,0.55), inset 0 0 0 6px rgba(255,253,246,0.9), inset 0 0 0 7px rgba(201,162,39,0.4), inset 0 0 70px rgba(120,90,50,0.1), 0 26px 55px rgba(0,0,0,0.16)'
                                 : 'none',
-                            padding: pulled ? '3.5rem 3.5rem 3rem' : '0 3.5rem',
+                            padding: pulled ? 'clamp(1.75rem,6vw,3.5rem) clamp(1.25rem,6vw,3.5rem) clamp(1.5rem,5vw,3rem)' : '0 clamp(1.25rem,6vw,3.5rem)',
                             overflow: 'hidden',
                         }}>
                             <CornerFlourish color={`${tc.primary}80`} style={{ top: '10px', left: '10px' }} />
@@ -231,7 +233,7 @@ const LegacyScroll = ({ description, tc }) => {
                             <CornerFlourish color={`${tc.primary}80`} style={{ bottom: '10px', left: '10px', transform: 'scaleY(-1)' }} />
                             <CornerFlourish color={`${tc.primary}80`} style={{ bottom: '10px', right: '10px', transform: 'scale(-1,-1)' }} />
 
-                            <div className="rte-content legacy-text" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontSize: '18px', color: '#5b4636', lineHeight: 2, overflowWrap: 'break-word', textAlign: 'left', position: 'relative', zIndex: 1 }}
+                            <div className="rte-content legacy-text" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontSize: '18px', color: '#5b4636', lineHeight: 2, overflowWrap: 'normal', wordBreak: 'normal', textAlign: 'left', position: 'relative', zIndex: 1 }}
                                 dangerouslySetInnerHTML={{ __html: description }} />
                         </div>
                     </div>
@@ -242,7 +244,7 @@ const LegacyScroll = ({ description, tc }) => {
 };
 
 // ── Single alumnus entry — alternates photo left/right for visual rhythm ──
-const AlumnusEntry = ({ alumnus, index, tc }) => {
+const AlumnusEntry = ({ alumnus, index, tc, bc }) => {
     const imageOnRight = index % 2 === 1;
 
     const tilt = (index % 2 === 0 ? -1 : 1) * (2.5 + (index % 3));
@@ -252,7 +254,7 @@ const AlumnusEntry = ({ alumnus, index, tc }) => {
             <div className="alumni-photo-wrap" style={{ position: 'relative', width: 'fit-content', transform: `rotate(${tilt}deg)`, transition: 'transform 0.4s cubic-bezier(0.16,1,0.3,1)' }}>
                 <div style={{
                     position: 'absolute', inset: '-8px', borderRadius: '4px',
-                    background: '#ffffff', boxShadow: '0 14px 30px rgba(0,0,0,0.14)'
+                    background: bc.card, boxShadow: '0 14px 30px rgba(0,0,0,0.14)'
                 }}></div>
                 <div className="alumni-photo-inner" style={{ position: 'relative', width: '210px', height: '230px', borderRadius: '2px', overflow: 'hidden', background: tc.light, transition: 'transform 0.5s cubic-bezier(0.16,1,0.3,1)' }}>
                     {alumnus.photo ? (
@@ -292,9 +294,8 @@ const AlumnusEntry = ({ alumnus, index, tc }) => {
                     </p>
                 )}
                 {alumnus.testimonial && (
-                    <p style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.85 }}>
-                        {alumnus.testimonial}
-                    </p>
+                    <div className="rte-content" style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.85 }}
+                        dangerouslySetInnerHTML={{ __html: alumnus.testimonial }} />
                 )}
                 {alumnus.linkedinUrl && (
                     <a href={alumnus.linkedinUrl} target="_blank" rel="noopener noreferrer"
@@ -341,7 +342,7 @@ const AlumniPublic = () => {
             setSchool(res.data);
             if (res.data?.id) {
                 const contentRes = await getPublicModuleContentApi(res.data.id, 'alumni');
-                if (contentRes.data?.alumni?.length > 0) setContent(contentRes.data);
+                if (contentRes.data) setContent(contentRes.data);
             }
         } catch (e) {
             navigate('/school-not-found');
@@ -360,16 +361,10 @@ const AlumniPublic = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Alumni page not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                ← Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'alumni')) return <NotPublished tc={tc} slug={slug} label="Alumni" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Alumni" />;
 
     const alumni = (content.alumni || []).filter(a => a.name);
 
@@ -381,7 +376,7 @@ const AlumniPublic = () => {
                 html { scroll-behavior: smooth; }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                body { background: #ffffff; }
+                body { background: ${bc.surface}; }
                 .alumni-name { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content p { margin-bottom: 0.8em; }
                 .rte-content p:last-child { margin-bottom: 0; }
@@ -392,6 +387,12 @@ const AlumniPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                .rte-content .ql-font-inter { font-family: 'Inter', system-ui, sans-serif; }
+                .rte-content .ql-font-poppins { font-family: 'Poppins', sans-serif; }
+                .rte-content .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+                .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+                .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
+                .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
                 .legacy-text p:first-of-type::first-letter {
                     font-family: 'Playfair Display', Georgia, serif;
                     font-style: normal; font-weight: 800; font-size: 3.6em; line-height: 0.75;
@@ -404,45 +405,38 @@ const AlumniPublic = () => {
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="alumni" />
 
-                {/* ── Hero — full page height, consistent with Achievements/Sports ── */}
-                <div style={{ height: '90vh', position: 'relative', overflow: 'hidden' }}>
-                    {content.banner ? (
-                        <img src={content.banner} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.dark},${tc.primary})` }}></div>
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.35) 60%, #ffffff 100%)' }}></div>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 2rem' }}>
-                        <p style={{ fontSize: '13px', color: '#fff', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '20px', textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>
-                            {school.name}
-                        </p>
-                        <h1 className="alumni-name" style={{ fontSize: 'clamp(44px, 7vw, 96px)', fontWeight: 800, letterSpacing: '-2px', lineHeight: 1.05, color: '#ffffff', textShadow: '0 4px 30px rgba(0,0,0,0.3)', fontStyle: content.headingItalic ? 'italic' : 'normal' }}>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 className="alumni-name" style={{ fontFamily: content.headingFont ? getFontFamily(content.headingFont) : undefined, fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: content.headingColor || '#ffffff', letterSpacing: '-1px', marginBottom: '10px', fontStyle: content.headingItalic ? 'italic' : 'normal' }}>
                             {content.heading || 'Alumni Community'}
                         </h1>
-                    </div>
-                    <div style={{ position: 'absolute', bottom: '2.5rem', left: '50%', transform: 'translateX(-50%)' }}>
-                        <svg width="22" height="22" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
                 </div>
 
                 {/* ── Description — sealed under a draggable pin, unrolls like a scroll ── */}
                 {content.description && (
-                    <div style={{ padding: '6.5rem 3rem 2rem', background: '#ffffff' }}>
+                    <div style={{ padding: '6.5rem clamp(1.25rem,6vw,3rem) 2rem', background: bc.surface }}>
                         <LegacyScroll description={content.description} tc={tc} />
                     </div>
                 )}
 
                 {/* ── Alumni list — vertical list, alternating photo position, ornamental dividers ── */}
-                <div style={{ padding: content.description ? '3rem 3rem 7rem' : '7rem 3rem' }}>
+                <div style={{ padding: content.description ? '3rem clamp(1.25rem,6vw,3rem) 7rem' : '7rem clamp(1.25rem,6vw,3rem)' }}>
                     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
                         {alumni.map((al, i) => (
                             <div key={al.id}>
-                                <AlumnusEntry alumnus={al} index={i} tc={tc} />
+                                <AlumnusEntry alumnus={al} index={i} tc={tc} bc={bc} />
                                 <OrnamentalDivider color={`${tc.primary}90`} />
                             </div>
                         ))}

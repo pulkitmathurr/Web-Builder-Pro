@@ -3,7 +3,7 @@ const { sendError } = require('../utils/response.utils');
 
 const protect = (req, res, next) => {
     try {
-        // Header se token nikalo
+        // Extract token from the header
         const authHeader = req.headers.authorization;
 
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -12,14 +12,14 @@ const protect = (req, res, next) => {
 
         const token = authHeader.split(' ')[1];
 
-        // Token verify karo
+        // Verify the token
         const decoded = verifyAccessToken(token);
 
         if (!decoded) {
             return sendError(res, 'Invalid or expired token', 401);
         }
 
-        // Token valid hai — user ki info request mein daal do
+        // Token is valid — attach user info to the request
         req.user = decoded;
         next();
 

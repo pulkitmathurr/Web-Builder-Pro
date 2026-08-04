@@ -7,7 +7,7 @@ const login = async (req, res) => {
 
         // Validation
         if (!email || !password || !role) {
-            return sendError(res, 'Email, password aur role required hai', 400);
+            return sendError(res, 'Email, password and role are required', 400);
         }
 
         if (!['super_admin', 'admin'].includes(role)) {
@@ -17,11 +17,15 @@ const login = async (req, res) => {
         const { accessToken, refreshToken, user } = await loginService(email, password, role);
 
         // Refresh token cookie 
+        // sameSite must be 'none' (with secure:true) in production because the deployed
+        // frontend and backend live on different domains — 'strict'/'lax' cookies get
+        // silently dropped on cross-site requests, breaking the refresh flow.
+        const isProd = process.env.NODE_ENV === 'production';
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 din milliseconds mein
+            secure: isProd,
+            sameSite: isProd ? 'none' : 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
         });
 
         return sendSuccess(res, 'Login successful', {
@@ -40,7 +44,7 @@ const logout = async (req, res) => {
 
         await logoutService(refreshToken);
 
-        // Cookie clear karo
+        // Clear the cookie
         res.clearCookie('refreshToken');
 
         return sendSuccess(res, 'Logout successful');

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi } from '../../../api/content.api';
 import useSchoolStore from '../../../store/schoolStore';
+import ItalicToggle from '../../../components/common/ItalicToggle';
+import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import toast from 'react-hot-toast';
 
 const hexToRgba = (hex, alpha) => {
@@ -28,15 +30,19 @@ const PERIODS = [
     { key: 'annual', label: 'Full Year' },
 ];
 
-const defaultContent = { classes: [], optionalFeeTables: [], transportTables: [] };
+const defaultContent = {
+    classes: [], optionalFeeTables: [], transportTables: [],
+    optionalSubjectsHeading: '', optionalSubjectsHeadingColor: '', optionalSubjectsHeadingFont: '', optionalSubjectsHeadingItalic: false,
+};
 
 const FeeStructure = () => {
-    const { tc } = useSchoolStore();
+    const { tc, bc } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [publishing, setPublishing] = useState(false);
     const [isPublished, setIsPublished] = useState(false);
     const [content, setContent] = useState(defaultContent);
+    const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [activeClass, setActiveClass] = useState(null);
     const [activePeriod, setActivePeriod] = useState('annual');
     const [showAddClass, setShowAddClass] = useState(false);
@@ -58,7 +64,9 @@ const FeeStructure = () => {
             if (res.data) {
                 const raw = res.data.content || {};
                 const classes = migrateClasses(raw.classes);
-                setContent({ ...defaultContent, ...raw, classes });
+                const merged = { ...defaultContent, ...raw, classes };
+                setContent(merged);
+                setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
                 if (classes.length > 0) {
                     setActiveClass(classes[0].name);
@@ -80,6 +88,7 @@ const FeeStructure = () => {
         publish ? setPublishing(true) : setSaving(true);
         try {
             await saveModuleContentApi('fee', content, publish ? 1 : isPublished ? 1 : 0);
+            setSavedSnapshot(JSON.stringify(content));
             if (publish) {
                 let current = await fetchPublishedFlag();
                 if (!current) {
@@ -223,11 +232,13 @@ const FeeStructure = () => {
     const activeClassData = getActiveClassData();
 
     const inputStyle = {
-        width: '100%', padding: '10px 14px', border: '0.5px solid #e2e8f0',
-        borderRadius: '8px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
-        boxSizing: 'border-box', background: '#ffffff', fontFamily: 'system-ui, sans-serif',
-        transition: 'border 0.2s, box-shadow 0.2s'
+        width: '100%', padding: '10px 14px', border: '1px solid #e5e9f0',
+        borderRadius: '10px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
+        boxSizing: 'border-box', background: '#f8fafc', fontFamily: 'system-ui, sans-serif',
+        transition: 'border 0.2s, box-shadow 0.2s, background 0.2s'
     };
+
+    const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
@@ -241,19 +252,30 @@ const FeeStructure = () => {
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .fs-section { animation: fadeInUp 0.35s ease forwards; }
-                .fee-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
+                @media (max-width: 800px) {
+                    .fs-section { grid-template-columns: 1fr !important; }
+                }
+                @media (max-width: 560px) {
+                    .fs-row-grid { grid-template-columns: 1fr 90px 40px !important; }
+                }
+                .fee-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .class-tab { transition: all 0.15s; }
                 .class-tab:hover { background: ${tc.light} !important; }
+                .fs-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .fs-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-            <div style={{ fontFamily: 'system-ui, sans-serif' }}>
+            <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* ── Hero Header ── */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-                    <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div className="fs-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <div>
+                        <div className="fs-hero-item">
                             <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Fee Structure</p>
                             <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Fee Structure</h1>
                             <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
@@ -265,6 +287,25 @@ const FeeStructure = () => {
                             <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
                         </div>
                     </div>
+                </div>
+
+                {/* Top Action Bar */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '1.25rem' }}>
+                    <button onClick={() => handleSave(false)} disabled={saving}
+                        style={{ padding: '11px 24px', background: isDirty ? '#fefce8' : '#ffffff', color: isDirty ? '#a16207' : '#64748b', border: isDirty ? '1px solid #fde68a' : '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                        {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                    </button>
+                    {isPublished ? (
+                        <button onClick={handleUnpublish}
+                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            Unpublish
+                        </button>
+                    ) : (
+                        <button onClick={() => handleSave(true)} disabled={publishing}
+                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            {publishing ? 'Publishing...' : 'Publish'}
+                        </button>
+                    )}
                 </div>
 
                 {/* ── Main Layout ── */}
@@ -334,7 +375,9 @@ const FeeStructure = () => {
                     {/* ── Right — Fee Editor ── */}
                     {!activeClass ? (
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '4rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                            <p style={{ fontSize: '32px', marginBottom: '12px', opacity: 0.3 }}>🏫</p>
+                            <div style={{ width: '56px', height: '56px', background: '#f1f5f9', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <svg width="24" height="24" fill="none" stroke="#94a3b8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 21h14a1 1 0 001-1V6.41a1 1 0 00-.29-.7L16.29 2.29A1 1 0 0015.59 2H5a1 1 0 00-1 1v17a1 1 0 001 1z" /></svg>
+                            </div>
                             <p style={{ fontSize: '15px', fontWeight: 500, color: '#0f172a', marginBottom: '6px' }}>No class selected</p>
                             <p style={{ fontSize: '13px', color: '#94a3b8' }}>Add a class from the left panel to start entering fees</p>
                         </div>
@@ -389,14 +432,14 @@ const FeeStructure = () => {
                                 ) : (
                                     <div style={{ marginTop: '1.25rem' }}>
                                         {/* Table Header */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '8px 12px', background: `linear-gradient(135deg,${tc.dark},${tc.primary})`, borderRadius: '8px', marginBottom: '6px' }}>
+                                        <div className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '8px 12px', background: `linear-gradient(135deg,${tc.dark},${tc.primary})`, borderRadius: '8px', marginBottom: '6px' }}>
                                             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fee Type</span>
                                             <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{PERIODS.find(p => p.key === activePeriod)?.label} Amount (₹)</span>
                                             <span></span>
                                         </div>
 
                                         {activeClassData.fees.map((fee, i) => (
-                                            <div key={fee.type} style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '10px 12px', borderBottom: '0.5px solid #f8fafc', alignItems: 'center', background: i % 2 === 0 ? '#fafafa' : '#ffffff', borderRadius: '6px', marginBottom: '3px' }}>
+                                            <div key={fee.type} className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '10px 12px', borderBottom: '0.5px solid #f8fafc', alignItems: 'center', background: i % 2 === 0 ? '#fafafa' : '#ffffff', borderRadius: '6px', marginBottom: '3px' }}>
                                                 <span style={{ fontSize: '13px', fontWeight: 500, color: '#0f172a' }}>{fee.type}</span>
                                                 <div style={{ position: 'relative' }}>
                                                     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b' }}>₹</span>
@@ -417,7 +460,7 @@ const FeeStructure = () => {
                                         ))}
 
                                         {/* Total Row */}
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '12px 12px', marginTop: '6px', background: 'linear-gradient(135deg,#fdf0f5,#fff5f8)', borderRadius: '8px', border: '1px solid #f9c4d4' }}>
+                                        <div className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '12px 12px', marginTop: '6px', background: 'linear-gradient(135deg,#fdf0f5,#fff5f8)', borderRadius: '8px', border: '1px solid #f9c4d4' }}>
                                             <span style={{ fontSize: '13px', fontWeight: 700, color: tc.primary }}>Total {PERIODS.find(p => p.key === activePeriod)?.label} Fee</span>
                                             <span style={{ fontSize: '15px', fontWeight: 800, color: tc.primary }}>₹{getTotal(activeClassData.fees).toLocaleString('en-IN')}</span>
                                             <span></span>
@@ -434,9 +477,29 @@ const FeeStructure = () => {
                     <div style={{ marginBottom: '1rem' }}>
                         <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Optional Fee Tables</p>
                         <p style={{ fontSize: '12px', color: '#94a3b8' }}>
-                            Shown on the public site under "Other optional subjects are also offered" — Robotics, Music, Foreign Language, Swimming etc. Shown 2 per row.
+                            Robotics, Music, Foreign Language, Swimming etc. Shown 2 per row.
                         </p>
                     </div>
+
+                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Section Heading</label>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <input
+                                className="fee-input"
+                                type="text"
+                                value={content.optionalSubjectsHeading}
+                                onChange={e => setContent(prev => ({ ...prev, optionalSubjectsHeading: e.target.value }))}
+                                placeholder="Other optional subjects are also offered"
+                                style={{ ...inputStyle, fontStyle: content.optionalSubjectsHeadingItalic ? 'italic' : 'normal' }}
+                            />
+                            <ItalicToggle active={!!content.optionalSubjectsHeadingItalic} onToggle={() => setContent(prev => ({ ...prev, optionalSubjectsHeadingItalic: !prev.optionalSubjectsHeadingItalic }))} />
+                        </div>
+                        <HeadingStyleField
+                            color={content.optionalSubjectsHeadingColor} onColorChange={val => setContent(prev => ({ ...prev, optionalSubjectsHeadingColor: val }))}
+                            font={content.optionalSubjectsHeadingFont} onFontChange={val => setContent(prev => ({ ...prev, optionalSubjectsHeadingFont: val }))}
+                        />
+                    </div>
+
                     <FeeTableEditor
                         sectionKey="optionalFeeTables"
                         tables={content.optionalFeeTables}
@@ -471,24 +534,6 @@ const FeeStructure = () => {
                     />
                 </div>
 
-                {/* Bottom Save Bar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                    <button onClick={() => handleSave(false)} disabled={saving}
-                        style={{ padding: '11px 24px', background: '#ffffff', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>
-                        {saving ? 'Saving...' : 'Save Draft'}
-                    </button>
-                    {isPublished ? (
-                        <button onClick={handleUnpublish}
-                            style={{ padding: '11px 24px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                            Unpublish
-                        </button>
-                    ) : (
-                        <button onClick={() => handleSave(true)} disabled={publishing}
-                            style={{ padding: '11px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {publishing ? 'Publishing...' : 'Publish'}
-                        </button>
-                    )}
-                </div>
             </div>
         </>
     );
@@ -561,13 +606,13 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
                 </div>
             )}
 
-            {tables.map((table, ti) => (
+            {tables.map((table) => (
                 <div key={table.id} style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                     <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <input
                             value={table.title}
                             onChange={e => onUpdateTable(sectionKey, table.id, 'title', e.target.value)}
-                            placeholder={`Table ${ti + 1} title, e.g. "Optional Fee"`}
+                            placeholder="Enter Table Title"
                             style={{ ...inputStyle, fontWeight: 600, flex: 1 }}
                         />
                         <button onClick={() => onRemoveTable(sectionKey, table.id)}
@@ -577,7 +622,8 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
                     </div>
 
                     <div style={{ padding: '1.25rem 1.5rem' }}>
-                        <div style={{ display: 'flex', gap: '10px', marginBottom: '1.25rem' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem' }}>
+                            <div style={{ width: '68px', flexShrink: 0 }}></div>
                             <div style={{ flex: 1 }}>
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Item Column Label</label>
                                 <input value={table.itemLabel} onChange={e => onUpdateTable(sectionKey, table.id, 'itemLabel', e.target.value)} style={inputStyle} />
@@ -586,6 +632,7 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount Column Label</label>
                                 <input value={table.amountLabel} onChange={e => onUpdateTable(sectionKey, table.id, 'amountLabel', e.target.value)} style={inputStyle} />
                             </div>
+                            <div style={{ width: '32px', flexShrink: 0 }}></div>
                         </div>
 
                         {table.rows.map(row => (
@@ -594,13 +641,13 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
                                 {row.type === 'item' ? (
                                     <>
                                         <input value={row.label} onChange={e => onUpdateRow(sectionKey, table.id, row.id, 'label', e.target.value)}
-                                            placeholder="e.g. Robotics Club (monthly)" style={{ ...inputStyle, flex: 2 }} />
+                                            placeholder="Enter Item Label" style={{ ...inputStyle, flex: 1 }} />
                                         <input value={row.value} onChange={e => onUpdateRow(sectionKey, table.id, row.id, 'value', e.target.value)}
-                                            placeholder="e.g. ₹ 600 pm" style={{ ...inputStyle, flex: 1 }} />
+                                            placeholder="Enter Amount" style={{ ...inputStyle, flex: 1 }} />
                                     </>
                                 ) : (
                                     <input value={row.text} onChange={e => onUpdateRow(sectionKey, table.id, row.id, 'text', e.target.value)}
-                                        placeholder={row.type === 'subheading' ? 'e.g. Individual (one to one) lessons' : 'Footnote text, e.g. *2-wheeler allowed only with valid driving licence'}
+                                        placeholder={row.type === 'subheading' ? 'Enter Subheading Text' : 'Enter Footnote Text'}
                                         style={{ ...inputStyle, flex: 1 }} />
                                 )}
                                 <button onClick={() => onRemoveRow(sectionKey, table.id, row.id)}

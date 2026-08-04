@@ -8,8 +8,11 @@ import {
 import RichTextEditor from "../../../components/common/RichTextEditor";
 import ImageCropModal from "../../../components/common/ImageCropModal";
 import ItalicToggle from "../../../components/common/ItalicToggle";
+import HeadingStyleField from "../../../components/common/HeadingStyleField";
 import useSchoolStore from "../../../store/schoolStore";
 import toast from "react-hot-toast";
+
+const MAX_CATEGORY_IMAGES = 5;
 
 const hexToRgba = (hex, alpha) => {
   const h = hex.replace("#", "");
@@ -28,25 +31,27 @@ const defaultCategory = {
   id: "",
   slug: "",
   name: "",
-  banner: "",
   heading: "",
   description: "",
   images: [],
+  horizontalImages: [],
 };
 const defaultContent = { categories: [] };
 
 const Infrastructure = () => {
-  const { tc } = useSchoolStore();
+  const { tc, bc } = useSchoolStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [content, setContent] = useState(defaultContent);
+  const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [uploading, setUploading] = useState({});
-  const [bannerCropSrc, setBannerCropSrc] = useState(null);
+  const [cropTarget, setCropTarget] = useState(null); // { mode: 'image' | 'horizontal', src }
+  const [imageQueue, setImageQueue] = useState([]); // remaining files still waiting to be cropped, for whichever mode is active
 
   useEffect(() => {
     fetchContent();
@@ -56,7 +61,9 @@ const Infrastructure = () => {
     try {
       const res = await getModuleContentApi("infrastructure");
       if (res.data) {
-        setContent({ ...defaultContent, ...res.data.content });
+        const merged = { ...defaultContent, ...res.data.content };
+        setContent(merged);
+        setSavedSnapshot(JSON.stringify(merged));
         setIsPublished(res.data.is_published === 1);
         if (res.data.content?.categories?.length > 0) {
           setActiveCategory(res.data.content.categories[0].id);
@@ -82,6 +89,7 @@ const Infrastructure = () => {
         content,
         publish ? 1 : isPublished ? 1 : 0,
       );
+      setSavedSnapshot(JSON.stringify(content));
       if (publish) {
         let current = await fetchPublishedFlag();
         if (!current) {
@@ -158,34 +166,55 @@ const Infrastructure = () => {
     }));
   };
 
-  const uploadBanner = async (file) => {
-    setUploading((prev) => ({ ...prev, banner: true }));
-    try {
-      const res = await uploadContentImageApi(file);
-      updateField("banner", res.data.url);
-      toast.success("Banner uploaded!");
-    } catch (e) {
-      toast.error("Failed to upload");
-    } finally {
-      setUploading((prev) => ({ ...prev, banner: false }));
+  // Each file is cropped one at a time (freeform, no locked aspect — keep it tall/vertical
+  // for the best fit in the public slider) before upload; capped at MAX_CATEGORY_IMAGES per
+  // category. Once confirmed, the next queued file automatically opens in the crop modal.
+  const startImageUpload = (files) => {
+    const cat = getActiveCategoryData();
+    const room = MAX_CATEGORY_IMAGES - (cat?.images || []).length;
+    if (room <= 0) {
+      toast.error(`Maximum ${MAX_CATEGORY_IMAGES} images allowed per category`);
+      return;
     }
+    const toQueue = files.slice(0, room);
+    if (files.length > toQueue.length) {
+      toast.error(`Only ${room} more image(s) can be added (max ${MAX_CATEGORY_IMAGES})`);
+    }
+    setImageQueue(toQueue.slice(1));
+    setCropTarget({ mode: "image", src: URL.createObjectURL(toQueue[0]) });
   };
 
-  const addImages = async (files) => {
-    setUploading((prev) => ({ ...prev, image: true }));
+  // Horizontal gallery images (carousel below the description) — same queued crop flow,
+  // freeform aspect, no cap.
+  const startHorizontalUpload = (files) => {
+    if (files.length === 0) return;
+    setImageQueue(files.slice(1));
+    setCropTarget({ mode: "horizontal", src: URL.createObjectURL(files[0]) });
+  };
+
+  const onCropConfirmed = async (croppedFile) => {
+    const target = cropTarget;
+    setCropTarget(null);
+    const key = target.mode === "horizontal" ? "horizontalImage" : "image";
+    setUploading((prev) => ({ ...prev, [key]: true }));
     try {
-      const uploadedUrls = [];
-      for (const file of files) {
-        const res = await uploadContentImageApi(file);
-        uploadedUrls.push(res.data.url);
-      }
+      const res = await uploadContentImageApi(croppedFile);
       const cat = getActiveCategoryData();
-      updateField("images", [...(cat.images || []), ...uploadedUrls]);
-      toast.success(`${uploadedUrls.length} image(s) added!`);
+      if (target.mode === "horizontal") {
+        updateField("horizontalImages", [...(cat.horizontalImages || []), res.data.url]);
+      } else {
+        updateField("images", [...(cat.images || []), res.data.url]);
+      }
+      toast.success("Image uploaded!");
     } catch (e) {
-      toast.error("Failed to upload one or more images");
+      toast.error("Failed to upload image");
     } finally {
-      setUploading((prev) => ({ ...prev, image: false }));
+      setUploading((prev) => ({ ...prev, [key]: false }));
+      if (imageQueue.length > 0) {
+        const [next, ...rest] = imageQueue;
+        setImageQueue(rest);
+        setCropTarget({ mode: target.mode, src: URL.createObjectURL(next) });
+      }
     }
   };
 
@@ -197,17 +226,26 @@ const Infrastructure = () => {
     );
   };
 
+  const removeHorizontalImage = (idx) => {
+    const cat = getActiveCategoryData();
+    updateField(
+      "horizontalImages",
+      (cat.horizontalImages || []).filter((_, i) => i !== idx),
+    );
+  };
+
   const inputStyle = {
     width: "100%",
     padding: "11px 14px",
-    border: "0.5px solid #e2e8f0",
+    border: "1px solid #e5e9f0",
     borderRadius: "10px",
     fontSize: "13.5px",
     color: "#0f172a",
     outline: "none",
     boxSizing: "border-box",
-    background: "#ffffff",
+    background: "#f8fafc",
     fontFamily: "system-ui, sans-serif",
+    transition: "border 0.2s, box-shadow 0.2s, background 0.2s",
   };
 
   const labelStyle = {
@@ -219,6 +257,8 @@ const Infrastructure = () => {
     textTransform: "uppercase",
     letterSpacing: "0.05em",
   };
+
+  const isDirty = savedSnapshot !== null && JSON.stringify(content) !== savedSnapshot;
 
   if (loading)
     return (
@@ -251,16 +291,22 @@ const Infrastructure = () => {
       <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .infra-section { animation: fadeInUp 0.35s ease forwards; }
                 .cat-tab:hover { background: ${tc.light} !important; }
+                .infra-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .infra-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
+                .infra-hero-orb { animation: drift1 9s ease-in-out infinite; }
             `}</style>
 
-      <div style={{ fontFamily: "system-ui, sans-serif" }}>
+      <div style={{ fontFamily: "system-ui, sans-serif", background: bc.surface, margin: "-24px", padding: "24px", minHeight: "100vh" }}>
         {/* Hero Header */}
-        <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '10px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
-          <div style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
+        <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+          <div className="infra-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
           <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
+            <div className="infra-hero-item">
               <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Infrastructure</p>
               <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Infrastructure Categories</h1>
               <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
@@ -272,6 +318,61 @@ const Infrastructure = () => {
               <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
             </div>
           </div>
+        </div>
+
+        {/* Top Action Bar */}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginBottom: "1.25rem" }}>
+          <button
+            onClick={() => handleSave(false)}
+            disabled={saving}
+            style={{
+              padding: "11px 24px",
+              background: isDirty ? "#fefce8" : "#ffffff",
+              color: isDirty ? "#a16207" : "#64748b",
+              border: isDirty ? "1px solid #fde68a" : "1px solid #e2e8f0",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: isDirty ? 700 : 500,
+              cursor: "pointer",
+            }}
+          >
+            {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
+          </button>
+          {isPublished ? (
+            <button
+              onClick={handleUnpublish}
+              style={{
+                padding: "11px 24px",
+                background: "#fef2f2",
+                color: "#dc2626",
+                border: "1px solid #fecaca",
+                borderRadius: "6px",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Unpublish
+            </button>
+          ) : (
+            <button
+              onClick={() => handleSave(true)}
+              disabled={publishing}
+              style={{
+                padding: "11px 28px",
+                background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
+                color: "#fff",
+                border: "none",
+                borderRadius: "6px",
+                fontSize: "13px",
+                fontWeight: 600,
+                cursor: "pointer",
+                boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`,
+              }}
+            >
+              {publishing ? "Publishing..." : "Publish"}
+            </button>
+          )}
         </div>
 
         {/* ── Main Layout ── */}
@@ -396,10 +497,11 @@ const Infrastructure = () => {
                   }}
                 >
                   <input
+                    className="infra-input"
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="e.g. Sports Facilities"
+                    placeholder="Enter Category Name"
                     style={{
                       ...inputStyle,
                       fontSize: "12px",
@@ -536,81 +638,24 @@ const Infrastructure = () => {
                   gap: "20px",
                 }}
               >
-                {/* Banner */}
-                <div>
-                  <label style={labelStyle}>Banner Image</label>
-                  <div
-                    onClick={() =>
-                      document.getElementById("banner-input").click()
-                    }
-                    style={{
-                      border: "1.5px dashed #e2e8f0",
-                      borderRadius: "12px",
-                      padding: activeData.banner ? 0 : "2rem",
-                      textAlign: "center",
-                      cursor: "pointer",
-                      background: activeData.banner ? "transparent" : "#fafafa",
-                      overflow: "hidden",
-                      minHeight: activeData.banner ? "160px" : "auto",
-                    }}
-                  >
-                    {uploading.banner ? (
-                      <div style={{ padding: "2rem" }}>
-                        <div
-                          style={{
-                            width: "24px",
-                            height: "24px",
-                            border: "3px solid #f0c4c4",
-                            borderTop: `3px solid ${tc.primary}`,
-                            borderRadius: "50%",
-                            animation: "spin 1s linear infinite",
-                            margin: "0 auto",
-                          }}
-                        ></div>
-                      </div>
-                    ) : activeData.banner ? (
-                      <img
-                        src={activeData.banner}
-                        alt=""
-                        style={{
-                          width: "100%",
-                          height: "160px",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    ) : (
-                      <p style={{ fontSize: "13px", color: "#64748b" }}>
-                        🖼️ Click to upload banner — recommended 1920×1080
-                      </p>
-                    )}
-                  </div>
-                  <input
-                    id="banner-input"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const f = e.target.files[0];
-                      e.target.value = "";
-                      if (f) setBannerCropSrc(URL.createObjectURL(f));
-                    }}
-                    style={{ display: "none" }}
-                  />
-                </div>
-
                 {/* Heading */}
                 <div>
                   <label style={labelStyle}>Heading</label>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <input
+                      className="infra-input"
                       type="text"
                       value={activeData.heading}
                       onChange={(e) => updateField("heading", e.target.value)}
-                      placeholder="e.g. Sports Facilities"
+                      placeholder="Enter Heading"
                       style={{ ...inputStyle, fontStyle: activeData.headingItalic ? "italic" : "normal" }}
                     />
                     <ItalicToggle active={!!activeData.headingItalic} onToggle={() => updateField("headingItalic", !activeData.headingItalic)} />
                   </div>
+                  <HeadingStyleField
+                    color={activeData.headingColor} onColorChange={(val) => updateField("headingColor", val)}
+                    font={activeData.headingFont} onFontChange={(val) => updateField("headingFont", val)}
+                  />
                 </div>
 
                 {/* Description */}
@@ -621,12 +666,18 @@ const Infrastructure = () => {
                     onChange={(val) => updateField("description", val)}
                     placeholder="Describe this facility/category in detail..."
                     minHeight="150px"
+                    maxWidth="814px"
+                    fontSize="15.5px"
+                    fontFamily="'Inter', system-ui, sans-serif"
                   />
                 </div>
 
                 {/* Images Grid */}
                 <div>
-                  <label style={labelStyle}>Images</label>
+                  <label style={labelStyle}>Images (Vertical, max {MAX_CATEGORY_IMAGES})</label>
+                  <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
+                    Shown as a slider beside the description on the live page. You'll get a crop tool for each image (freely adjustable from every side — keep it tall/vertical) before it's added. JPG, PNG, WEBP · Max 5MB each.
+                  </p>
                   <div
                     style={{
                       display: "grid",
@@ -642,7 +693,7 @@ const Infrastructure = () => {
                           position: "relative",
                           borderRadius: "10px",
                           overflow: "hidden",
-                          aspectRatio: "1",
+                          aspectRatio: "3/4",
                         }}
                       >
                         <img
@@ -678,9 +729,109 @@ const Infrastructure = () => {
                       </div>
                     ))}
                   </div>
+                  {(activeData.images || []).length >= MAX_CATEGORY_IMAGES ? (
+                    <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "0.75rem" }}>
+                      Maximum {MAX_CATEGORY_IMAGES} images added — remove one to add another.
+                    </p>
+                  ) : (
+                    <div
+                      onClick={() =>
+                        document.getElementById("image-input").click()
+                      }
+                      style={{
+                        border: "1.5px dashed #e2e8f0",
+                        borderRadius: "12px",
+                        padding: "1.5rem",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        background: "#fafafa",
+                      }}
+                    >
+                      {uploading.image ? (
+                        <p style={{ fontSize: "13px", color: "#64748b" }}>
+                          Uploading...
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: "13px", color: "#64748b" }}>
+                          + Click to add image
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <input
+                    id="image-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files);
+                      e.target.value = "";
+                      if (files.length > 0) startImageUpload(files);
+                    }}
+                    style={{ display: "none" }}
+                  />
+                </div>
+
+                {/* Horizontal Gallery Images (Carousel) */}
+                <div>
+                  <label style={labelStyle}>Horizontal Gallery Images (Carousel)</label>
+                  <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
+                    Shown as a sliding carousel below the description — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.
+                  </p>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(4,1fr)",
+                      gap: "14px",
+                      marginBottom: "1.25rem",
+                    }}
+                  >
+                    {(activeData.horizontalImages || []).map((img, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          position: "relative",
+                          borderRadius: "10px",
+                          overflow: "hidden",
+                          aspectRatio: "16/9",
+                        }}
+                      >
+                        <img
+                          src={img}
+                          alt=""
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <button
+                          onClick={() => removeHorizontalImage(i)}
+                          style={{
+                            position: "absolute",
+                            top: "6px",
+                            right: "6px",
+                            width: "24px",
+                            height: "24px",
+                            background: "rgba(0,0,0,0.6)",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "50%",
+                            cursor: "pointer",
+                            fontSize: "14px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                   <div
                     onClick={() =>
-                      document.getElementById("image-input").click()
+                      document.getElementById("horizontal-image-input").click()
                     }
                     style={{
                       border: "1.5px dashed #e2e8f0",
@@ -691,24 +842,25 @@ const Infrastructure = () => {
                       background: "#fafafa",
                     }}
                   >
-                    {uploading.image ? (
+                    {uploading.horizontalImage ? (
                       <p style={{ fontSize: "13px", color: "#64748b" }}>
                         Uploading...
                       </p>
                     ) : (
                       <p style={{ fontSize: "13px", color: "#64748b" }}>
-                        + Click to add image
+                        + Click to add images (multiple allowed)
                       </p>
                     )}
                   </div>
                   <input
-                    id="image-input"
+                    id="horizontal-image-input"
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={(e) => {
                       const files = Array.from(e.target.files);
-                      if (files.length > 0) addImages(files);
+                      e.target.value = "";
+                      startHorizontalUpload(files);
                     }}
                     style={{ display: "none" }}
                   />
@@ -718,75 +870,14 @@ const Infrastructure = () => {
           )}
         </div>
 
-        {/* Bottom Save Bar */}
-        <div
-          style={{
-            marginTop: "1.5rem",
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: "10px",
-          }}
-        >
-          <button
-            onClick={() => handleSave(false)}
-            disabled={saving}
-            style={{
-              padding: "11px 24px",
-              background: "#ffffff",
-              color: "#64748b",
-              border: "1px solid #e2e8f0",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-              cursor: "pointer",
-            }}
-          >
-            {saving ? "Saving..." : "Save Draft"}
-          </button>
-          {isPublished ? (
-            <button
-              onClick={handleUnpublish}
-              style={{
-                padding: "11px 24px",
-                background: "#fef2f2",
-                color: "#dc2626",
-                border: "1px solid #fecaca",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-              }}
-            >
-              Unpublish
-            </button>
-          ) : (
-            <button
-              onClick={() => handleSave(true)}
-              disabled={publishing}
-              style={{
-                padding: "11px 28px",
-                background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
-                color: "#fff",
-                border: "none",
-                borderRadius: "6px",
-                fontSize: "13px",
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`,
-              }}
-            >
-              {publishing ? "Publishing..." : "Publish"}
-            </button>
-          )}
-        </div>
       </div>
 
-      {bannerCropSrc && (
+      {cropTarget && (
         <ImageCropModal
-          imageSrc={bannerCropSrc}
-          aspect={16 / 9}
-          onCancel={() => setBannerCropSrc(null)}
-          onCropComplete={(croppedFile) => { setBannerCropSrc(null); uploadBanner(croppedFile); }}
+          imageSrc={cropTarget.src}
+          aspect={null}
+          onCancel={() => { setCropTarget(null); setImageQueue([]); }}
+          onCropComplete={onCropConfirmed}
         />
       )}
     </>

@@ -79,8 +79,21 @@ const SchoolWebsite = () => {
     const [scrollY, setScrollY] = useState(0);
     const [introVisible, setIntroVisible] = useState(true);
     const [introPhase, setIntroPhase] = useState('enter');
+    const [bannerIndex, setBannerIndex] = useState(0);
+    const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
 
     useEffect(() => { fetchSchool(); }, [slug]);
+
+    const heroBanners = homeContent?.heroBgType === 'banner' ? (homeContent?.heroBanners || []) : [];
+
+    useEffect(() => {
+        setBannerIndex(0);
+        if (heroBanners.length < 2) return;
+        const timer = setInterval(() => {
+            setBannerIndex(i => (i + 1) % heroBanners.length);
+        }, 8000);
+        return () => clearInterval(timer);
+    }, [heroBanners.length]);
 
     useEffect(() => {
         const handleScroll = () => setScrollY(window.scrollY);
@@ -98,6 +111,17 @@ const SchoolWebsite = () => {
 
         return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
     }, [school]);
+
+    // ── Welcome banner popup — optional, shown once per browser tab session, only
+    // after the intro animation (if any) has finished so the two never overlap ──
+    useEffect(() => {
+        if (!school || introVisible) return;
+        if (!school.welcome_banner_enabled || !school.welcome_banner_url) return;
+        const key = `welcomeBannerShown_${school.id}`;
+        if (sessionStorage.getItem(key)) return;
+        sessionStorage.setItem(key, '1');
+        setShowWelcomeBanner(true);
+    }, [school, introVisible]);
 
     const fetchSchool = async () => {
         try {
@@ -178,8 +202,27 @@ const SchoolWebsite = () => {
                 </div>
             )}
 
+            {/* ── Welcome Banner Popup — optional admissions/promo poster set from Settings ── */}
+            {showWelcomeBanner && school.welcome_banner_url && (
+                <div onClick={() => setShowWelcomeBanner(false)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(2,6,23,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.3s ease' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '440px', width: '100%' }}>
+                        <button onClick={() => setShowWelcomeBanner(false)} aria-label="Close"
+                            style={{ position: 'absolute', top: '-14px', right: '-14px', width: '32px', height: '32px', borderRadius: '50%', background: '#ffffff', border: 'none', color: '#0f172a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: '18px', lineHeight: 1, boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
+                            ×
+                        </button>
+                        <div
+                            onClick={() => { if (school.welcome_banner_link) window.open(school.welcome_banner_link, '_blank', 'noopener,noreferrer'); }}
+                            style={{ cursor: school.welcome_banner_link ? 'pointer' : 'default', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.6)', lineHeight: 0 }}>
+                            <img src={school.welcome_banner_url} alt="Welcome" style={{ width: '100%', maxHeight: '85vh', objectFit: 'contain', display: 'block', background: '#0f172a' }} />
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 * { margin: 0; padding: 0; box-sizing: border-box; }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
                 @keyframes waterWave { from { transform: translateX(0); } to { transform: translateX(-20px); } }
                 @keyframes waterDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
@@ -192,6 +235,12 @@ const SchoolWebsite = () => {
 .rte-content .ql-size-small { font-size: 0.75em; }
 .rte-content .ql-size-large { font-size: 1.5em; }
 .rte-content .ql-size-huge { font-size: 2.5em; }
+.rte-content .ql-font-inter { font-family: 'Inter', system-ui, sans-serif; }
+.rte-content .ql-font-poppins { font-family: 'Poppins', sans-serif; }
+.rte-content .ql-font-montserrat { font-family: 'Montserrat', sans-serif; }
+.rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
+.rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
+.rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
             `}</style>
 
             <div style={{ width: '100%', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: '#020617', position: 'relative', overflowX: 'hidden' }}>
@@ -199,9 +248,17 @@ const SchoolWebsite = () => {
                 {/* ── Shared Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" />
 
-                {/* ── Hero — video background ── */}
-                <div style={{ width: '100%', height: '100vh', position: 'relative', overflow: 'hidden' }}>
-                    {school.hero_video_url ? (
+                {/* ── Hero — video / banner slideshow background — taller than one viewport (fixed
+                     px buffer on top of 100vh, not a vh percentage, so it stays taller than the
+                     screen even on shorter laptop viewports) so the footer isn't already visible
+                     without scrolling ── */}
+                <div style={{ width: '100%', height: 'calc(100vh + 220px)', position: 'relative', overflow: 'hidden' }}>
+                    {heroBanners.length > 0 ? (
+                        heroBanners.map((b, i) => (
+                            <div key={b.id || b.url} aria-hidden={i !== bannerIndex}
+                                style={{ position: 'absolute', inset: 0, backgroundImage: `url(${b.url})`, backgroundSize: 'cover', backgroundPosition: 'center', zIndex: 0, opacity: i === bannerIndex ? 1 : 0, transition: 'opacity 1.2s ease' }} />
+                        ))
+                    ) : school.hero_video_url ? (
                         <video autoPlay muted loop playsInline style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}>
                             <source src={school.hero_video_url} type="video/mp4" />
                         </video>
@@ -211,32 +268,34 @@ const SchoolWebsite = () => {
                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(2,6,23,0.55)', zIndex: 1 }}></div>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '60px 60px', zIndex: 1 }}></div>
 
-                    <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '0 5rem 7rem' }}>
+                    {/* Pinned to the real viewport height (not the taller buffered container above)
+                         so the heading/buttons always land above the fold, no scrolling needed. */}
+                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100vh', zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.25rem,7vw,4.5rem) clamp(1.25rem,6vw,5rem) clamp(3rem,10vw,4.5rem)', boxSizing: 'border-box' }}>
                         <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '16px' }}>
                             {school.city || 'Excellence in Education'}
                         </p>
-                        <h1 style={{ fontFamily: getFontFamily(school.heading_font), fontSize: '76px', fontWeight: 900, lineHeight: 1.0, marginBottom: homeContent?.tagline ? '14px' : '24px', letterSpacing: '-3px', maxWidth: '900px', background: `linear-gradient(90deg, #fff 0%, ${tc.secondary} 50%, #fff 100%)`, backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'shimmer 4s linear infinite' }}>
+                        <h1 style={homeContent?.schoolNameColor ? {
+                            fontFamily: getFontFamily(homeContent?.schoolNameFont), fontSize: 'clamp(34px,9vw,76px)', fontWeight: 900, lineHeight: 1.15, paddingBottom: '0.08em', marginBottom: homeContent?.tagline ? '14px' : '24px', letterSpacing: '-1.5px', maxWidth: '900px', color: homeContent.schoolNameColor,
+                        } : {
+                            fontFamily: getFontFamily(homeContent?.schoolNameFont), fontSize: 'clamp(34px,9vw,76px)', fontWeight: 900, lineHeight: 1.15, paddingBottom: '0.08em', marginBottom: homeContent?.tagline ? '14px' : '24px', letterSpacing: '-1.5px', maxWidth: '900px', background: `linear-gradient(90deg, #fff 0%, ${tc.secondary} 50%, #fff 100%)`, backgroundSize: '200% auto', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', animation: 'shimmer 4s linear infinite',
+                        }}>
                             {school.name}
                         </h1>
 
                         {homeContent?.tagline && (
-                            <p style={{ fontSize: '22px', color: tc.secondary, marginBottom: '20px', fontWeight: 600, letterSpacing: '0.02em' }}>
+                            <p style={{ fontFamily: homeContent.taglineFont ? getFontFamily(homeContent.taglineFont) : undefined, fontSize: 'clamp(16px,3.2vw,22px)', color: homeContent.taglineColor || tc.secondary, marginBottom: '20px', fontWeight: 600, letterSpacing: '0.02em' }}>
                                 {homeContent.tagline}
                             </p>
                         )}
 
                         {homeContent?.subText && (
-                            <div className="rte-content" style={{ fontSize: '18px', color: 'rgba(255,255,255,0.55)', lineHeight: 1.8, marginBottom: '2.5rem', width: '80%', maxWidth: '1040px', overflowWrap: 'break-word' }}
+                            <div className="rte-content" style={{ fontFamily: homeContent.subTextFont ? getFontFamily(homeContent.subTextFont) : undefined, fontSize: 'clamp(14px,2vw,18px)', color: homeContent.subTextColor || 'rgba(255,255,255,0.55)', lineHeight: 1.8, marginBottom: '2.5rem', width: '100%', maxWidth: '1040px', overflowWrap: 'normal', wordBreak: 'normal' }}
                                 dangerouslySetInnerHTML={{ __html: homeContent.subText }} />
                         )}
-                        <div style={{ display: 'flex', gap: '14px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
                             <WaterButton variant="solid" tc={tc} onClick={() => navigate(`/school/${slug}/about`)}>Explore School</WaterButton>
-                            <WaterButton variant="outline" tc={tc}>Admission Enquiry</WaterButton>
+                            <WaterButton variant="outline" tc={tc} onClick={() => window.dispatchEvent(new Event('open-admission-enquiry'))}>Admission Enquiry</WaterButton>
                         </div>
-                    </div>
-
-                    <div style={{ position: 'absolute', left: '5rem', bottom: '3rem', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '8px', zIndex: 2 }}>
-                        <svg width="24" height="24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
                     </div>
                 </div>
 

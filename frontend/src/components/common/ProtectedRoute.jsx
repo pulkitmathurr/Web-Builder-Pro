@@ -4,7 +4,7 @@ import useAuthStore from '../../store/authStore';
 const ProtectedRoute = ({ children, allowedRole }) => {
     const { isAuthenticated, role } = useAuthStore();
 
-    // Login nahi hai
+    // Not logged in
     if (!isAuthenticated) {
         if (allowedRole === 'super_admin') {
             return <Navigate to="/super-admin/login" replace />;
@@ -12,7 +12,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
         return <Navigate to="/login" replace />;
     }
 
-    // Role match nahi karta
+    // Role doesn't match
     if (allowedRole && role !== allowedRole) {
         if (role === 'super_admin') {
             return <Navigate to="/super-admin/dashboard" replace />;

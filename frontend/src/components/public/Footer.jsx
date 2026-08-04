@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getPublicModuleContentApi } from "../../api/content.api";
+import { getPublicModuleContentApi, getPublishedModulesApi } from "../../api/content.api";
 import { COURSE_LEVELS, isLevelComplete } from "../../utils/courseLevels";
+import { isModuleEnabled } from "../../constants/publicNav";
 
 const SocialIcon = ({ type }) => {
     const icons = {
@@ -15,47 +16,52 @@ const SocialIcon = ({ type }) => {
     return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d={icons[type]} /></svg>;
 };
 
-const FOOTER_BG = '#222831';
-
 // ── Footer nav categories (Milestone 2 links only) ──
+// `key` on every link maps to the module's `module_key` in tbl_module_content, so the footer
+// can filter itself down to only modules the school has actually published (see publishedKeys).
 const FOOTER_NAV = [
     {
         heading: 'About Us',
         links: [
-            { label: 'About Us',      path: (slug) => `/school/${slug}/about` },
-            { label: 'Faculty',       path: (slug) => `/school/${slug}/faculty` },
-            { label: 'Infrastructure',path: (slug) => `/school/${slug}/infrastructure` },
-            { label: 'Alumni',        path: (slug) => `/school/${slug}/alumni` },
-            { label: 'TC Information',path: (slug) => `/school/${slug}/tc` },
+            { key: 'about',          label: 'About Us',       path: (slug) => `/school/${slug}/about` },
+            { key: 'faculty',        label: 'Faculty',        path: (slug) => `/school/${slug}/faculty` },
+            { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure` },
+            { key: 'alumni',         label: 'Alumni',         path: (slug) => `/school/${slug}/alumni` },
+            { key: 'tc',             label: 'TC Information', path: (slug) => `/school/${slug}/tc` },
         ],
     },
     {
         heading: 'Academics',
         links: [
-            { key: 'courses', label: 'Courses',          path: (slug) => `/school/${slug}/courses` },
-            { label: 'Fee Structure',    path: (slug) => `/school/${slug}/fee` },
-            { label: 'Public Disclosure',path: (slug) => `/school/${slug}/public-disclosure` },
+            { key: 'courses',    label: 'Courses',           path: (slug) => `/school/${slug}/courses` },
+            { key: 'fee',        label: 'Fee Structure',     path: (slug) => `/school/${slug}/fee` },
+            { key: 'disclosure', label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {
         heading: 'Highlights',
         links: [
-            { label: 'Sports',      path: (slug) => `/school/${slug}/sports` },
-            { label: 'Gallery',     path: (slug) => `/school/${slug}/gallery/photo` },
-            { label: 'Achievements',path: (slug) => `/school/${slug}/achievements` },
+            { key: 'sports',       label: 'Sports',       path: (slug) => `/school/${slug}/sports` },
+            { key: 'gallery',      label: 'Gallery',      path: (slug) => `/school/${slug}/gallery/photo` },
+            { key: 'achievements', label: 'Achievements', path: (slug) => `/school/${slug}/achievements` },
         ],
     },
 ];
 
 const Footer = ({ school, slug, tc, bgImage }) => {
+    const footerBg = tc.dark;
     const navigate = useNavigate();
     const [coursesContent, setCoursesContent] = useState(null);
+    const [publishedKeys, setPublishedKeys] = useState([]);
 
     useEffect(() => {
         if (!school?.id) return;
         getPublicModuleContentApi(school.id, 'courses')
             .then(res => setCoursesContent(res.data || {}))
             .catch(() => setCoursesContent({}));
+        getPublishedModulesApi(school.id)
+            .then(res => setPublishedKeys(res.data || []))
+            .catch(() => setPublishedKeys([]));
     }, [school?.id]);
 
     // Footer's Courses link routes to whichever fully-filled level page exists — there's no
@@ -81,20 +87,34 @@ const Footer = ({ school, slug, tc, bgImage }) => {
     };
 
     return (
-        <footer style={{ position: 'relative', overflow: 'hidden', borderTopLeftRadius: '48px', borderTopRightRadius: '48px', fontFamily: "'Inter', system-ui, sans-serif", color: 'rgba(255,255,255,0.85)' }}>
+        <footer style={{ position: 'relative', overflow: 'hidden', fontFamily: "'Inter', system-ui, sans-serif", color: 'rgba(255,255,255,0.85)' }}>
+            <style>{`
+                @media (max-width: 980px) {
+                    .footer-main-grid { grid-template-columns: repeat(3, minmax(140px, 1fr)) !important; }
+                }
+                @media (max-width: 680px) {
+                    .footer-main-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)) !important; }
+                }
+                @media (max-width: 420px) {
+                    .footer-main-grid { grid-template-columns: 1fr !important; }
+                }
+            `}</style>
 
             {/* Background */}
-            <div style={{ position: 'absolute', inset: 0, background: FOOTER_BG }}>
+            <div style={{ position: 'absolute', inset: 0, background: footerBg }}>
                 {bgImage && (
                     <img src={bgImage} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: 0.18 }} />
                 )}
-                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${FOOTER_BG}d9, ${FOOTER_BG}f7)` }} />
+                <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, ${footerBg}d9, ${footerBg}f7)` }} />
             </div>
 
-            <div style={{ position: 'relative', zIndex: 1, maxWidth: '1280px', margin: '0 auto', padding: '4rem 3rem 2.5rem' }}>
+            <div style={{ position: 'relative', zIndex: 1, maxWidth: '1280px', margin: '0 auto', padding: '4rem clamp(1.25rem,6vw,3rem) 2.5rem' }}>
 
-                {/* ── Main grid: Brand | Nav categories | Map ── */}
-                <div style={{
+                {/* ── Main grid: Brand | Nav categories | Map — the fixed minmax() column
+                    tracks below need ~950px minimum to render side-by-side, so they collapse
+                    to fewer columns (then a single stacked column) via .footer-main-grid's
+                    media queries instead of forcing horizontal overflow on every page. ── */}
+                <div className="footer-main-grid" style={{
                     display: 'grid',
                     gridTemplateColumns: 'minmax(200px,1.1fr) repeat(3, minmax(130px,1fr)) minmax(200px,1fr)',
                     gap: '2.5rem',
@@ -134,6 +154,13 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                                 {school.phone}
                             </a>
                         )}
+                        {school.phone2 && (
+                            <a href={`tel:${school.phone2}`} style={{ display: 'block', fontSize: '13px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', marginBottom: '6px' }}
+                                onMouseEnter={e => e.currentTarget.style.color = '#fff'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.6)'}>
+                                {school.phone2}
+                            </a>
+                        )}
 
                         {/* Email */}
                         {school.email && (
@@ -168,14 +195,17 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                         </button>
                     </div>
 
-                    {/* ── Columns 2-4: Nav categories ── */}
-                    {FOOTER_NAV.map((cat) => (
+                    {/* ── Columns 2-4: Nav categories — only published modules show up ── */}
+                    {FOOTER_NAV.map((cat) => {
+                        const publishedLinks = cat.links.filter(link => publishedKeys.includes(link.key) && isModuleEnabled(school, link.key));
+                        if (publishedLinks.length === 0) return null;
+                        return (
                         <div key={cat.heading}>
                             <p style={{ fontSize: '11px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: '1.1rem', borderBottom: '1px solid rgba(255,255,255,0.12)', paddingBottom: '10px' }}>
                                 {cat.heading}
                             </p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '11px' }}>
-                                {cat.links.map(link => {
+                                {publishedLinks.map(link => {
                                     const isCourses = link.key === 'courses';
                                     const disabled = isCourses && !firstCompleteLevel;
                                     const handleClick = () => {
@@ -195,7 +225,8 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                                 })}
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
 
                     {/* ── Column 5: Map ── */}
                     {school.map_url && (

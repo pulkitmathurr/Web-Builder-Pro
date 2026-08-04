@@ -4,7 +4,9 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
+import { getFontFamily } from "../../constants/fonts";
 
 const CLASS_ORDER = [
     'Nursery', 'LKG', 'UKG',
@@ -60,16 +62,16 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
 };
 
 // ── One small optional/transport fee table card ──
-const FeeTableCard = ({ table, tc }) => {
+const FeeTableCard = ({ table, tc, bc }) => {
     const hasItemRows = table.rows.some(r => r.type === 'item');
     return (
-        <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
+        <div style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
             <div style={{ padding: '16px 24px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
                 <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#fff' }}>{table.title}</h4>
             </div>
             <div>
                 {hasItemRows && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', background: bc.cardAlt, borderBottom: '1px solid #e2e8f0' }}>
                         <span style={{ padding: '10px 24px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', borderRight: '1px solid #e2e8f0' }}>{table.itemLabel || 'Item'}</span>
                         <span style={{ padding: '10px 24px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>{table.amountLabel || 'Amount'}</span>
                     </div>
@@ -149,16 +151,10 @@ const FeeStructurePublic = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Fee Structure not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                ← Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'fee')) return <NotPublished tc={tc} slug={slug} label="Fee Structure" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Fee Structure" />;
 
     const classes = content.classes || [];
     const sortedClasses = [...classes].sort((a, b) => CLASS_ORDER.indexOf(a.name) - CLASS_ORDER.indexOf(b.name));
@@ -176,52 +172,57 @@ const FeeStructurePublic = () => {
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 html { scroll-behavior: smooth; }
                 @keyframes spin { to { transform: rotate(360deg); } }
-                body { background: #ffffff; }
+                body { background: ${bc.surface}; }
                 .fee-row { transition: background 0.15s; }
                 .fee-row:hover { background: ${tc.light} !important; }
                 ::-webkit-scrollbar { width: 6px; height: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @media (max-width: 640px) {
+                    .fee-2col-grid { grid-template-columns: 1fr !important; }
+                }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="fee" />
 
-                {/* ── Hero ── */}
-                <div style={{ height: '60vh', background: `linear-gradient(135deg,${tc.dark} 0%,${tc.primary} 100%)`, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', background: `radial-gradient(circle,${tc.secondary}20,transparent)`, top: '-200px', right: '-100px' }}></div>
-                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                    <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '16px' }}>{school.name}</p>
-                        <h1 style={{ fontSize: 'clamp(48px,7vw,96px)', fontWeight: 900, color: '#ffffff', letterSpacing: '-3px', lineHeight: 1 }}>Fee Structure</h1>
-                        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>Academic Year Fee Breakdown</p>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-1px', marginBottom: '10px' }}>
+                            Fee Structure
+                        </h1>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom,transparent,#ffffff)' }}></div>
                 </div>
 
                 {/* ── Combined Academic Fee Table — all classes side by side ── */}
                 {sortedClasses.length > 0 && (
-                    <div style={{ padding: '4rem 5rem 5rem', background: '#ffffff' }}>
+                    <div style={{ padding: '4rem clamp(1.25rem,6vw,5rem) 5rem', background: bc.surface }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '2rem' }}>
                                     <div>
                                         <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Academic Fee Structure</p>
-                                        <h2 style={{ fontSize: '38px', fontWeight: 900, color: '#0f172a', letterSpacing: '-1.5px' }}>Class-wise Fee Breakdown</h2>
+                                        <h2 style={{ fontSize: 'clamp(26px,4vw,38px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-1.5px' }}>Class-wise Fee Breakdown</h2>
                                     </div>
                                     <div>
                                         <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>View By</label>
                                         <select value={selectedPeriod} onChange={e => setSelectedPeriod(e.target.value)}
-                                            style={{ padding: '11px 18px', borderRadius: '8px', border: `1.5px solid ${tc.primary}`, fontSize: '13.5px', fontWeight: 700, color: tc.primary, background: '#ffffff', cursor: 'pointer', outline: 'none' }}>
+                                            style={{ padding: '11px 18px', borderRadius: '8px', border: `1.5px solid ${tc.primary}`, fontSize: '13.5px', fontWeight: 700, color: tc.primary, background: bc.card, cursor: 'pointer', outline: 'none' }}>
                                             {PERIODS.map(p => <option key={p.key} value={p.key}>{p.label}</option>)}
                                         </select>
                                     </div>
                                 </div>
 
                                 {allFeeTypes.length === 0 ? (
-                                    <div style={{ padding: '3rem', textAlign: 'center', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ padding: '3rem', textAlign: 'center', background: bc.surfaceAlt, borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                         <p style={{ fontSize: '14px', color: '#94a3b8' }}>{PERIODS.find(p => p.key === selectedPeriod)?.label} fee details not added yet — please contact the school office.</p>
                                     </div>
                                 ) : (
@@ -238,8 +239,8 @@ const FeeStructurePublic = () => {
                                         </thead>
                                         <tbody>
                                             {sortedClasses.map((cls, i) => (
-                                                <tr key={cls.name} className="fee-row" style={{ background: i % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                                                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? '#ffffff' : '#fafafa', padding: '14px 24px', fontSize: '14px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{cls.name}</td>
+                                                <tr key={cls.name} className="fee-row" style={{ background: i % 2 === 0 ? bc.card : bc.cardAlt }}>
+                                                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? bc.card : bc.cardAlt, padding: '14px 24px', fontSize: '14px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{cls.name}</td>
                                                     {allFeeTypes.map(t => {
                                                         const fee = cls.fees.find(f => f.type === t);
                                                         const amt = getAmount(fee, selectedPeriod);
@@ -273,17 +274,17 @@ const FeeStructurePublic = () => {
 
                 {/* ── Other Optional Subjects ── */}
                 {optionalFeeTables.length > 0 && (
-                    <div style={{ padding: '2rem 5rem 5rem', background: '#fafafa' }}>
+                    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 5rem', background: bc.surface }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                                 <div style={{ marginBottom: '2rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Optional Add-ons</p>
-                                    <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>Other optional subjects are also offered</h2>
+                                    <h2 style={{ fontFamily: content.optionalSubjectsHeadingFont ? getFontFamily(content.optionalSubjectsHeadingFont) : undefined, fontStyle: content.optionalSubjectsHeadingItalic ? 'italic' : 'normal', fontSize: 'clamp(22px,3.5vw,32px)', fontWeight: 900, color: content.optionalSubjectsHeadingColor || '#0f172a', letterSpacing: '-1px' }}>{content.optionalSubjectsHeading || 'Other optional subjects are also offered'}</h2>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                                <div className="fee-2col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
                                     {optionalFeeTables.map((table, i) => (
                                         <Reveal key={table.id} delay={i * 0.08}>
-                                            <FeeTableCard table={table} tc={tc} />
+                                            <FeeTableCard table={table} tc={tc} bc={bc} />
                                         </Reveal>
                                     ))}
                                 </div>
@@ -294,17 +295,17 @@ const FeeStructurePublic = () => {
 
                 {/* ── School Transport ── */}
                 {transportTables.length > 0 && (
-                    <div style={{ padding: '2rem 5rem 5rem', background: '#ffffff' }}>
+                    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 5rem', background: bc.surface }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                                 <div style={{ marginBottom: '2rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Getting to School</p>
-                                    <h2 style={{ fontSize: '32px', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>School Transport (Optional)</h2>
+                                    <h2 style={{ fontSize: 'clamp(22px,3.5vw,32px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>School Transport </h2>
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                                <div className="fee-2col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
                                     {transportTables.map((table, i) => (
                                         <Reveal key={table.id} delay={i * 0.08}>
-                                            <FeeTableCard table={table} tc={tc} />
+                                            <FeeTableCard table={table} tc={tc} bc={bc} />
                                         </Reveal>
                                     ))}
                                 </div>
@@ -312,19 +313,6 @@ const FeeStructurePublic = () => {
                         </Reveal>
                     </div>
                 )}
-
-                {/* ── Footer CTA ── */}
-                <div style={{ padding: '5rem', background: tc.light, textAlign: 'center' }}>
-                    <Reveal>
-                        <h3 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', letterSpacing: '-0.5px' }}>
-                            Have questions about fees?
-                        </h3>
-                        <button onClick={() => navigate(`/school/${slug}`)}
-                            style={{ padding: '14px 36px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 10px 30px ${tc.primary}30`, letterSpacing: '0.05em' }}>
-                            Contact Us →
-                        </button>
-                    </Reveal>
-                </div>
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

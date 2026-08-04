@@ -4,7 +4,8 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -76,17 +77,11 @@ const CoursesPublic = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
     const navbarSolid = scrollY > 60;
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Courses page not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                ← Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'courses')) return <NotPublished tc={tc} slug={slug} label="Courses" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Courses" />;
 
     return (
         <>
@@ -96,7 +91,7 @@ const CoursesPublic = () => {
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes float3d { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-                body { background: #ffffff; }
+                body { background: ${bc.surface}; }
                 .section-card { transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease; }
                 .section-card:hover { transform: translateY(-8px); box-shadow: 0 30px 60px rgba(0,0,0,0.1); }
                 .subj-chip { transition: all 0.2s; }
@@ -104,31 +99,36 @@ const CoursesPublic = () => {
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @media (max-width: 760px) {
+                    .section-card { grid-template-columns: 1fr !important; }
+                }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="courses" />
 
-                {/* ── Hero ── */}
-                <div style={{ height: '60vh', background: `linear-gradient(135deg,${tc.dark} 0%,${tc.primary} 100%)`, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ position: 'absolute', width: '600px', height: '600px', borderRadius: '50%', background: `radial-gradient(circle,${tc.secondary}20,transparent)`, top: '-200px', right: '-100px' }}></div>
-                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px)', backgroundSize: '30px 30px' }}></div>
-                    <div style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-                        <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '16px' }}>{school.name}</p>
-                        <h1 style={{ fontSize: 'clamp(48px,7vw,96px)', fontWeight: 900, color: '#ffffff', letterSpacing: '-3px', lineHeight: 1 }}>Courses & Streams</h1>
-                        <p style={{ fontSize: '16px', color: 'rgba(255,255,255,0.5)', marginTop: '16px' }}>Academic programs across all levels</p>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-1px', marginBottom: '10px' }}>
+                            Courses & Streams
+                        </h1>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
-                    <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '80px', background: 'linear-gradient(to bottom,transparent,#ffffff)' }}></div>
                 </div>
 
                 {/* ── Section Cards ── */}
-                <div style={{ padding: '5rem 5rem 7rem', background: '#ffffff' }}>
+                <div style={{ padding: '5rem clamp(1.25rem,6vw,5rem) 7rem', background: bc.surface }}>
                     <Reveal>
                         <div style={{ maxWidth: '1200px', margin: '0 auto 3.5rem', textAlign: 'center' }}>
                             <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>What We Offer</p>
-                            <h2 style={{ fontSize: '44px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1.5px' }}>Academic Sections</h2>
+                            <h2 style={{ fontSize: 'clamp(28px,4.5vw,44px)', fontWeight: 800, color: '#0f172a', letterSpacing: '-1.5px' }}>Academic Sections</h2>
                         </div>
                     </Reveal>
 
@@ -136,9 +136,9 @@ const CoursesPublic = () => {
                         {content.sections.map((sec, i) => (
                             <Reveal key={sec.id} delay={i * 0.1}>
                                 <div className="section-card" style={{
-                                    display: 'grid', gridTemplateColumns: sec.image ? '420px 1fr' : '1fr',
+                                    display: 'grid', gridTemplateColumns: sec.image ? 'minmax(240px,420px) 1fr' : '1fr',
                                     borderRadius: '28px', overflow: 'hidden', border: '1px solid #f1f5f9',
-                                    boxShadow: '0 8px 30px rgba(0,0,0,0.05)', background: '#ffffff',
+                                    boxShadow: '0 8px 30px rgba(0,0,0,0.05)', background: bc.card,
                                 }}>
                                     {sec.image && (
                                         <div style={{ position: 'relative', overflow: 'hidden' }}>
@@ -146,14 +146,14 @@ const CoursesPublic = () => {
                                             <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.primary}20,transparent)` }}></div>
                                         </div>
                                     )}
-                                    <div style={{ padding: '3rem', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    <div style={{ padding: 'clamp(1.5rem,4vw,3rem)', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                                         {sec.classRange && (
                                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', background: tc.light, borderRadius: '30px', marginBottom: '1.25rem', width: 'fit-content' }}>
                                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tc.primary }}></div>
                                                 <span style={{ fontSize: '12px', color: tc.primary, fontWeight: 700, letterSpacing: '0.05em' }}>{sec.classRange}</span>
                                             </div>
                                         )}
-                                        <h3 style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px', marginBottom: '14px' }}>{sec.name}</h3>
+                                        <h3 style={{ fontSize: 'clamp(24px,3.5vw,32px)', fontWeight: 800, color: '#0f172a', letterSpacing: '-1px', marginBottom: '14px' }}>{sec.name}</h3>
                                         {sec.description && (
                                             <p style={{ fontSize: '15px', color: '#64748b', lineHeight: 1.8, marginBottom: '1.75rem', maxWidth: '600px' }}>{sec.description}</p>
                                         )}
@@ -162,7 +162,7 @@ const CoursesPublic = () => {
                                                 <p style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, marginBottom: '12px' }}>Subjects Offered</p>
                                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                                     {sec.subjects.map((subj, j) => (
-                                                        <span key={j} className="subj-chip" style={{ padding: '7px 16px', background: '#fafafa', border: '1px solid #f1f5f9', borderRadius: '20px', fontSize: '13px', color: '#334155', fontWeight: 500, cursor: 'default' }}>
+                                                        <span key={j} className="subj-chip" style={{ padding: '7px 16px', background: bc.cardAlt, border: '1px solid #f1f5f9', borderRadius: '20px', fontSize: '13px', color: '#334155', fontWeight: 500, cursor: 'default' }}>
                                                             {subj}
                                                         </span>
                                                     ))}
@@ -177,7 +177,7 @@ const CoursesPublic = () => {
                 </div>
 
                 {/* ── Footer CTA ── */}
-                <div style={{ padding: '5rem', background: tc.light, textAlign: 'center' }}>
+                <div style={{ padding: 'clamp(2.5rem,8vw,5rem) clamp(1.25rem,6vw,5rem)', background: bc.surface, textAlign: 'center' }}>
                     <Reveal>
                         <h3 style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', marginBottom: '1.5rem', letterSpacing: '-0.5px' }}>
                             Want to know more about our academics?

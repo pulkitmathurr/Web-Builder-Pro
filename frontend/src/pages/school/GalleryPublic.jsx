@@ -4,7 +4,8 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import NotPublished from "../../components/public/NotPublished";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 
 // ── Icons (SVG, no emojis) ──
 const IconFolder = ({ size = 22, color = '#8b2252' }) => (
@@ -42,11 +43,6 @@ const IconChevronLeft = ({ size = 18, color = 'currentColor' }) => (
 const IconClose = ({ size = 20, color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.4">
         <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-);
-const IconPlay = ({ size = 18, color = '#ffffff' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-        <path d="M8 5v14l11-7z" />
     </svg>
 );
 const IconEmpty = ({ size = 44, color = '#e2e8f0' }) => (
@@ -119,6 +115,7 @@ const GalleryPublic = () => {
     };
 
     const tc = school ? getThemeColors(school.theme) : getThemeColors(null);
+    const bc = school ? getBaseColors(school.base_theme) : getBaseColors(null);
     const navbarSolid = scrollY > 60;
 
     if (loading) return (
@@ -130,23 +127,18 @@ const GalleryPublic = () => {
 
     if (!school) return null;
 
-    if (!content) return (
-        <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', fontFamily: 'system-ui, sans-serif' }}>
-            <p style={{ fontSize: '18px', color: '#64748b' }}>Gallery not published yet</p>
-            <button onClick={() => navigate(`/school/${slug}`)}
-                style={{ padding: '12px 28px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                Back to Home
-            </button>
-        </div>
-    );
+    if (!isModuleEnabled(school, 'gallery')) return <NotPublished tc={tc} slug={slug} label="Gallery" reason="disabled" />;
+    if (!content) return <NotPublished tc={tc} slug={slug} label="Gallery" />;
 
     const nodesKey = activeTab === 'photo' ? 'photoNodes' : 'videoNodes';
-    const bannerKey = activeTab === 'photo' ? 'photoBanner' : 'videoBanner';
     const nodes = content[nodesKey] || [];
-    const banner = content[bannerKey];
 
     const getFolder = (id) => nodes.find(n => n.id === id);
-    const childFolders = nodes.filter(n => n.parentId === currentFolderId);
+    // Priority decides display order — 1 shows first. Folders without one (legacy data)
+    // sort after all prioritized ones, in their original order.
+    const childFolders = nodes
+        .filter(n => n.parentId === currentFolderId)
+        .sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
     const currentFolder = currentFolderId ? getFolder(currentFolderId) : null;
 
     const breadcrumb = [];
@@ -188,88 +180,167 @@ const GalleryPublic = () => {
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes tilePop { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-                body { background: #ffffff; }
-                .folder-tile { transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease, border-color 0.25s; cursor: pointer; animation: tilePop 0.4s ease forwards; }
-                .folder-tile:hover { transform: translateY(-5px); box-shadow: 0 16px 32px rgba(15,23,42,0.1); border-color: #f0c4c4 !important; }
-                .photo-tile { transition: transform 0.25s ease, box-shadow 0.25s ease; cursor: pointer; animation: tilePop 0.4s ease forwards; }
-                .photo-tile:hover { transform: scale(1.03); box-shadow: 0 14px 28px rgba(15,23,42,0.14); z-index: 2; }
-                .video-row { transition: all 0.2s; }
-                .video-row:hover { background: #f8fafc; transform: translateX(3px); }
+                body { background: ${bc.surface}; }
+                @keyframes folderPop { from { opacity: 0; transform: translateY(22px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                .folder-tile {
+                    position: relative; border-radius: 26px; cursor: pointer; padding: 12px;
+                    background: linear-gradient(160deg, ${tc.light}, #ffffff);
+                    border: 1px solid rgba(15,23,42,0.06);
+                    box-shadow: 0 2px 10px rgba(15,23,42,0.05);
+                    transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease, border-color 0.4s ease;
+                    animation: folderPop 0.55s cubic-bezier(0.16,1,0.3,1) both;
+                }
+                .folder-tile:hover { transform: translateY(-9px); box-shadow: 0 30px 55px -18px rgba(15,23,42,0.3); border-color: rgba(15,23,42,0.14); }
+                .folder-cover { position: relative; height: 140px; overflow: hidden; border-radius: 18px; }
+                .folder-cover::after {
+                    content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none;
+                    background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.45) 48%, transparent 61%);
+                    transform: translateX(-140%); transition: transform 1s ease;
+                }
+                .folder-tile:hover .folder-cover::after { transform: translateX(140%); }
+                .folder-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.16,1,0.3,1); }
+                .folder-tile:hover .folder-cover img { transform: scale(1.1); }
+                .folder-cover-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.5) 100%); }
+                .folder-badge-overlap { transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+                .folder-tile:hover .folder-badge-overlap { transform: scale(1.12) rotate(-8deg); }
+                .folder-count-badge { transition: transform 0.3s ease; }
+                .folder-tile:hover .folder-count-badge { transform: translateY(-2px); }
+                .photo-tile { position: relative; transition: transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease; cursor: pointer; animation: tilePop 0.4s ease forwards; }
+                .photo-tile:hover { transform: scale(1.035); box-shadow: 0 18px 36px -12px rgba(15,23,42,0.28); z-index: 2; }
+                .photo-tile img { transition: transform 0.5s ease; }
+                .photo-tile:hover img { transform: scale(1.08); }
+                .photo-tile-scrim { position: absolute; inset: 0; background: rgba(15,23,42,0); transition: background 0.3s ease; display: flex; align-items: center; justify-content: center; }
+                .photo-tile:hover .photo-tile-scrim { background: rgba(15,23,42,0.18); }
+                .photo-tile-zoom { opacity: 0; transform: scale(0.7); transition: all 0.25s ease; }
+                .photo-tile:hover .photo-tile-zoom { opacity: 1; transform: scale(1); }
+                .video-row { transition: all 0.25s cubic-bezier(0.16,1,0.3,1); }
+                .video-row:hover { background: #f1f5f9 !important; transform: translateX(4px); box-shadow: 0 10px 26px rgba(15,23,42,0.08); }
+                .video-thumb img { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1); }
+                .video-row:hover .video-thumb img { transform: scale(1.08); }
+                .video-play-btn { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+                .video-row:hover .video-play-btn { transform: scale(1.18); }
                 .crumb-link { transition: color 0.2s; cursor: pointer; }
                 .crumb-link:hover { color: ${tc.primary} !important; }
                 .tab-btn { transition: all 0.2s; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @media (max-width: 900px) {
+                    .gallery-folder-grid { grid-template-columns: repeat(2,1fr) !important; }
+                    .gallery-photo-grid { grid-template-columns: repeat(3,1fr) !important; }
+                }
+                @media (max-width: 640px) {
+                    .gallery-folder-grid { grid-template-columns: 1fr !important; }
+                    .gallery-photo-grid { grid-template-columns: repeat(2,1fr) !important; }
+                    .gallery-video-grid { grid-template-columns: 1fr !important; }
+                    .lightbox-nav-btn { left: 4px !important; right: 4px !important; width: 38px !important; height: 38px !important; }
+                }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: '#ffffff', minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="gallery" />
 
-                {/* ── Banner — increased height ── */}
-                <div style={{ height: '70vh', position: 'relative', overflow: 'hidden' }}>
-                    {banner ? (
-                        <img src={banner} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                        <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.dark},${tc.primary})` }}></div>
-                    )}
-                    <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)' }}></div>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 2rem' }}>
-                        <div>
-                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', letterSpacing: '0.3em', textTransform: 'uppercase', marginBottom: '16px' }}>{school.name}</p>
-                            <h1 style={{ fontSize: 'clamp(40px,6vw,72px)', fontWeight: 900, letterSpacing: '-2px', lineHeight: 1, color: '#ffffff', textShadow: '0 4px 30px rgba(0,0,0,0.4)' }}>
-                                {activeTab === 'photo' ? 'Photo Gallery' : 'Video Gallery'}
-                            </h1>
-                        </div>
+                {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
+                    <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
+
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-1px', marginBottom: '10px' }}>
+                            {activeTab === 'photo' ? 'Photo Gallery' : 'Video Gallery'}
+                        </h1>
+                        <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
                 </div>
 
                 {/* ── Breadcrumb ── */}
-                <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '2.5rem 5rem 0', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <span className="crumb-link" onClick={() => setCurrentFolderId(null)}
-                        style={{ fontSize: '14px', fontWeight: !currentFolderId ? 700 : 500, color: !currentFolderId ? tc.primary : '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <IconHome size={13} color={!currentFolderId ? tc.primary : '#cbd5e1'} /> {activeTab === 'photo' ? 'Photo Gallery' : 'Video Gallery'}
-                    </span>
-                    {breadcrumb.map(f => (
-                        <span key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <IconChevronRight />
-                            <span className="crumb-link" onClick={() => setCurrentFolderId(f.id)}
-                                style={{ fontSize: '14px', fontWeight: f.id === currentFolderId ? 700 : 500, color: f.id === currentFolderId ? tc.primary : '#94a3b8' }}>
-                                {f.name}
-                            </span>
+                <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '2.5rem clamp(1.25rem,6vw,5rem) 0' }}>
+                    <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap',
+                        background: bc.cardAlt, border: '1px solid #f1f5f9', borderRadius: '999px',
+                        padding: '10px 20px',
+                    }}>
+                        <span className="crumb-link" onClick={() => setCurrentFolderId(null)}
+                            style={{ fontSize: '13.5px', fontWeight: !currentFolderId ? 700 : 500, color: !currentFolderId ? tc.primary : '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <IconHome size={13} color={!currentFolderId ? tc.primary : '#cbd5e1'} /> {activeTab === 'photo' ? 'Photo Gallery' : 'Video Gallery'}
                         </span>
-                    ))}
+                        {breadcrumb.map(f => (
+                            <span key={f.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <IconChevronRight />
+                                <span className="crumb-link" onClick={() => setCurrentFolderId(f.id)}
+                                    style={{ fontSize: '13.5px', fontWeight: f.id === currentFolderId ? 700 : 500, color: f.id === currentFolderId ? tc.primary : '#64748b' }}>
+                                    {f.name}
+                                </span>
+                            </span>
+                        ))}
+                    </div>
                 </div>
 
                 {/* ── Folder grid ── */}
-                <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '1.75rem 5rem 0' }}>
+                <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '1.75rem clamp(1.25rem,6vw,5rem) 0' }}>
                     {childFolders.length > 0 && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '18px', marginBottom: '3rem' }}>
+                        <div className="gallery-folder-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px', marginBottom: '3rem' }}>
                             {childFolders.map((f, i) => {
                                 const subCount = nodes.filter(n => n.parentId === f.id).length;
                                 const mediaCount = countDescendantMedia(f.id);
                                 const coverImg = f.coverImage || (activeTab === 'photo' ? f.images?.[0] : null);
+                                const countLabel = subCount > 0
+                                    ? `${subCount} folder${subCount > 1 ? 's' : ''}`
+                                    : `${mediaCount} ${activeTab === 'photo' ? 'photo' : 'video'}${mediaCount !== 1 ? 's' : ''}`;
                                 return (
                                     <div key={f.id} className="folder-tile" onClick={() => setCurrentFolderId(f.id)}
-                                        style={{ animationDelay: `${i * 0.04}s`, borderRadius: '16px', overflow: 'hidden', border: '1px solid #f1f5f9', boxShadow: '0 2px 10px rgba(15,23,42,0.04)', background: '#ffffff' }}>
-                                        <div style={{ height: '140px', background: tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+                                        style={{ animationDelay: `${i * 0.06}s` }}>
+                                        <div className="folder-cover" style={{ background: coverImg ? '#000' : `linear-gradient(135deg, ${tc.light}, ${bc.surface})` }}>
                                             {coverImg ? (
                                                 <>
-                                                    <img src={coverImg} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(0,0,0,0.05),rgba(0,0,0,0.35))' }}></div>
+                                                    <img src={coverImg} alt="" />
+                                                    <div className="folder-cover-scrim"></div>
                                                 </>
-                                            ) : null}
-                                            <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '32px', height: '32px', borderRadius: '8px', background: coverImg ? 'rgba(255,255,255,0.92)' : tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <IconFolder size={18} color={tc.primary} />
+                                            ) : (
+                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <IconFolder size={44} color={`${tc.primary}35`} />
+                                                </div>
+                                            )}
+                                            <div className="folder-count-badge" style={{
+                                                position: 'absolute', top: '12px', right: '12px', display: 'flex', alignItems: 'center', gap: '5px',
+                                                padding: '5px 12px', borderRadius: '999px',
+                                                background: coverImg ? 'rgba(255,255,255,0.92)' : '#ffffff',
+                                                boxShadow: '0 2px 8px rgba(15,23,42,0.1)',
+                                            }}>
+                                                {activeTab === 'photo'
+                                                    ? <IconImage size={11} color={tc.primary} />
+                                                    : <IconVideo size={11} color={tc.primary} />}
+                                                <span style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a' }}>{countLabel}</span>
                                             </div>
                                         </div>
-                                        <div style={{ padding: '0.9rem 1rem' }}>
-                                            <p style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{f.name}</p>
-                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>
-                                                {subCount > 0 ? `${subCount} folder${subCount > 1 ? 's' : ''}` : `${mediaCount} ${activeTab === 'photo' ? 'photo' : 'video'}${mediaCount !== 1 ? 's' : ''}`}
-                                            </p>
+
+                                        {/* Caption — a literal folder "tab" badge straddles the seam between cover and text, like a wax seal */}
+                                        <div style={{ position: 'relative', paddingTop: '30px' }}>
+                                            <div className="folder-badge-overlap" style={{
+                                                position: 'absolute', top: '-26px', left: '14px', width: '50px', height: '50px', borderRadius: '15px',
+                                                background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`,
+                                                boxShadow: `0 8px 20px -4px ${tc.primary}80`,
+                                                border: '3px solid #ffffff',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            }}>
+                                                <IconFolder size={22} color="#ffffff" />
+                                            </div>
+                                            <div style={{ paddingLeft: '64px', minHeight: '50px', paddingBottom: '6px' }}>
+                                                <p style={{
+                                                    fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 700,
+                                                    color: '#0f172a', letterSpacing: '-0.1px', marginBottom: '4px',
+                                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                                }}>{f.name}</p>
+                                                {f.createdAt && (
+                                                    <p style={{ fontSize: '11.5px', color: tc.primary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.75 }}>
+                                                        <svg width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                                        {formatDate(f.createdAt)}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -282,11 +353,16 @@ const GalleryPublic = () => {
                         <Reveal>
                             <div style={{ marginBottom: '4rem' }}>
                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Photos in this folder</p>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
+                                <div className="gallery-photo-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
                                     {currentFolder.images.map((img, i) => (
                                         <div key={i} className="photo-tile" style={{ animationDelay: `${i * 0.03}s`, borderRadius: '12px', overflow: 'hidden', aspectRatio: '1', boxShadow: '0 4px 14px rgba(15,23,42,0.07)' }}
                                             onClick={() => setLightbox({ images: currentFolder.images, index: i })}>
                                             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            <div className="photo-tile-scrim">
+                                                <svg className="photo-tile-zoom" width="26" height="26" fill="none" stroke="#fff" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <circle cx="11" cy="11" r="7" /><path strokeLinecap="round" d="M21 21l-4.35-4.35" /><path strokeLinecap="round" d="M11 8v6M8 11h6" />
+                                                </svg>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -299,30 +375,35 @@ const GalleryPublic = () => {
                         <Reveal>
                             <div style={{ marginBottom: '4rem' }}>
                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Videos in this folder</p>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '14px' }}>
+                                <div className="gallery-video-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '16px' }}>
                                     {visibleVideos.map(v => {
                                         const isUpload = v.sourceType === 'upload';
+                                        const thumbBox = (
+                                            <div className="video-thumb" style={{ position: 'relative', width: '45%', maxWidth: '190px', aspectRatio: '16/9', borderRadius: '6px', overflow: 'hidden', flexShrink: 0, background: v.thumbnail ? '#000' : (isUpload ? tc.primary : '#ff0000'), boxShadow: '0 6px 18px rgba(15,23,42,0.12)' }}>
+                                                {v.thumbnail && <img src={v.thumbnail} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: v.thumbnail ? 'rgba(15,23,42,0.22)' : 'transparent' }}>
+                                                    <svg className="video-play-btn" width="34" height="34" fill="#ffffff" viewBox="0 0 24 24" style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))' }}>
+                                                        <path d="M8 5v14l11-7z" />
+                                                    </svg>
+                                                </div>
+                                            </div>
+                                        );
+                                        const info = (
+                                            <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                                                <p style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.1px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{v.title || 'Untitled'}</p>
+                                            </div>
+                                        );
                                         return isUpload ? (
-                                            <div key={v.id} className="video-row" onClick={() => setVideoModal({ url: v.videoUrl, title: v.title })}
-                                                style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', background: '#f8fafc', borderRadius: '12px', cursor: 'pointer' }}>
-                                                <div style={{ width: '42px', height: '42px', background: tc.primary, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                    <IconPlay size={18} />
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{v.title || 'Untitled'}</p>
-                                                    <p style={{ fontSize: '12px', color: '#94a3b8' }}>{formatDate(v.date)}</p>
-                                                </div>
+                                            <div key={v.id} className="video-row" onClick={() => setVideoModal({ url: v.videoUrl, title: v.title, thumbnail: v.thumbnail })}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '14px', background: bc.cardAlt, border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer' }}>
+                                                {thumbBox}
+                                                {info}
                                             </div>
                                         ) : (
                                             <a key={v.id} href={v.youtubeUrl} target="_blank" rel="noreferrer" className="video-row"
-                                                style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '16px 18px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none' }}>
-                                                <div style={{ width: '42px', height: '42px', background: '#ff0000', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                                    <IconPlay size={18} />
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{v.title || 'Untitled'}</p>
-                                                    <p style={{ fontSize: '12px', color: '#94a3b8' }}>{formatDate(v.date)}</p>
-                                                </div>
+                                                style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '14px', background: bc.cardAlt, border: '1px solid #e2e8f0', borderRadius: '8px', textDecoration: 'none' }}>
+                                                {thumbBox}
+                                                {info}
                                             </a>
                                         );
                                     })}
@@ -352,10 +433,12 @@ const GalleryPublic = () => {
                             {lightbox.images.length > 1 && (
                                 <>
                                     <button onClick={() => setLightbox(p => ({ ...p, index: p.index === 0 ? p.images.length - 1 : p.index - 1 }))}
+                                        className="lightbox-nav-btn"
                                         style={{ position: 'absolute', left: '-70px', top: '50%', transform: 'translateY(-50%)', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <IconChevronLeft color="#fff" />
                                     </button>
                                     <button onClick={() => setLightbox(p => ({ ...p, index: (p.index + 1) % p.images.length }))}
+                                        className="lightbox-nav-btn"
                                         style={{ position: 'absolute', right: '-70px', top: '50%', transform: 'translateY(-50%)', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <IconChevronRight size={18} color="#fff" />
                                     </button>
@@ -375,7 +458,7 @@ const GalleryPublic = () => {
                     <div onClick={() => setVideoModal(null)}
                         style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.25s ease' }}>
                         <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '900px' }}>
-                            <video src={videoModal.url} controls autoPlay style={{ width: '100%', maxHeight: '75vh', borderRadius: '12px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', display: 'block' }} />
+                            <video src={videoModal.url} poster={videoModal.thumbnail || undefined} controls autoPlay style={{ width: '100%', maxHeight: '75vh', borderRadius: '12px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', display: 'block' }} />
                             {videoModal.title && <p style={{ color: '#fff', fontSize: '14px', marginTop: '1rem', textAlign: 'center' }}>{videoModal.title}</p>}
                         </div>
                         <button onClick={() => setVideoModal(null)}
@@ -384,14 +467,6 @@ const GalleryPublic = () => {
                         </button>
                     </div>
                 )}
-
-                {/* ── Footer CTA ── */}
-                <div style={{ padding: '5rem', background: tc.light, textAlign: 'center', marginTop: '3rem' }}>
-                    <button onClick={() => navigate(`/school/${slug}`)}
-                        style={{ padding: '14px 36px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 10px 30px ${tc.primary}30`, letterSpacing: '0.05em' }}>
-                        Back to Home
-                    </button>
-                </div>
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

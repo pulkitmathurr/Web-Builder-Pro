@@ -28,6 +28,12 @@ import Achievements from './pages/admin/modules/Achievements';
 import Alumni from './pages/admin/modules/Alumni';
 import PublicDisclosure from './pages/admin/modules/PublicDisclosure';
 import TCInformation from './pages/admin/modules/TCInformation';
+import Announcements from './pages/admin/modules/Announcements';
+import Events from './pages/admin/modules/Events';
+import Circulars from './pages/admin/modules/Circulars';
+import Calendar from './pages/admin/modules/Calendar';
+import AdmissionEnquiry from './pages/admin/modules/AdmissionEnquiry';
+import CareerEnquiry from './pages/admin/modules/CareerEnquiry';
 // School Website
 import SchoolWebsite from './pages/school/SchoolWebsite';
 import AboutUsPublic from './pages/school/AboutUsPublic';
@@ -43,17 +49,26 @@ import AchievementsPublic from './pages/school/AchievementsPublic';
 import AlumniPublic from './pages/school/AlumniPublic';
 import PublicDisclosurePublic from './pages/school/PublicDisclosurePublic';
 import TCInformationPublic from './pages/school/TCInformationPublic';
+import AnnouncementsPublic from './pages/school/AnnouncementsPublic';
+import AnnouncementDetailPublic from './pages/school/AnnouncementDetailPublic';
+import EventsPublic from './pages/school/EventsPublic';
+import EventDetailPublic from './pages/school/EventDetailPublic';
+import CircularsPublic from './pages/school/CircularsPublic';
+import CircularDetailPublic from './pages/school/CircularDetailPublic';
+import CalendarPublic from './pages/school/CalendarPublic';
 // Layouts
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import AdminLayout from './layouts/AdminLayout';
 
 // Protected Route
 import ProtectedRoute from './components/common/ProtectedRoute';
+import EnquiryWidget from './components/public/EnquiryWidget';
 
 function App() {
     return (
         <BrowserRouter>
             <Toaster position="top-right" />
+            <EnquiryWidget />
             <Routes>
 
                 {/* Public Routes */}
@@ -76,6 +91,13 @@ function App() {
                 <Route path="/school/:slug/alumni" element={<AlumniPublic />} />
                 <Route path="/school/:slug/public-disclosure" element={<PublicDisclosurePublic />} />
                 <Route path="/school/:slug/tc" element={<TCInformationPublic />} />
+                <Route path="/school/:slug/announcements/:id" element={<AnnouncementDetailPublic />} />
+                <Route path="/school/:slug/announcements" element={<AnnouncementsPublic />} />
+                <Route path="/school/:slug/events/:id" element={<EventDetailPublic />} />
+                <Route path="/school/:slug/events" element={<EventsPublic />} />
+                <Route path="/school/:slug/circulars/:id" element={<CircularDetailPublic />} />
+                <Route path="/school/:slug/circulars" element={<CircularsPublic />} />
+                <Route path="/school/:slug/calendar" element={<CalendarPublic />} />
                 <Route path="/school/:slug/:levelSlug" element={<SchoolLevelPublic />} />
                 <Route path="/school-not-found" element={<SchoolNotFound />} />
 
@@ -115,6 +137,12 @@ function App() {
                     <Route path="module/alumni" element={<Alumni />} />
                     <Route path="module/disclosure" element={<PublicDisclosure />} />
                     <Route path="module/tc" element={<TCInformation />} />
+                    <Route path="module/announcements" element={<Announcements />} />
+                    <Route path="module/events" element={<Events />} />
+                    <Route path="module/circulars" element={<Circulars />} />
+                    <Route path="module/calendar" element={<Calendar />} />
+                    <Route path="module/admission" element={<AdmissionEnquiry />} />
+                    <Route path="module/career" element={<CareerEnquiry />} />
                     {/* Generic module route baad mein */}
                     <Route path="module/:moduleKey" element={<ModulePage />} />
                 </Route>
