@@ -8,8 +8,12 @@ const routes = require('./src/routes/index.routes');
 const app = express();
 
 // ── Middlewares ──────────────────────────────────────
+// TODO: lock this down to the Vercel URL (via FRONTEND_URL) once it's known —
+// `origin: true` reflects whatever Origin header the request sent, which
+// accepts everything for now while still working with credentials:true
+// (a literal '*' origin is rejected by browsers when credentials are used).
 app.use(cors({
-    origin: process.env.FRONTEND_URL,
+    origin: true,
     credentials: true
 }));
 
