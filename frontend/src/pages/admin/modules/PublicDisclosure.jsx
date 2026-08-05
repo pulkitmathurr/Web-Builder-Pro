@@ -213,44 +213,71 @@ const PublicDisclosure = () => {
                 .pd-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .pd-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .pd-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                @media (max-width: 700px) {
+                    .pd-pdf-grid { grid-template-columns: 1fr !important; }
+                }
+                @media (max-width: 640px) {
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .pd-hero-inner { gap: 12px !important; }
+                    .pd-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .pd-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .pd-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .pd-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .pd-status-badge { padding: 4px 9px !important; }
+                    .pd-status-badge span { font-size: 9.5px !important; }
+                    .pd-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+
+                    /* ── Category row cards — a proper stacked card (label + remove button
+                       together up top, detail/PDF fields below) instead of a bare 3-way stack
+                       with column headers that stop meaning anything once stacked ── */
+                    .pd-col-header { display: none !important; }
+                    .pd-row-grid {
+                        display: flex !important; flex-wrap: wrap !important; align-items: center !important;
+                        gap: 8px !important; background: #fafbfc !important; border: 1px solid #f1f5f9 !important;
+                        border-radius: 12px !important; padding: 10px !important; margin-bottom: 8px !important;
+                    }
+                    .pd-row-label { order: 1 !important; flex: 1 1 auto !important; min-width: 0 !important; }
+                    .pd-row-remove { order: 2 !important; flex-shrink: 0 !important; }
+                    .pd-row-detail { order: 3 !important; flex-basis: 100% !important; width: 100% !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="pd-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                        <div className="pd-hero-item">
-                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Mandatory Public Disclosure</p>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Mandatory Public Disclosure</h1>
-                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                                Mandatory CBSE-format disclosure — general info, document uploads, staff & infrastructure details, and the consolidated disclosure PDF.
-                            </p>
+                    <div className="pd-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div className="pd-hero-top" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                            <div className="pd-hero-item">
+                                <p className="pd-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Mandatory Public Disclosure</p>
+                                <h1 className="pd-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Mandatory Public Disclosure</h1>
+                                <p className="pd-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                                    Mandatory CBSE-format disclosure — general info, document uploads, staff & infrastructure details, and the consolidated disclosure PDF.
+                                </p>
+                            </div>
+                            <div className="pd-hero-item pd-status-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}>
+                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8', flexShrink: 0 }}></div>
+                                <span style={{ fontSize: '10.5px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{isPublished ? 'Published' : 'Draft'}</span>
+                            </div>
                         </div>
-                        <div className="pd-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={() => handleSave(false)} disabled={saving}
-                                    style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                    {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                        <div className="pd-hero-item pd-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button onClick={() => handleSave(false)} disabled={saving}
+                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                            </button>
+                            {isPublished ? (
+                                <button onClick={handleUnpublish}
+                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                    Unpublish
                                 </button>
-                                {isPublished ? (
-                                    <button onClick={handleUnpublish}
-                                        style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                        Unpublish
-                                    </button>
-                                ) : (
-                                    <button onClick={() => handleSave(true)} disabled={publishing}
-                                        style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                        {publishing ? 'Publishing...' : 'Publish'}
-                                    </button>
-                                )}
-                            </div>
+                            ) : (
+                                <button onClick={() => handleSave(true)} disabled={publishing}
+                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                    {publishing ? 'Publishing...' : 'Publish'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -316,7 +343,7 @@ const PublicDisclosure = () => {
                     <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Mandatory Public Disclosure PDF</p>
                         <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>The consolidated official disclosure document — shown as a standalone button at the bottom of the page</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="pd-pdf-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div>
                                 <label style={labelStyle}>Button Label</label>
                                 <input className="pd-input" type="text" value={content.disclosurePdf.label}
@@ -379,23 +406,23 @@ const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategor
                 )}
             </div>
 
-            {/* Column headers */}
-            <div style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', padding: '0 0 8px', borderBottom: '1px solid #f1f5f9', marginBottom: '4px' }}>
+            {/* Column headers — hidden on mobile since rows become stacked cards there, where a shared column header no longer means anything */}
+            <div className="pd-col-header" style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', padding: '0 0 8px', borderBottom: '1px solid #f1f5f9', marginBottom: '4px' }}>
                 <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Information</span>
                 <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{category.type === 'info' ? 'Details' : 'PDF, Link or Text'}</span>
                 <span></span>
             </div>
 
             {(category.rows || []).map((row, rowIdx) => (
-                <div key={row.id} style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', alignItems: 'start', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
-                    <input className="pd-input" type="text" value={row.label} onChange={e => onUpdateRow(rowIdx, 'label', e.target.value)}
+                <div key={row.id} className="pd-row-grid" style={{ display: 'grid', gridTemplateColumns: category.type === 'info' ? '2fr 2fr 70px' : '1.6fr 1.6fr 70px', gap: '10px', alignItems: 'start', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
+                    <input className="pd-input pd-row-label" type="text" value={row.label} onChange={e => onUpdateRow(rowIdx, 'label', e.target.value)}
                         placeholder="Enter Label" style={inputStyle} />
                     {category.type === 'info' ? (
-                        <textarea className="pd-input" value={row.details} onChange={e => onUpdateRow(rowIdx, 'details', e.target.value)}
+                        <textarea className="pd-input pd-row-detail" value={row.details} onChange={e => onUpdateRow(rowIdx, 'details', e.target.value)}
                             placeholder="Type details here..." rows={2}
                             style={{ ...inputStyle, resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div className="pd-row-detail" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div onClick={() => document.getElementById(`pd-row-pdf-${row.id}`).click()}
                                 style={{ padding: '9px 12px', border: '1px dashed #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: row.pdfUrl ? '#15803d' : '#64748b', background: row.pdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
                                 {uploading[row.id] ? 'Uploading...' : row.pdfUrl ? '✓ Uploaded — click to change' : '📄 Upload PDF'}
@@ -409,7 +436,7 @@ const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategor
                                 style={{ ...inputStyle, fontSize: '12px', resize: 'vertical', fontFamily: 'system-ui, sans-serif' }} />
                         </div>
                     )}
-                    <button onClick={() => onRemoveRow(rowIdx)} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: '9px', height: 'fit-content' }}>×</button>
+                    <button className="pd-row-remove" onClick={() => onRemoveRow(rowIdx)} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: '9px', height: 'fit-content' }}>×</button>
                 </div>
             ))}
 

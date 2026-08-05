@@ -230,10 +230,31 @@ const GalleryPublic = () => {
                     .gallery-photo-grid { grid-template-columns: repeat(3,1fr) !important; }
                 }
                 @media (max-width: 640px) {
-                    .gallery-folder-grid { grid-template-columns: 1fr !important; }
+                    .gallery-folder-grid { grid-template-columns: repeat(2,1fr) !important; gap: 12px !important; }
                     .gallery-photo-grid { grid-template-columns: repeat(2,1fr) !important; }
-                    .gallery-video-grid { grid-template-columns: 1fr !important; }
+                    .gallery-video-grid { grid-template-columns: repeat(2,1fr) !important; gap: 12px !important; }
                     .lightbox-nav-btn { left: 4px !important; right: 4px !important; width: 38px !important; height: 38px !important; }
+
+                    /* ── Folder tiles — compact 2-per-row proportions instead of the desktop-sized cover/badge ── */
+                    .folder-tile { border-radius: 18px !important; padding: 8px !important; }
+                    .folder-cover { height: 100px !important; border-radius: 13px !important; }
+                    .folder-badge-overlap { width: 38px !important; height: 38px !important; top: -19px !important; left: 10px !important; border-radius: 11px !important; border-width: 2px !important; }
+                    .folder-badge-overlap svg { width: 16px !important; height: 16px !important; }
+                    .folder-count-badge { padding: 3px 8px !important; top: 8px !important; right: 8px !important; gap: 3px !important; }
+                    .folder-count-badge span { font-size: 9.5px !important; }
+                    .folder-count-badge svg { width: 9px !important; height: 9px !important; }
+                    .folder-caption-wrap { padding-top: 22px !important; }
+                    .folder-caption-text { padding-left: 46px !important; min-height: 38px !important; }
+                    .folder-caption-text p:first-child { font-size: 13.5px !important; }
+                    .folder-caption-text p:last-child { font-size: 10px !important; }
+
+                    /* ── Video tiles — the row layout (thumb-left, title-right) only works at
+                       full width; in a 2-per-row grid it stacks into a compact vertical card
+                       instead, thumbnail on top so it isn't squeezed to almost nothing ── */
+                    .video-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; padding: 8px !important; border-radius: 12px !important; }
+                    .video-thumb { width: 100% !important; max-width: none !important; }
+                    .video-info { padding-right: 0 !important; padding: 0 2px 2px !important; }
+                    .video-info p { font-size: 12.5px !important; }
                 }
             `}</style>
 
@@ -318,7 +339,7 @@ const GalleryPublic = () => {
                                         </div>
 
                                         {/* Caption — a literal folder "tab" badge straddles the seam between cover and text, like a wax seal */}
-                                        <div style={{ position: 'relative', paddingTop: '30px' }}>
+                                        <div className="folder-caption-wrap" style={{ position: 'relative', paddingTop: '30px' }}>
                                             <div className="folder-badge-overlap" style={{
                                                 position: 'absolute', top: '-26px', left: '14px', width: '50px', height: '50px', borderRadius: '15px',
                                                 background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`,
@@ -328,7 +349,7 @@ const GalleryPublic = () => {
                                             }}>
                                                 <IconFolder size={22} color="#ffffff" />
                                             </div>
-                                            <div style={{ paddingLeft: '64px', minHeight: '50px', paddingBottom: '6px' }}>
+                                            <div className="folder-caption-text" style={{ paddingLeft: '64px', minHeight: '50px', paddingBottom: '6px' }}>
                                                 <p style={{
                                                     fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 700,
                                                     color: '#0f172a', letterSpacing: '-0.1px', marginBottom: '4px',
@@ -389,7 +410,7 @@ const GalleryPublic = () => {
                                             </div>
                                         );
                                         const info = (
-                                            <div style={{ minWidth: 0, paddingRight: '8px' }}>
+                                            <div className="video-info" style={{ minWidth: 0, paddingRight: '8px' }}>
                                                 <p style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.1px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{v.title || 'Untitled'}</p>
                                             </div>
                                         );

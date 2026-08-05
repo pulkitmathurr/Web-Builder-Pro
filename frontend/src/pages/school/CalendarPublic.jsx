@@ -196,7 +196,7 @@ const CalendarPublic = () => {
                                 {/* Day grid */}
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px', background: '#e5e9f0', border: '1.5px solid #cbd5e1', borderRadius: '12px', overflow: 'hidden' }}>
                                     {grid.map((day, i) => {
-                                        if (!day) return <div key={i} style={{ background: bc.card, minHeight: '92px' }}></div>;
+                                        if (!day) return <div key={i} style={{ background: bc.card, minHeight: '76px' }}></div>;
                                         const key = toDateKey(new Date(year, month, day));
                                         const dayItems = itemsByDate[key] || [];
                                         const isToday = key === todayKey;
@@ -205,7 +205,7 @@ const CalendarPublic = () => {
                                         return (
                                             <div key={i} className="cal-day"
                                                 style={{
-                                                    minHeight: '92px', display: 'flex', flexDirection: 'column',
+                                                    minHeight: '76px', display: 'flex', flexDirection: 'column',
                                                     alignItems: 'stretch', padding: '5px 4px', gap: '2px', overflow: 'hidden',
                                                     boxShadow: isToday ? `inset 0 0 0 1.5px ${tc.primary}` : 'none',
                                                     background: isToday ? `${tc.primary}0a` : bc.card,

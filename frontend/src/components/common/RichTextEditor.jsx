@@ -140,6 +140,29 @@ const RichTextEditor = ({
                 .rte-wrapper .ql-picker.ql-font .ql-picker-label::before,
                 .rte-wrapper .ql-picker.ql-font .ql-picker-item::before { content: 'Font'; }
                 ${fontFaceCss}
+                @media (max-width: 640px) {
+                    /* ── Toolbar — wrap into neat rows of small, evenly-spaced controls
+                       instead of the cramped/overflowing default layout on narrow screens ── */
+                    .rte-wrapper .ql-toolbar.ql-snow {
+                        display: flex !important; flex-wrap: wrap !important;
+                        align-items: center !important; gap: 4px 6px !important;
+                        padding: 6px 8px !important;
+                    }
+                    .rte-wrapper .ql-toolbar.ql-snow .ql-formats {
+                        margin: 0 !important; display: flex !important; align-items: center !important; gap: 2px !important;
+                    }
+                    .rte-wrapper .ql-toolbar.ql-snow button {
+                        width: 24px !important; height: 24px !important; padding: 3px !important;
+                    }
+                    .rte-wrapper .ql-picker.ql-font { width: 68px !important; }
+                    .rte-wrapper .ql-picker.ql-size { width: 54px !important; }
+                    .rte-wrapper .ql-picker.ql-align { width: 40px !important; }
+                    .rte-wrapper .ql-picker-label { padding-left: 4px !important; padding-right: 12px !important; font-size: 11px !important; }
+                    .rte-wrapper .ql-picker.ql-color .ql-picker-label,
+                    .rte-wrapper .ql-picker.ql-background .ql-picker-label {
+                        width: 24px !important; height: 24px !important; padding: 3px !important;
+                    }
+                }
             `}</style>
       <ReactQuill
         theme="snow"

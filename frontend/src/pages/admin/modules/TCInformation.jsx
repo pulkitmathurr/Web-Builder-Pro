@@ -315,11 +315,21 @@ const TCInformation = () => {
                 .tc-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .tc-hero-orb { animation: drift1 9s ease-in-out infinite; }
                 .tc-page input:focus, .tc-page textarea:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                @media (max-width: 640px) {
+                    .tc-hero { padding: 18px 16px !important; margin: 12px 0 !important; border-radius: 16px !important; }
+                    .tc-hero-inner { gap: 10px !important; }
+                    .tc-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .tc-hero-title { font-size: 18px !important; }
+                    .tc-hero-desc { font-size: 11px !important; margin-top: 4px !important; }
+                    .tc-status-badge { font-size: 9.5px !important; padding: 3px 9px !important; }
+                    .tc-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+                }
             `}</style>
             <div className="tc-page" style={{ background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
             <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 16px 60px' }}>
             {/* ============ Hero header ============ */}
             <div
+                className="tc-hero"
                 style={{
                     background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`,
                     borderRadius: 22,
@@ -333,16 +343,17 @@ const TCInformation = () => {
             >
                 <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                 <div className="tc-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-                <div className="tc-hero-item" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                    <div>
-                        <h1 style={{ fontSize: 26, fontWeight: 800 }}>Transfer Certificates</h1>
-                        <p style={{ marginTop: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', maxWidth: 560 }}>
-                            Add session-wise TC records one student at a time — TC No, Student Name, and the
-                            signed TC as a PDF. Students can then search and download it from the public page.
-                        </p>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10, flexShrink: 0 }}>
+                <div className="tc-hero-item tc-hero-inner" style={{ display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', zIndex: 1 }}>
+                    <div className="tc-hero-top" style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <h1 className="tc-hero-title" style={{ fontSize: 26, fontWeight: 800 }}>Transfer Certificates</h1>
+                            <p className="tc-hero-desc" style={{ marginTop: 8, fontSize: 14, color: 'rgba(255,255,255,0.75)', maxWidth: 560 }}>
+                                Add session-wise TC records one student at a time — TC No, Student Name, and the
+                                signed TC as a PDF. Students can then search and download it from the public page.
+                            </p>
+                        </div>
                         <span
+                            className="tc-status-badge"
                             style={{
                                 fontSize: 11.5,
                                 fontWeight: 700,
@@ -351,18 +362,19 @@ const TCInformation = () => {
                                 background: isPublished ? 'rgba(34,197,94,0.18)' : 'rgba(250,204,21,0.15)',
                                 color: isPublished ? '#4ade80' : '#fde047',
                                 border: `1px solid ${isPublished ? 'rgba(74,222,128,0.4)' : 'rgba(253,224,71,0.35)'}`,
+                                flexShrink: 0,
                             }}
                         >
                             {isPublished ? 'PUBLISHED' : 'DRAFT'}
                         </span>
-                        <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={handleSave} disabled={saving} style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: 6, fontSize: 12, fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                {saving ? 'Saving…' : isDirty ? '● Save' : 'Save'}
-                            </button>
-                            <button onClick={handlePublishToggle} disabled={publishing} style={isPublished ? { padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' } : { padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                {publishing ? 'Working…' : isPublished ? 'Unpublish' : 'Publish'}
-                            </button>
-                        </div>
+                    </div>
+                    <div className="tc-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                        <button onClick={handleSave} disabled={saving} style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: 6, fontSize: 12, fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                            {saving ? 'Saving…' : isDirty ? '● Save' : 'Save'}
+                        </button>
+                        <button onClick={handlePublishToggle} disabled={publishing} style={isPublished ? { padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' } : { padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                            {publishing ? 'Working…' : isPublished ? 'Unpublish' : 'Publish'}
+                        </button>
                     </div>
                 </div>
             </div>

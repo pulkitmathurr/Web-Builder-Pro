@@ -47,22 +47,10 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-const CARDS_PER_PAGE = 5;
-const AUTO_SLIDE_MS = 4000;
-
-// ── Single level section — 5-card grid; auto-advancing slideshow (no arrows) once more than 5 ──
+// ── Single level section — a real wrapping grid (5 per row on desktop, 3 per row on
+// mobile — see .faculty-grid in the stylesheet below), every member shown at once with a
+// staggered scroll-reveal fade-up per card instead of the old auto-advancing slideshow. ──
 const LevelSection = ({ levelKey, members, tc, bc }) => {
-    const [page, setPage] = useState(0);
-    const totalPages = Math.ceil(members.length / CARDS_PER_PAGE);
-
-    useEffect(() => {
-        if (totalPages <= 1) return;
-        const timer = setInterval(() => setPage(p => (p + 1) % totalPages), AUTO_SLIDE_MS);
-        return () => clearInterval(timer);
-    }, [totalPages]);
-
-    const visibleThumbs = members.slice(page * CARDS_PER_PAGE, page * CARDS_PER_PAGE + CARDS_PER_PAGE);
-
     return (
         <div style={{ padding: '3.5rem clamp(1.25rem,6vw,5rem)', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>
             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
@@ -70,10 +58,10 @@ const LevelSection = ({ levelKey, members, tc, bc }) => {
                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.75rem' }}>{LEVEL_LABELS[levelKey]}</p>
                 </Reveal>
 
-                <Reveal delay={0.1}>
-                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(140px, 190px))`, justifyContent: 'center', gap: '14px' }}>
-                        {visibleThumbs.map((m, idx) => (
-                            <div key={`${page}-${m.id}`} className="faculty-card"
+                <div className="faculty-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 190px))', justifyContent: 'center', gap: '14px' }}>
+                    {members.map((m, idx) => (
+                        <Reveal key={m.id} delay={Math.min(idx * 0.05, 0.6)}>
+                            <div className="faculty-card"
                                 style={{
                                     borderRadius: '6px',
                                     border: '1px solid #dde2e8',
@@ -81,7 +69,6 @@ const LevelSection = ({ levelKey, members, tc, bc }) => {
                                     padding: '6px',
                                     display: 'flex', flexDirection: 'column',
                                     boxShadow: '0 4px 16px rgba(15,23,42,0.06)',
-                                    animationDelay: `${idx * 0.08}s`,
                                     '--tc-primary': tc.primary,
                                 }}>
                                 {/* Photo — framed with an inset accent border that sharpens on hover */}
@@ -95,19 +82,19 @@ const LevelSection = ({ levelKey, members, tc, bc }) => {
                                     )}
                                 </div>
                                 {/* Name plate */}
-                                <div style={{ flex: '0 0 auto', padding: '8px 4px 3px', textAlign: 'center' }}>
-                                    <p style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>{m.name}</p>
+                                <div className="faculty-card-plate" style={{ flex: '0 0 auto', padding: '8px 4px 3px', textAlign: 'center' }}>
+                                    <p className="faculty-card-name" style={{ fontSize: '11.5px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.3 }}>{m.name}</p>
                                     {m.designation && (
-                                        <p style={{ fontSize: '10px', fontWeight: 700, color: tc.primary, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.designation}</p>
+                                        <p className="faculty-card-desig" style={{ fontSize: '10px', fontWeight: 700, color: tc.primary, marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.designation}</p>
                                     )}
                                     {m.experience && (
-                                        <p style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.experience} experience</p>
+                                        <p className="faculty-card-exp" style={{ fontSize: '9px', color: '#94a3b8', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.experience} experience</p>
                                     )}
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                </Reveal>
+                        </Reveal>
+                    ))}
+                </div>
             </div>
         </div>
     );
@@ -231,8 +218,7 @@ const FacultyPublic = () => {
                 html { scroll-behavior: smooth; }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes facultyCardPop { from { opacity: 0; transform: translateY(16px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-                .faculty-card { position: relative; animation: facultyCardPop 0.5s cubic-bezier(0.16,1,0.3,1) both; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease, border-color 0.35s ease; }
+                .faculty-card { position: relative; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease, border-color 0.35s ease; }
                 .faculty-card::before { content: ''; position: absolute; inset: 5px; border: 1px solid transparent; border-radius: 3px; pointer-events: none; transition: border-color 0.35s ease, inset 0.35s ease; }
                 .faculty-card:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgba(15,23,42,0.14); border-color: var(--tc-primary); }
                 .faculty-card:hover::before { border-color: var(--tc-primary); inset: 3px; }
@@ -246,6 +232,15 @@ const FacultyPublic = () => {
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @media (max-width: 640px) {
+                    /* ── 3-per-row on mobile instead of 5 — smaller cards, tighter text ── */
+                    .faculty-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+                    .faculty-card { border-radius: 5px !important; padding: 4px !important; }
+                    .faculty-card-plate { padding: 6px 2px 2px !important; }
+                    .faculty-card-name { font-size: 9.5px !important; }
+                    .faculty-card-desig { font-size: 8px !important; }
+                    .faculty-card-exp { display: none !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>

@@ -56,7 +56,8 @@ const CategoryTable = ({ category, tc, bc }) => {
                 {(category.name || 'Untitled').toUpperCase()}
             </h2>
 
-            <div style={{ borderRadius: '4px', overflow: 'hidden', boxShadow: '0 4px 18px rgba(0,0,0,0.06)', border: '1.5px solid #94a3b8' }}>
+            <div style={{ overflowX: 'auto', borderRadius: '4px', boxShadow: '0 4px 18px rgba(0,0,0,0.06)', border: '1.5px solid #94a3b8' }}>
+              <div style={{ minWidth: '520px' }}>
                 {/* Header row */}
                 <div style={{
                     display: 'grid',
@@ -114,6 +115,7 @@ const CategoryTable = ({ category, tc, bc }) => {
                         )}
                     </div>
                 ))}
+              </div>
             </div>
         </Reveal>
     );

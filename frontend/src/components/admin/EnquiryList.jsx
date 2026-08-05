@@ -120,28 +120,39 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
                 .enquiry-link-pill { transition: transform 0.18s ease, box-shadow 0.18s ease; }
                 .enquiry-link-pill:hover { transform: translateY(-1px); box-shadow: 0 4px 12px ${hexToRgba(tc.primary, 0.35)}; }
                 .enquiry-new-pulse { animation: pulseDot 2s infinite; }
+                @media (max-width: 640px) {
+                    .enquiry-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .enquiry-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .enquiry-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .enquiry-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .enquiry-stat { padding: 7px 14px !important; }
+                    .enquiry-stat-num { font-size: 17px !important; }
+                    .enquiry-row-main { padding: 0.85rem 1rem !important; gap: 8px !important; }
+                    .enquiry-avatar { width: 32px !important; height: 32px !important; font-size: 11px !important; }
+                    .enquiry-row-detail { padding: 0 1rem 1rem 1rem !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                <div className="enquiry-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                         <div>
-                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>{breadcrumb}</p>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>{title}</h1>
-                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '440px' }}>{description}</p>
+                            <p className="enquiry-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>{breadcrumb}</p>
+                            <h1 className="enquiry-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>{title}</h1>
+                            <p className="enquiry-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '440px' }}>{description}</p>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ textAlign: 'center', padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px' }}>
-                                <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{enquiries.length}</div>
+                            <div className="enquiry-stat" style={{ textAlign: 'center', padding: '10px 20px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '10px' }}>
+                                <div className="enquiry-stat-num" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>{enquiries.length}</div>
                                 <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 20px', background: newCount > 0 ? hexToRgba('#ffffff', 0.14) : 'rgba(255,255,255,0.08)', border: `1px solid ${newCount > 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '10px' }}>
+                            <div className="enquiry-stat" style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '10px 20px', background: newCount > 0 ? hexToRgba('#ffffff', 0.14) : 'rgba(255,255,255,0.08)', border: `1px solid ${newCount > 0 ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '10px' }}>
                                 {newCount > 0 && <span className="enquiry-new-pulse" style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ffffff', flexShrink: 0 }}></span>}
                                 <div>
-                                    <div style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>{newCount}</div>
+                                    <div className="enquiry-stat-num" style={{ fontSize: '22px', fontWeight: 800, color: '#ffffff', lineHeight: 1 }}>{newCount}</div>
                                     <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: '3px' }}>New</div>
                                 </div>
                             </div>
@@ -168,7 +179,7 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
                                             transition: 'background 0.15s, border-left-color 0.2s ease',
                                             animationDelay: `${Math.min(i * 0.03, 0.25)}s`,
                                         }}>
-                                        <div onClick={() => setExpanded(isOpen ? null : en.uuid)}
+                                        <div className="enquiry-row-main" onClick={() => setExpanded(isOpen ? null : en.uuid)}
                                             style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '1.05rem 1.5rem', cursor: 'pointer', flexWrap: 'wrap' }}>
 
                                             {/* Avatar — initials on a theme-color gradient */}

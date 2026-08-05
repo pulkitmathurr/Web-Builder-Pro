@@ -298,27 +298,43 @@ const Infrastructure = () => {
                 .infra-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .infra-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .infra-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                @media (max-width: 700px) {
+                    .infra-main-grid { grid-template-columns: 1fr !important; }
+                }
+                @media (max-width: 640px) {
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .infra-hero-inner { gap: 12px !important; }
+                    .infra-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .infra-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .infra-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .infra-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .infra-status-badge { padding: 4px 9px !important; }
+                    .infra-status-badge span { font-size: 9.5px !important; }
+                    .infra-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+                    .infra-img-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                }
             `}</style>
 
       <div style={{ fontFamily: "system-ui, sans-serif", background: bc.surface, margin: "-24px", padding: "24px", minHeight: "100vh" }}>
         {/* Hero Header */}
-        <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+        <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
           <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
           <div className="infra-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-          <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-            <div className="infra-hero-item">
-              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Infrastructure</p>
-              <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Infrastructure Categories</h1>
-              <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                Add categories like Our Campus, Sports Facilities, Transport — each gets its own page.
-              </p>
-            </div>
-            <div className="infra-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
+          <div className="infra-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div className="infra-hero-top" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+              <div className="infra-hero-item">
+                <p className="infra-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Infrastructure</p>
+                <h1 className="infra-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Infrastructure Categories</h1>
+                <p className="infra-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                  Add categories like Our Campus, Sports Facilities, Transport — each gets its own page.
+                </p>
               </div>
-              <div style={{ display: "flex", gap: "8px" }}>
+              <div className="infra-hero-item infra-status-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}>
+                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8', flexShrink: 0 }}></div>
+                <span style={{ fontSize: '10.5px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{isPublished ? 'Published' : 'Draft'}</span>
+              </div>
+            </div>
+            <div className="infra-hero-item infra-hero-actions" style={{ display: "flex", justifyContent: 'flex-end', gap: "8px" }}>
                 <button
                   onClick={() => handleSave(false)}
                   disabled={saving}
@@ -373,11 +389,10 @@ const Infrastructure = () => {
               </div>
             </div>
           </div>
-        </div>
 
         {/* ── Main Layout ── */}
         <div
-          className="infra-section"
+          className="infra-main-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "260px 1fr",
@@ -679,6 +694,7 @@ const Infrastructure = () => {
                     Shown as a slider beside the description on the live page. You'll get a crop tool for each image (freely adjustable from every side — keep it tall/vertical) before it's added. JPG, PNG, WEBP · Max 5MB each.
                   </p>
                   <div
+                    className="infra-img-grid"
                     style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(4,1fr)",
@@ -779,6 +795,7 @@ const Infrastructure = () => {
                     Shown as a sliding carousel below the description — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.
                   </p>
                   <div
+                    className="infra-img-grid"
                     style={{
                       display: "grid",
                       gridTemplateColumns: "repeat(4,1fr)",

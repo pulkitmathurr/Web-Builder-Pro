@@ -168,12 +168,46 @@ const ContactUs = () => {
                     .contact-2col { grid-template-columns: 1fr !important; }
                     .contact-3col { grid-template-columns: 1fr !important; }
                 }
+                @media (max-width: 640px) {
+                    /* ── Hero header — compact, same treatment as Dashboard/Settings ── */
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .contact-hero-inner { flex-wrap: wrap !important; gap: 0.85rem !important; }
+                    .dash-hero-greeting { margin-bottom: 6px !important; }
+                    .dash-hero-greeting p { font-size: 10px !important; }
+                    .dash-hero-title { font-size: 19px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .dash-hero-desc { font-size: 11px !important; line-height: 1.5 !important; max-width: 100% !important; }
+
+                    /* ── Quick Contact glass panel inside hero ── */
+                    .contact-quick-panel { padding: 0.6rem 1rem !important; width: 100% !important; min-width: 0 !important; border-radius: 12px !important; }
+                    .contact-quick-row { padding: 9px 0 !important; gap: 10px !important; }
+                    .contact-quick-icon { width: 28px !important; height: 28px !important; border-radius: 8px !important; }
+                    .contact-quick-icon svg { width: 14px !important; height: 14px !important; }
+                    .contact-quick-label { font-size: 9px !important; }
+                    .contact-quick-value { font-size: 11.5px !important; white-space: normal !important; overflow-wrap: break-word !important; text-overflow: unset !important; overflow: visible !important; }
+
+                    /* ── Section tabs — horizontal swipeable strip ── */
+                    .contact-tabs { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; padding-bottom: 2px !important; }
+                    .contact-tabs::-webkit-scrollbar { display: none !important; }
+                    .contact-tabs button { flex-shrink: 0 !important; padding: 8px 14px !important; font-size: 12px !important; gap: 5px !important; }
+                    .contact-tabs button svg { width: 14px !important; height: 14px !important; }
+
+                    /* ── Social cards — 2-per-row compact grid instead of 1-per-row stack ── */
+                    .contact-3col { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+                    .contact-social-card { border-radius: 8px !important; }
+                    .contact-social-header { padding: 8px !important; gap: 6px !important; }
+                    .contact-social-icon { width: 24px !important; height: 24px !important; border-radius: 6px !important; }
+                    .contact-social-icon svg { width: 12px !important; height: 12px !important; }
+                    .contact-social-label { font-size: 10px !important; white-space: normal !important; overflow-wrap: break-word !important; line-height: 1.2 !important; }
+                    .contact-social-body { padding: 8px !important; }
+                    .contact-social-input { font-size: 10px !important; padding: 7px 8px !important; }
+                    .contact-social-preview { display: none !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif' }}>
 
                 {/* Hero Header */}
-                <div style={{
+                <div className="dash-hero" style={{
                     background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`,
                     borderRadius: '22px',
                     padding: '2.5rem 2.75rem',
@@ -185,30 +219,30 @@ const ContactUs = () => {
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="contact-hero-orb" style={{ position: 'absolute', width: '350px', height: '350px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-120px', right: '8%', pointerEvents: 'none' }}></div>
 
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
+                    <div className="contact-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem' }}>
                         <div className="contact-hero-item" style={{ animationDelay: '0.05s' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                            <div className="dash-hero-greeting" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tc.secondary }}></div>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Admin / Contact Us</p>
                             </div>
-                            <h1 style={{ fontSize: '30px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', letterSpacing: '-0.5px' }}>Contact Information</h1>
-                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '400px' }}>
+                            <h1 className="dash-hero-title" style={{ fontSize: '30px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', letterSpacing: '-0.5px' }}>Contact Information</h1>
+                            <p className="dash-hero-desc" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '400px' }}>
                                 Manage your school's address, Google Maps location and social media links.
                             </p>
                         </div>
                         {/* Quick Contact — one cohesive glass panel with icon rows, instead of separate boxed chips */}
-                        <div className="contact-hero-item" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '18px', padding: '0.5rem 1.5rem', backdropFilter: 'blur(14px)', minWidth: '230px', animationDelay: '0.15s' }}>
+                        <div className="contact-hero-item contact-quick-panel" style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '18px', padding: '0.5rem 1.5rem', backdropFilter: 'blur(14px)', minWidth: '230px', animationDelay: '0.15s' }}>
                             {[
                                 { label: 'Phone Number', value: formData.phone || 'Not added yet', icon: <svg width="16" height="16" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg> },
                                 { label: 'City', value: formData.city || 'Not added yet', icon: <svg width="16" height="16" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg> },
                             ].map((item, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '13px', padding: '13px 0', borderBottom: i === 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
-                                    <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <div key={i} className="contact-quick-row" style={{ display: 'flex', alignItems: 'center', gap: '13px', padding: '13px 0', borderBottom: i === 0 ? '1px solid rgba(255,255,255,0.1)' : 'none' }}>
+                                    <div className="contact-quick-icon" style={{ width: '34px', height: '34px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                         {item.icon}
                                     </div>
                                     <div style={{ minWidth: 0 }}>
-                                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</p>
-                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.value}</p>
+                                        <p className="contact-quick-label" style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{item.label}</p>
+                                        <p className="contact-quick-value" style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.value}</p>
                                     </div>
                                 </div>
                             ))}
@@ -217,7 +251,7 @@ const ContactUs = () => {
                 </div>
 
                 {/* Section Tabs */}
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem' }}>
+                <div className="contact-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem' }}>
                     {sections.map(s => (
                         <button
                             key={s.key}
@@ -371,6 +405,7 @@ const ContactUs = () => {
                             {socialLinks.map((social, i) => (
                                 <div
                                     key={social.name}
+                                    className="contact-social-card"
                                     onMouseEnter={() => setHoveredSocial(social.name)}
                                     onMouseLeave={() => setHoveredSocial(null)}
                                     style={{
@@ -383,20 +418,21 @@ const ContactUs = () => {
                                         transform: hoveredSocial === social.name ? 'translateY(-2px)' : 'none'
                                     }}
                                 >
-                                    <div style={{ padding: '14px 16px', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: social.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: `0 4px 10px ${social.color}40`, flexShrink: 0 }}>
+                                    <div className="contact-social-header" style={{ padding: '14px 16px', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div className="contact-social-icon" style={{ width: '34px', height: '34px', borderRadius: '8px', background: social.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: `0 4px 10px ${social.color}40`, flexShrink: 0 }}>
                                             {social.icon}
                                         </div>
-                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{social.label}</p>
+                                        <p className="contact-social-label" style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{social.label}</p>
                                     </div>
-                                    <div style={{ padding: '14px 16px' }}>
+                                    <div className="contact-social-body" style={{ padding: '14px 16px' }}>
                                         <input
+                                            className="contact-social-input"
                                             type="text" name={social.name} value={formData[social.name]}
                                             onChange={handleChange} placeholder={social.placeholder}
                                             style={{ ...inputStyle, fontSize: '12px', padding: '9px 12px' }}
                                         />
                                         {formData[social.name] && (
-                                            <a href={formData[social.name]} target="_blank" rel="noreferrer"
+                                            <a href={formData[social.name]} target="_blank" rel="noreferrer" className="contact-social-preview"
                                                 style={{ fontSize: '11px', color: social.color, marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontWeight: 500 }}>
                                                 <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                                                 Preview link

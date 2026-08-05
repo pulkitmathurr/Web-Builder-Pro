@@ -155,13 +155,14 @@ const EventStyleCard = ({ heading, description, images, tc, bc, onImageClick }) 
     const hasImages = images?.length > 0;
 
     return (
-        <div style={{ background: bc.card, border: '1px solid #f1f5f9', borderRadius: '20px', padding: '2rem', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
+        <div className="event-style-card" style={{ background: bc.card, border: '1px solid #f1f5f9', borderRadius: '20px', padding: '2rem', boxShadow: '0 6px 20px rgba(0,0,0,0.05)', boxSizing: 'border-box' }}>
+            <div className="event-card-kicker" style={{ width: '28px', height: '3px', background: tc.primary, borderRadius: '2px' }}></div>
             {hasImages && (
                 <div className="sports-float-img" style={{ float: 'right', width: '340px', marginLeft: '2rem', marginBottom: '1rem' }}>
                     <SingleImageSlider images={images} tc={tc} onImageClick={onImageClick} />
                 </div>
             )}
-            <h3 style={{
+            <h3 className="event-card-heading" style={{
                 fontFamily: "'Inter', system-ui, sans-serif",
                 fontSize: 'clamp(22px,2.8vw,28px)', fontWeight: 800, letterSpacing: '-0.5px',
                 lineHeight: 1.25, marginBottom: '0.9rem', color: '#0f172a', textAlign: 'left'
@@ -169,7 +170,7 @@ const EventStyleCard = ({ heading, description, images, tc, bc, onImageClick }) 
                 {restText ? `${restText} ` : ''}<span style={{ color: tc.primary }}>{lastWord}</span>
             </h3>
             {description && (
-                <div className="rte-content" style={{ fontSize: '14.5px', color: '#64748b', lineHeight: 1.8, textAlign: 'left' }}
+                <div className="rte-content event-card-desc" style={{ fontSize: '14.5px', color: '#64748b', lineHeight: 1.8, textAlign: 'left' }}
                     dangerouslySetInnerHTML={{ __html: description }} />
             )}
             <div style={{ clear: 'both' }}></div>
@@ -372,6 +373,7 @@ const SportsPublic = () => {
 
                 .year-badge { transition: background 0.2s; cursor: pointer; }
                 .year-badge:hover { background: ${tc.light} !important; }
+                .event-card-kicker { display: none; }
                 .rte-content { overflow-wrap: normal; word-break: normal; }
                 .rte-content p { margin-bottom: 0.6em; }
                 .rte-content p:last-child { margin-bottom: 0; }
@@ -392,15 +394,48 @@ const SportsPublic = () => {
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
                 @media (max-width: 900px) {
                     .sports-3col-grid { grid-template-columns: repeat(2,1fr) !important; }
+                    .sports-cert-grid { grid-template-columns: repeat(2,1fr) !important; }
                 }
                 @media (max-width: 780px) {
                     .sports-float-img { float: none !important; width: 100% !important; max-width: 360px; margin: 0 auto 1.5rem !important; }
+
+                    /* ── Sports Offered / Sporting Events cards — the boxed white card only
+                       makes sense at desktop widths; on mobile it becomes a minimal editorial
+                       block (no fill/border/shadow, just a hairline rule below), reordered so
+                       the header and description always read before the image ── */
+                    .event-style-card {
+                        background: none !important;
+                        border: none !important;
+                        border-radius: 0 !important;
+                        padding: 0 0 2.25rem !important;
+                        box-shadow: none !important;
+                        border-bottom: 1px solid rgba(15,23,42,0.08) !important;
+                        display: flex !important;
+                        flex-direction: column !important;
+                    }
+                    .event-card-kicker { display: block !important; order: 1 !important; margin-bottom: 12px !important; }
+                    .event-card-heading { order: 2 !important; }
+                    .event-card-desc { order: 3 !important; margin-bottom: 0 !important; }
+                    .sports-float-img { order: 4 !important; margin-top: 0.5rem !important; }
+
+                    .sports-list-col { gap: 2.25rem !important; }
                 }
                 @media (max-width: 640px) {
                     .sports-3col-grid { grid-template-columns: 1fr !important; }
                     .sports-rest-grid { grid-template-columns: repeat(2,1fr) !important; }
                     .sports-collage-grid { --collage-rh: 130px !important; }
                     .awards-carousel { height: 320px !important; }
+
+                    /* ── Certifications — 2-per-row compact cards instead of stacking 1-per-row ── */
+                    .sports-cert-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+                    .cert-card { border-radius: 12px !important; }
+                    .cert-card-photo { height: auto !important; aspect-ratio: 4/3 !important; }
+                    .cert-card-seal { width: 24px !important; height: 24px !important; top: 8px !important; right: 8px !important; }
+                    .cert-card-seal svg { width: 11px !important; height: 11px !important; }
+                    .cert-card-body { padding: 0.8rem 0.85rem 0.95rem !important; }
+                    .cert-card-eyebrow { font-size: 8.5px !important; margin-bottom: 4px !important; }
+                    .cert-card-title { font-size: 12.5px !important; line-height: 1.3 !important; }
+                    .cert-card-info { font-size: 10.5px !important; line-height: 1.4 !important; }
                 }
             `}</style>
 
@@ -469,7 +504,7 @@ const SportsPublic = () => {
 
                             {/* Sports Offered — same list pattern as Sporting Events, using the same EventStyleCard */}
                             {activePageKey === 'sportsOffered' && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem', marginTop: '1rem' }}>
+                                <div className="sports-list-col" style={{ display: 'flex', flexDirection: 'column', gap: '4rem', marginTop: '1rem' }}>
                                     {(pageData.offeredSports || []).map((sp, i) => (
                                         <Reveal key={sp.id} delay={i * 0.1}>
                                             <EventStyleCard
@@ -487,7 +522,7 @@ const SportsPublic = () => {
 
                             {/* Sporting Events — heading + description wraps naturally around the floated image block */}
                             {activePageKey === 'sportingEvents' && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4rem', marginTop: '1rem' }}>
+                                <div className="sports-list-col" style={{ display: 'flex', flexDirection: 'column', gap: '4rem', marginTop: '1rem' }}>
                                     {events.map((ev, i) => (
                                         <Reveal key={ev.id} delay={i * 0.1}>
                                             <EventStyleCard
@@ -518,7 +553,7 @@ const SportsPublic = () => {
                                         <Reveal delay={0.15}>
                                             <div style={{ textAlign: 'center' }}>
                                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Certifications</p>
-                                                <div className="sports-3col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '22px', textAlign: 'left' }}>
+                                                <div className="sports-cert-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '22px', textAlign: 'left' }}>
                                                     {certifications.map((cert) => (
                                                         <div key={cert.id} className="cert-card" onClick={() => setLightbox({ image: cert.image, title: cert.title, info: cert.info })}
                                                             style={{ cursor: cert.image ? 'zoom-in' : 'default' }}>
@@ -531,10 +566,10 @@ const SportsPublic = () => {
                                                                     </div>
                                                                 </div>
                                                             )}
-                                                            <div style={{ padding: '1.15rem 1.25rem 1.3rem' }}>
-                                                                <p style={{ fontSize: '10px', color: tc.primary, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px', opacity: 0.85 }}>Certification</p>
-                                                                {cert.title && <p style={{ fontSize: '15.5px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.2px', marginBottom: '5px' }}>{cert.title}</p>}
-                                                                {cert.info && <p style={{ fontSize: '12.5px', color: '#64748b', lineHeight: 1.6 }}>{cert.info}</p>}
+                                                            <div className="cert-card-body" style={{ padding: '1.15rem 1.25rem 1.3rem' }}>
+                                                                <p className="cert-card-eyebrow" style={{ fontSize: '10px', color: tc.primary, letterSpacing: '0.16em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px', opacity: 0.85 }}>Certification</p>
+                                                                {cert.title && <p className="cert-card-title" style={{ fontSize: '15.5px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.2px', marginBottom: '5px' }}>{cert.title}</p>}
+                                                                {cert.info && <p className="cert-card-info" style={{ fontSize: '12.5px', color: '#64748b', lineHeight: 1.6 }}>{cert.info}</p>}
                                                             </div>
                                                         </div>
                                                     ))}

@@ -123,43 +123,58 @@ const Announcements = () => {
                 .announcements-pin:hover { color: ${tc.primary} !important; }
                 .announcements-remove { transition: transform 0.18s ease, background 0.18s ease; }
                 .announcements-remove:hover { transform: scale(1.08); background: #fee2e2; }
+                @media (max-width: 480px) {
+                    .announcements-date-grid { grid-template-columns: 1fr 1fr !important; }
+                    .announcements-date-grid > div:last-child { grid-column: 1 / -1; }
+                }
+                @media (max-width: 640px) {
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .announcements-hero-inner { gap: 12px !important; }
+                    .announcements-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .announcements-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .announcements-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .announcements-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .announcements-status-badge { padding: 4px 9px !important; }
+                    .announcements-status-badge span { font-size: 9.5px !important; }
+                    .announcements-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                        <div>
-                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Dynamic / Announcements</p>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Announcements &amp; News</h1>
-                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                                Post school news, notices and updates for parents and students to see on the public site.
-                            </p>
+                    <div className="announcements-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div className="announcements-hero-top" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                            <div>
+                                <p className="announcements-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Dynamic / Announcements</p>
+                                <h1 className="announcements-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Announcements &amp; News</h1>
+                                <p className="announcements-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                                    Post school news, notices and updates for parents and students to see on the public site.
+                                </p>
+                            </div>
+                            <div className="announcements-status-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}>
+                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8', flexShrink: 0 }}></div>
+                                <span style={{ fontSize: '10.5px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{isPublished ? 'Published' : 'Draft'}</span>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button className="announcements-btn" onClick={() => handleSave(false)} disabled={saving}
-                                    style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                    {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                        <div className="announcements-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button className="announcements-btn" onClick={() => handleSave(false)} disabled={saving}
+                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                            </button>
+                            {isPublished ? (
+                                <button className="announcements-btn" onClick={handleUnpublish}
+                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                    Unpublish
                                 </button>
-                                {isPublished ? (
-                                    <button className="announcements-btn" onClick={handleUnpublish}
-                                        style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                        Unpublish
-                                    </button>
-                                ) : (
-                                    <button className="announcements-btn" onClick={() => handleSave(true)} disabled={publishing}
-                                        style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                        {publishing ? 'Publishing...' : 'Publish'}
-                                    </button>
-                                )}
-                            </div>
+                            ) : (
+                                <button className="announcements-btn" onClick={() => handleSave(true)} disabled={publishing}
+                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                    {publishing ? 'Publishing...' : 'Publish'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -242,7 +257,7 @@ const AnnouncementCard = ({ announcement, onUpdate, onRemove, delay = 0 }) => {
                     <label style={labelStyle}>Title</label>
                     <input className="announcements-input" type="text" value={announcement.title} onChange={e => onUpdate('title', e.target.value)} placeholder="Enter Announcement Title" style={inputStyle} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                <div className="announcements-date-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                     <div>
                         <label style={labelStyle}>Date</label>
                         <input className="announcements-input" type="date" value={announcement.date} onChange={e => onUpdate('date', e.target.value)} style={inputStyle} />

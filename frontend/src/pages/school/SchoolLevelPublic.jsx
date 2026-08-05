@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useLayoutEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
@@ -31,10 +31,10 @@ const useScrollReveal = () => {
     return [ref, visible];
 };
 
-const Reveal = ({ children, delay = 0, style = {} }) => {
+const Reveal = ({ children, delay = 0, style = {}, className }) => {
     const [ref, visible] = useScrollReveal();
     return (
-        <div ref={ref} style={{
+        <div ref={ref} className={className} style={{
             opacity: visible ? 1 : 0,
             transform: visible ? 'translateY(0)' : 'translateY(40px)',
             transition: `opacity 0.8s ease ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
@@ -53,9 +53,6 @@ const SchoolLevelPublic = () => {
     const [loading, setLoading] = useState(true);
     const [scrollY, setScrollY] = useState(0);
     const [galleryIndex, setGalleryIndex] = useState(0);
-    const aboutSectionRef = useRef(null);
-    const aboutQuoteRef = useRef(null);
-    const [aboutLineRect, setAboutLineRect] = useState({ top: 0, height: 0 });
 
     const levelInfo = LEVEL_MAP[levelSlug];
 
@@ -82,30 +79,6 @@ const SchoolLevelPublic = () => {
             setLoading(false);
         }
     };
-
-    // Measures where the About quote block actually sits so the accent line can start
-    // only once the floated image ends, and stop at the quote's own bottom — never
-    // sliding behind the image above, or running on past it into the author line below.
-    useLayoutEffect(() => {
-        const lvl = allLevels?.[levelInfo?.key];
-        if (!lvl?.aboutQuote || !aboutQuoteRef.current || !aboutSectionRef.current) {
-            setAboutLineRect({ top: 0, height: 0 });
-            return;
-        }
-        const compute = () => {
-            if (!aboutQuoteRef.current || !aboutSectionRef.current) return;
-            const containerRect = aboutSectionRef.current.getBoundingClientRect();
-            const quoteRect = aboutQuoteRef.current.getBoundingClientRect();
-            const quoteTop = quoteRect.top - containerRect.top;
-            const imageHeight = lvl.aboutImage ? 408 : 0;
-            const top = Math.max(quoteTop, imageHeight);
-            const bottom = quoteTop + quoteRect.height;
-            setAboutLineRect({ top, height: Math.max(bottom - top, 0) });
-        };
-        compute();
-        window.addEventListener('resize', compute);
-        return () => window.removeEventListener('resize', compute);
-    }, [allLevels, levelInfo?.key]);
 
     if (loading) return (
         <div style={{ minHeight: '100vh', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -176,6 +149,28 @@ const SchoolLevelPublic = () => {
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @media (max-width: 640px) {
+                    /* ── About / Why Unique — the image no longer floats beside the text
+                       (which left almost no room for the text next to a 300px-wide image on
+                       a phone). Reordered via flex so the header/description text always
+                       reads first, with the image as its own centered block below it. ── */
+                    .lvl-about-container, .lvl-unique-container {
+                        display: flex !important;
+                        flex-direction: column !important;
+                    }
+                    .lvl-about-text-wrap, .lvl-unique-text-wrap { order: 1 !important; }
+                    .lvl-about-img-wrap, .lvl-unique-img-wrap {
+                        order: 2 !important;
+                        float: none !important;
+                        width: 100% !important;
+                        max-width: 280px !important;
+                        margin: 1.75rem auto 0 !important;
+                    }
+                    .lvl-gallery-heading { font-size: 26px !important; }
+
+                    /* ── Left accent border beside the description — desktop-only flourish, drop it on mobile ── */
+                    .lvl-accent-block { border-left: none !important; padding-left: 0 !important; margin-left: 0 !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
@@ -184,7 +179,7 @@ const SchoolLevelPublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="courses" />
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem 3rem 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'clamp(3rem,14vw,4.5rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -199,10 +194,10 @@ const SchoolLevelPublic = () => {
 
                 {/* ── About — image floats left, description wraps and reclaims full width once the image ends ── */}
                 {(data.aboutHeading || data.aboutQuote) && (
-                    <div style={{ padding: '4rem 5rem', background: bc.surface }}>
-                        <div ref={aboutSectionRef} style={{ maxWidth: '1300px', margin: '0 auto', position: 'relative' }}>
+                    <div style={{ padding: 'clamp(2rem,8vw,4rem) clamp(1.25rem,6vw,5rem)', background: bc.surface }}>
+                        <div className="lvl-about-container" style={{ maxWidth: '1300px', margin: '0 auto', position: 'relative' }}>
                             {data.aboutImage && (
-                                <Reveal style={{ float: 'left', width: '300px', marginRight: '3rem', marginBottom: '1rem', position: 'relative', zIndex: 2 }}>
+                                <Reveal className="lvl-about-img-wrap" style={{ float: 'left', width: '300px', marginRight: '3rem', marginBottom: '1rem', position: 'relative', zIndex: 2 }}>
                                     <div className="lvl-frame">
                                         <span className="lvl-frame-corner lvl-corner-tl"></span>
                                         <span className="lvl-frame-corner lvl-corner-tr"></span>
@@ -214,11 +209,7 @@ const SchoolLevelPublic = () => {
                                     </div>
                                 </Reveal>
                             )}
-                            {/* Accent line only runs alongside the text below the floated image, and stops at the quote's own end — never under the image or past it into the author line */}
-                            {data.aboutQuote && aboutLineRect.height > 0 && (
-                                <div style={{ position: 'absolute', left: 0, top: `${aboutLineRect.top}px`, height: `${aboutLineRect.height}px`, width: '3px', background: tc.primary, borderRadius: '2px' }}></div>
-                            )}
-                            <Reveal delay={0.2}>
+                            <Reveal delay={0.2} className="lvl-about-text-wrap">
                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '20px' }}>#{school.name.replace(/\s+/g, '')}</p>
                                 {data.aboutHeading && (
                                     <h2 style={{ fontFamily: data.aboutHeadingFont ? getFontFamily(data.aboutHeadingFont) : undefined, fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 800, color: data.aboutHeadingColor || '#0f172a', letterSpacing: '-1.5px', lineHeight: 1.15, marginBottom: '1.25rem', fontStyle: data.aboutHeadingItalic ? 'italic' : 'normal' }}>
@@ -226,13 +217,15 @@ const SchoolLevelPublic = () => {
                                     </h2>
                                 )}
                                 {data.aboutQuote && (
-                                    <div ref={aboutQuoteRef} style={{ paddingLeft: '1.5rem', marginBottom: '1.25rem' }}>
+                                    /* Border sits in the left gutter (negative margin cancels the padding)
+                                       so the quote text itself stays flush with the heading above it. */
+                                    <div className="lvl-accent-block" style={{ borderLeft: `3px solid ${tc.primary}`, paddingLeft: '1.5rem', marginLeft: '-1.5rem', marginBottom: '1.25rem' }}>
                                         <div className="rte-content" style={{ fontSize: '15.5px', color: '#64748b', lineHeight: 1.9 }}
                                             dangerouslySetInnerHTML={{ __html: data.aboutQuote }} />
                                     </div>
                                 )}
                                 {data.aboutAuthor && (
-                                    <p style={{ fontSize: '15px', color: '#0f172a', fontWeight: 600, marginLeft: '1.5rem' }}>
+                                    <p style={{ fontSize: '15px', color: '#0f172a', fontWeight: 600 }}>
                                         — {data.aboutAuthor}{data.aboutAuthorDesignation && <span style={{ color: '#94a3b8', fontWeight: 400 }}>, {data.aboutAuthorDesignation}</span>}
                                     </p>
                                 )}
@@ -244,10 +237,10 @@ const SchoolLevelPublic = () => {
 
                 {/* ── Why Unique — image floats right, description wraps and reclaims full width once the image ends ── */}
                 {(data.uniqueHeading || data.uniqueText) && (
-                    <div style={{ padding: '4rem 5rem', background: bc.surface }}>
-                        <div style={{ maxWidth: '1300px', margin: '0 auto', position: 'relative' }}>
+                    <div style={{ padding: 'clamp(2rem,8vw,4rem) clamp(1.25rem,6vw,5rem)', background: bc.surface }}>
+                        <div className="lvl-unique-container" style={{ maxWidth: '1300px', margin: '0 auto', position: 'relative' }}>
                             {data.uniqueImage && (
-                                <Reveal delay={0.15} style={{ float: 'right', width: '300px', marginLeft: '3rem', marginBottom: '1rem', position: 'relative', zIndex: 2 }}>
+                                <Reveal delay={0.15} className="lvl-unique-img-wrap" style={{ float: 'right', width: '300px', marginLeft: '3rem', marginBottom: '1rem', position: 'relative', zIndex: 2 }}>
                                     <div className="lvl-frame">
                                         <span className="lvl-frame-corner lvl-corner-tl"></span>
                                         <span className="lvl-frame-corner lvl-corner-tr"></span>
@@ -259,7 +252,7 @@ const SchoolLevelPublic = () => {
                                     </div>
                                 </Reveal>
                             )}
-                            <Reveal>
+                            <Reveal className="lvl-unique-text-wrap">
                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '20px' }}>What Sets Us Apart</p>
                                 {data.uniqueHeading && (
                                     <h2 style={{ fontFamily: data.uniqueHeadingFont ? getFontFamily(data.uniqueHeadingFont) : undefined, fontSize: 'clamp(28px,3.5vw,40px)', fontWeight: 800, color: data.uniqueHeadingColor || '#0f172a', letterSpacing: '-1.5px', lineHeight: 1.15, marginBottom: '1.25rem', fontStyle: data.uniqueHeadingItalic ? 'italic' : 'normal' }}>
@@ -267,7 +260,7 @@ const SchoolLevelPublic = () => {
                                     </h2>
                                 )}
                                 {data.uniqueText && (
-                                    <div style={{ borderLeft: `3px solid ${tc.primary}`, paddingLeft: '1.5rem' }}>
+                                    <div className="lvl-accent-block" style={{ borderLeft: `3px solid ${tc.primary}`, paddingLeft: '1.5rem', marginLeft: '-1.5rem' }}>
                                         <div className="rte-content" style={{ fontSize: '15.5px', color: '#64748b', lineHeight: 1.9 }}
                                             dangerouslySetInnerHTML={{ __html: data.uniqueText }} />
                                     </div>
@@ -280,12 +273,12 @@ const SchoolLevelPublic = () => {
 
                 {/* ── Gallery ── */}
                 {gallery.length > 0 && (
-                    <div style={{ padding: '4rem 5rem', background: bc.surface, position: 'relative' }}>
+                    <div style={{ padding: 'clamp(2rem,8vw,4rem) clamp(1.25rem,6vw,5rem)', background: bc.surface, position: 'relative' }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                                 <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>Campus Life</p>
-                                    <h2 style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1.5px' }}>{levelInfo.label} Gallery</h2>
+                                    <h2 className="lvl-gallery-heading" style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1.5px' }}>{levelInfo.label} Gallery</h2>
                                 </div>
 
                                 <div style={{ maxWidth: '900px', margin: '0 auto' }}>

@@ -103,12 +103,12 @@ const VideoTile = ({ video, tagColor, onPlay }) => {
     const cardStyle = { display: 'block', background: '#ffffff', borderRadius: '6px', overflow: 'hidden', border: '1px solid #dde3ea', boxShadow: '0 3px 14px rgba(15,23,42,0.08)', cursor: 'pointer', textDecoration: 'none' };
 
     const footer = (
-        <div style={{ padding: '13px 16px 15px', background: '#eef2f7', borderTop: '1px solid #dde3ea' }}>
+        <div className="video-card-footer" style={{ padding: '13px 16px 15px', background: '#eef2f7', borderTop: '1px solid #dde3ea' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <span style={{ marginTop: '2px', flexShrink: 0 }}>
                     {isUpload ? <PlayIcon color={tagColor} size={11} /> : <ExternalLinkIcon color={tagColor} size={11} />}
                 </span>
-                <span style={{ fontSize: '13.5px', fontWeight: 600, color: '#1e293b', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <span className="video-card-title" style={{ fontSize: '13.5px', fontWeight: 600, color: '#1e293b', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     {video.title || (isUpload ? 'Watch Video' : 'View Video')}
                 </span>
             </div>
@@ -345,10 +345,17 @@ const EventDetailPublic = () => {
                     .lightbox-nav-btn { left: 4px !important; right: 4px !important; width: 36px !important; height: 36px !important; }
                 }
                 @media (max-width: 720px) {
-                    .video-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                    /* Always keep all 3 videos in one row, just tighter and smaller on narrow screens */
+                    .video-grid { gap: 10px !important; }
+                    .video-card-play { width: 34px !important; height: 34px !important; }
+                    .video-card-play svg { width: 14px !important; height: 14px !important; }
+                    .video-card-title { font-size: 11.5px !important; }
                 }
                 @media (max-width: 480px) {
-                    .video-grid { grid-template-columns: 1fr !important; }
+                    .video-grid { gap: 6px !important; }
+                    .video-card-play { width: 26px !important; height: 26px !important; }
+                    .video-card-footer { padding: 8px !important; }
+                    .video-card-title { font-size: 10px !important; -webkit-line-clamp: 1 !important; }
                 }
             `}</style>
 

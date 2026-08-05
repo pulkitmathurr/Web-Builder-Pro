@@ -195,6 +195,24 @@ const Achievements = () => {
                 @media (max-width: 480px) {
                     .ach-title-grid { grid-template-columns: 1fr !important; }
                 }
+                @media (max-width: 640px) {
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .ach-hero-inner { gap: 12px !important; }
+                    .ach-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .ach-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .ach-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .ach-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .ach-status-badge { padding: 4px 9px !important; }
+                    .ach-status-badge span { font-size: 9.5px !important; }
+                    .ach-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+
+                    /* ── Certifications — 4-per-row leaves almost no room on a phone; 2-per-row
+                       compact cards instead ── */
+                    .ach-cert-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+                    .ach-cert-card-photo { height: 90px !important; }
+                    .ach-cert-card-body { padding: 8px !important; gap: 5px !important; }
+                    .ach-cert-card-body input { font-size: 11px !important; padding: 7px 8px !important; }
+                }
                 input[type=text]:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .ach-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .ach-hero-orb { animation: drift1 9s ease-in-out infinite; }
@@ -219,39 +237,39 @@ const Achievements = () => {
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="ach-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                        <div className="ach-hero-item">
-                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Achievements</p>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Achievements</h1>
-                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                                Showcase school and student achievements, with certificates.
-                            </p>
+                    <div className="ach-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div className="ach-hero-top" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                            <div className="ach-hero-item">
+                                <p className="ach-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Achievements</p>
+                                <h1 className="ach-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Achievements</h1>
+                                <p className="ach-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                                    Showcase school and student achievements, with certificates.
+                                </p>
+                            </div>
+                            <div className="ach-hero-item ach-status-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}>
+                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8', flexShrink: 0 }}></div>
+                                <span style={{ fontSize: '10.5px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{isPublished ? 'Published' : 'Draft'}</span>
+                            </div>
                         </div>
-                        <div className="ach-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={() => handleSave(false)} disabled={saving}
-                                    style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                    {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                        <div className="ach-hero-item ach-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button onClick={() => handleSave(false)} disabled={saving}
+                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                            </button>
+                            {isPublished ? (
+                                <button onClick={handleUnpublish}
+                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                    Unpublish
                                 </button>
-                                {isPublished ? (
-                                    <button onClick={handleUnpublish}
-                                        style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                        Unpublish
-                                    </button>
-                                ) : (
-                                    <button onClick={() => handleSave(true)} disabled={publishing}
-                                        style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                        {publishing ? 'Publishing...' : 'Publish'}
-                                    </button>
-                                )}
-                            </div>
+                            ) : (
+                                <button onClick={() => handleSave(true)} disabled={publishing}
+                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                    {publishing ? 'Publishing...' : 'Publish'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -318,7 +336,7 @@ const Achievements = () => {
                                         <div>
                                             <label style={labelStyle}>Photo</label>
                                             <div className="ach-photobox" onClick={() => document.getElementById(`ach-photo-${a.id}`).click()}
-                                                style={{ width: '100%', height: '220px', borderRadius: '14px', border: '1.5px dashed #e5e7eb', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: a.photo ? 'transparent' : '#fafafa' }}>
+                                                style={{ width: '100%', height: '220px', borderRadius: '14px', border: a.photo ? '1px solid #e5e7eb' : '1.5px dashed #e5e7eb', boxShadow: a.photo ? '0 6px 18px rgba(15,23,42,0.08)' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: a.photo ? 'transparent' : '#fafafa' }}>
                                                 {uploading[photoKey] ? (
                                                     <div style={{ width: '22px', height: '22px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
                                                 ) : a.photo ? (
@@ -383,10 +401,10 @@ const Achievements = () => {
                     <button className="ach-cert-addbtn" onClick={addCertification} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e5e7eb', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
                         + Add Certification
                     </button>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px' }}>
+                    <div className="ach-cert-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px' }}>
                         {content.certifications.map((c, ci) => (
                             <div key={c.id} className="ach-cert-card" style={{ border: '1px solid #f1f5f9', borderRadius: '14px', animationDelay: `${Math.min(ci, 8) * 0.05}s` }}>
-                                <div onClick={() => document.getElementById(`cert-img-${c.id}`).click()}
+                                <div className="ach-cert-card-photo" onClick={() => document.getElementById(`cert-img-${c.id}`).click()}
                                     style={{ height: '130px', background: '#fafbfc', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
                                     {uploading[`cert-${c.id}`] ? (
                                         <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
@@ -397,7 +415,7 @@ const Achievements = () => {
                                     )}
                                 </div>
                                 <input id={`cert-img-${c.id}`} type="file" accept="image/*" onChange={e => { const f = e.target.files[0]; if (f) onCertImageSelected(c.id, f); e.target.value = ''; }} style={{ display: 'none' }} />
-                                <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div className="ach-cert-card-body" style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                     <input type="text" value={c.title} onChange={e => updateCertification(c.id, 'title', e.target.value)} placeholder="Title" style={{ ...inputStyle, fontSize: '12px', padding: '8px 10px' }} />
                                     <input type="text" value={c.info} onChange={e => updateCertification(c.id, 'info', e.target.value)} placeholder="Basic info" style={{ ...inputStyle, fontSize: '12px', padding: '8px 10px' }} />
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>

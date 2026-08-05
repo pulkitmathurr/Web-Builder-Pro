@@ -387,22 +387,68 @@ const AdminSettings = () => {
                     .settings-section[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
                     .settings-3col { grid-template-columns: 1fr !important; }
                 }
+                @media (max-width: 640px) {
+                    /* ── Tabs — horizontal swipeable strip instead of ugly uneven wrapping ── */
+                    .settings-tabs { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; padding-bottom: 2px !important; margin-bottom: 1.25rem !important; }
+                    .settings-tabs::-webkit-scrollbar { display: none !important; }
+                    .settings-tabs button { flex-shrink: 0 !important; padding: 8px 14px !important; font-size: 12px !important; gap: 5px !important; }
+                    .settings-tabs button svg { width: 14px !important; height: 14px !important; }
+
+                    /* ── Hero header — compact, same treatment as the Dashboard hero ── */
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .dash-hero-greeting { margin-bottom: 6px !important; }
+                    .dash-hero-greeting p { font-size: 10px !important; }
+                    .dash-hero-greeting svg { width: 12px !important; height: 12px !important; }
+                    .dash-hero-title { font-size: 19px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .dash-hero-desc { font-size: 11px !important; line-height: 1.5 !important; max-width: 100% !important; }
+
+                    /* ── Logo tab — hide the Navbar Preview card, upload card takes full width ── */
+                    .settings-navbar-preview { display: none !important; }
+
+                    /* ── Theme / Base Color / Font swatch grids — 3-per-row compact cards ── */
+                    .settings-3col, .settings-basecolor-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+
+                    .settings-theme-card { border-radius: 8px !important; }
+                    .settings-theme-swatch { height: 44px !important; }
+                    .settings-theme-deco, .settings-theme-bars { display: none !important; }
+                    .settings-theme-check { width: 16px !important; height: 16px !important; top: 4px !important; right: 4px !important; }
+                    .settings-theme-check svg { width: 8px !important; height: 8px !important; }
+                    .settings-theme-body { padding: 6px 5px !important; }
+                    .settings-theme-label-row { gap: 4px !important; margin-bottom: 0 !important; }
+                    .settings-theme-label { font-size: 9.5px !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; }
+                    .settings-theme-desc { display: none !important; }
+
+                    .settings-basecolor-card { border-radius: 8px !important; }
+                    .settings-basecolor-swatch { height: 38px !important; }
+                    .settings-basecolor-chip { height: 14px !important; left: 6px !important; right: 6px !important; bottom: 6px !important; border-radius: 4px !important; }
+                    .settings-basecolor-check { width: 14px !important; height: 14px !important; top: 4px !important; right: 4px !important; }
+                    .settings-basecolor-check svg { width: 7px !important; height: 7px !important; }
+                    .settings-basecolor-body { padding: 6px 5px !important; }
+                    .settings-basecolor-label { font-size: 9.5px !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; }
+
+                    .settings-font-card { padding: 10px 5px !important; }
+                    .settings-font-aa { font-size: 18px !important; margin-bottom: 4px !important; }
+                    .settings-font-label { font-size: 9.5px !important; line-height: 1.25 !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; margin-bottom: 0 !important; }
+                    .settings-font-desc { display: none !important; }
+                    .settings-font-check { width: 14px !important; height: 14px !important; top: 4px !important; right: 4px !important; }
+                    .settings-font-check svg { width: 7px !important; height: 7px !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.5rem 2.75rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 20px 60px ${hexToRgba(tc.primary, 0.2)}, 0 4px 20px rgba(0,0,0,0.15)` }}>
+                <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.5rem 2.75rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 20px 60px ${hexToRgba(tc.primary, 0.2)}, 0 4px 20px rgba(0,0,0,0.15)` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="settings-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'relative', zIndex: 1 }}>
                         <div className="settings-hero-item" style={{ animationDelay: '0.05s' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                            <div className="dash-hero-greeting" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                 <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tc.secondary }}></div>
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Admin / Settings</p>
                             </div>
-                            <h1 style={{ fontSize: '30px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', letterSpacing: '-0.5px' }}>General Settings</h1>
-                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '460px' }}>
+                            <h1 className="dash-hero-title" style={{ fontSize: '30px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', letterSpacing: '-0.5px' }}>General Settings</h1>
+                            <p className="dash-hero-desc" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '460px' }}>
                                 Manage how your school is presented online — profile details, branding and the visual identity of your public website.
                             </p>
                         </div>
@@ -410,7 +456,7 @@ const AdminSettings = () => {
                 </div>
 
                 {/* Tabs */}
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
+                <div className="settings-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
                     {tabs.map(tab => (
                         <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                             style={{ padding: '10px 20px', borderRadius: '6px', border: activeTab === tab.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === tab.key ? tc.light : '#ffffff', color: activeTab === tab.key ? tc.primary : '#64748b', fontWeight: activeTab === tab.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: activeTab === tab.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none' }}>
@@ -583,7 +629,7 @@ const AdminSettings = () => {
                             </div>
                         </div>
 
-                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div className="settings-navbar-preview" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#064e3b,#059669)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(5,150,105,0.3)' }}>
                                     <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
@@ -637,27 +683,27 @@ const AdminSettings = () => {
                             </div>
                         </div>
                         <div style={{ padding: '1.75rem' }}>
-                            <div className="settings-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                            <div className="settings-3col settings-theme-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                                 {themes.map(theme => {
                                     const isActive = settingsData.theme === theme.key;
                                     const isHovered = hoveredTheme === theme.key;
                                     return (
-                                        <div key={theme.key} onClick={() => handleThemeSave(theme.key)} onMouseEnter={() => setHoveredTheme(theme.key)} onMouseLeave={() => setHoveredTheme(null)}
+                                        <div key={theme.key} className="settings-theme-card" onClick={() => handleThemeSave(theme.key)} onMouseEnter={() => setHoveredTheme(theme.key)} onMouseLeave={() => setHoveredTheme(null)}
                                             style={{ borderRadius: '8px', border: isActive ? `2px solid ${theme.color}` : '0.5px solid #f1f5f9', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease', transform: isActive ? 'translateY(-4px)' : isHovered ? 'translateY(-2px)' : 'none', boxShadow: isActive ? `0 12px 32px ${theme.shadow}` : isHovered ? `0 8px 20px ${theme.shadow}` : '0 2px 8px rgba(0,0,0,0.04)' }}>
-                                            <div style={{ height: '90px', background: theme.gradient, position: 'relative', overflow: 'hidden' }}>
-                                                <div style={{ position: 'absolute', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', top: '-30px', right: '-20px' }}></div>
-                                                <div style={{ position: 'absolute', bottom: '12px', left: '14px', display: 'flex', gap: '5px' }}>
+                                            <div className="settings-theme-swatch" style={{ height: '90px', background: theme.gradient, position: 'relative', overflow: 'hidden' }}>
+                                                <div className="settings-theme-deco" style={{ position: 'absolute', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.08)', top: '-30px', right: '-20px' }}></div>
+                                                <div className="settings-theme-bars" style={{ position: 'absolute', bottom: '12px', left: '14px', display: 'flex', gap: '5px' }}>
                                                     <div style={{ width: '32px', height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.7)' }}></div>
                                                     <div style={{ width: '20px', height: '5px', borderRadius: '3px', background: 'rgba(255,255,255,0.35)' }}></div>
                                                 </div>
-                                                {isActive && <div style={{ position: 'absolute', top: '10px', right: '10px', width: '24px', height: '24px', background: '#ffffff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="12" height="12" fill="none" stroke={theme.color} strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>}
+                                                {isActive && <div className="settings-theme-check" style={{ position: 'absolute', top: '10px', right: '10px', width: '24px', height: '24px', background: '#ffffff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="12" height="12" fill="none" stroke={theme.color} strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>}
                                             </div>
-                                            <div style={{ padding: '12px 14px', background: '#ffffff' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                                            <div className="settings-theme-body" style={{ padding: '12px 14px', background: '#ffffff' }}>
+                                                <div className="settings-theme-label-row" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
                                                     <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: theme.gradient, flexShrink: 0 }}></div>
-                                                    <p style={{ fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? theme.color : '#0f172a' }}>{theme.label}</p>
+                                                    <p className="settings-theme-label" style={{ fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? theme.color : '#0f172a' }}>{theme.label}</p>
                                                 </div>
-                                                <p style={{ fontSize: '11px', color: '#94a3b8', paddingLeft: '18px' }}>{theme.desc}</p>
+                                                <p className="settings-theme-desc" style={{ fontSize: '11px', color: '#94a3b8', paddingLeft: '18px' }}>{theme.desc}</p>
                                             </div>
                                         </div>
                                     );
@@ -686,18 +732,18 @@ const AdminSettings = () => {
                             </div>
                         </div>
                         <div style={{ padding: '1.75rem' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '14px' }}>
+                            <div className="settings-basecolor-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '14px' }}>
                                 {BASE_COLOR_OPTIONS.map(base => {
                                     const isActive = settingsData.base_theme === base.key;
                                     return (
-                                        <div key={base.key} onClick={() => handleBaseThemeSave(base.key)}
+                                        <div key={base.key} className="settings-basecolor-card" onClick={() => handleBaseThemeSave(base.key)}
                                             style={{ borderRadius: '8px', border: isActive ? `2px solid ${tc.primary}` : '0.5px solid #f1f5f9', overflow: 'hidden', cursor: 'pointer', transition: 'all 0.2s ease', transform: isActive ? 'translateY(-4px)' : 'none', boxShadow: isActive ? `0 12px 32px ${hexToRgba(tc.primary, 0.18)}` : '0 2px 8px rgba(0,0,0,0.04)' }}>
-                                            <div style={{ height: '64px', background: base.surface, position: 'relative', borderBottom: '1px solid #f1f5f9' }}>
-                                                <div style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', height: '22px', borderRadius: '5px', background: base.card, border: '1px solid rgba(0,0,0,0.04)' }}></div>
-                                                {isActive && <div style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', background: tc.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>}
+                                            <div className="settings-basecolor-swatch" style={{ height: '64px', background: base.surface, position: 'relative', borderBottom: '1px solid #f1f5f9' }}>
+                                                <div className="settings-basecolor-chip" style={{ position: 'absolute', bottom: '10px', left: '10px', right: '10px', height: '22px', borderRadius: '5px', background: base.card, border: '1px solid rgba(0,0,0,0.04)' }}></div>
+                                                {isActive && <div className="settings-basecolor-check" style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', background: tc.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>}
                                             </div>
-                                            <div style={{ padding: '10px 12px', background: '#ffffff' }}>
-                                                <p style={{ fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? tc.primary : '#0f172a' }}>{base.label}</p>
+                                            <div className="settings-basecolor-body" style={{ padding: '10px 12px', background: '#ffffff' }}>
+                                                <p className="settings-basecolor-label" style={{ fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? tc.primary : '#0f172a' }}>{base.label}</p>
                                             </div>
                                         </div>
                                     );
@@ -724,16 +770,16 @@ const AdminSettings = () => {
                                     </div>
                                 </div>
                                 <div style={{ padding: '1.75rem' }}>
-                                    <div className="settings-3col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                                    <div className="settings-3col settings-font-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                                         {FONT_OPTIONS.map(font => {
                                             const isActive = settingsData[section.field] === font.key;
                                             return (
-                                                <div key={font.key} onClick={() => handleFontSave(section.field, font.key)}
+                                                <div key={font.key} className="settings-font-card" onClick={() => handleFontSave(section.field, font.key)}
                                                     style={{ borderRadius: '8px', border: isActive ? `2px solid ${tc.primary}` : '0.5px solid #f1f5f9', padding: '18px 14px', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s ease', background: isActive ? tc.light : '#ffffff', boxShadow: isActive ? `0 8px 20px ${hexToRgba(tc.primary, 0.18)}` : '0 2px 8px rgba(0,0,0,0.04)', position: 'relative' }}>
-                                                    {isActive && <div style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', background: tc.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>}
-                                                    <p style={{ fontFamily: font.family, fontSize: '30px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', marginBottom: '8px' }}>Aa</p>
-                                                    <p style={{ fontFamily: font.family, fontSize: '13px', fontWeight: isActive ? 700 : 600, color: isActive ? tc.primary : '#334155', marginBottom: '2px' }}>{font.label}</p>
-                                                    <p style={{ fontSize: '10.5px', color: '#94a3b8' }}>{font.desc}</p>
+                                                    {isActive && <div className="settings-font-check" style={{ position: 'absolute', top: '8px', right: '8px', width: '20px', height: '20px', background: tc.primary, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="10" height="10" fill="none" stroke="#fff" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg></div>}
+                                                    <p className="settings-font-aa" style={{ fontFamily: font.family, fontSize: '30px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', marginBottom: '8px' }}>Aa</p>
+                                                    <p className="settings-font-label" style={{ fontFamily: font.family, fontSize: '13px', fontWeight: isActive ? 700 : 600, color: isActive ? tc.primary : '#334155', marginBottom: '2px' }}>{font.label}</p>
+                                                    <p className="settings-font-desc" style={{ fontSize: '10.5px', color: '#94a3b8' }}>{font.desc}</p>
                                                 </div>
                                             );
                                         })}

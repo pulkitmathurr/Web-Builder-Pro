@@ -205,7 +205,7 @@ const Sports = () => {
     const ImageGrid = ({ field = 'images', label = 'Images' }) => (
         <div>
             <label style={labelStyle}>{label}</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
+            <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
                 {(content[activePage][field] || []).map((img, i) => (
                     <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
                         <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -260,7 +260,7 @@ const Sports = () => {
                     ))}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows},110px)` }), gap: '10px', marginBottom: '1.25rem' }}>
+                <div className="sports-collage-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows},110px)` }), gap: '10px', marginBottom: '1.25rem' }}>
                     {slots.map((slot, i) => {
                         const url = images[i];
                         const uploadKey = `collage-${i}`;
@@ -303,7 +303,7 @@ const Sports = () => {
                     <>
                         <label style={labelStyle}>Extra Photos (optional)</label>
                         <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '10px' }}>Shown in a plain row below the collage — freely cropped, no fixed shape. JPG, PNG, WEBP · Max 5MB each.</p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
+                        <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
                             {extraImages.map((img, i) => (
                                 <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
                                     <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -350,50 +350,78 @@ const Sports = () => {
                 .sports-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .sports-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .sports-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                @media (max-width: 640px) {
+                    /* ── Hero header — compact, same treatment as the other module pages ── */
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .sports-hero-inner { gap: 12px !important; }
+                    .sports-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .sports-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .sports-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .sports-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .sports-status-badge { padding: 4px 9px !important; }
+                    .sports-status-badge span { font-size: 9.5px !important; }
+                    .sports-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+
+                    /* ── Page tabs — horizontal swipeable strip ── */
+                    .sports-tabs { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; padding-bottom: 2px !important; }
+                    .sports-tabs::-webkit-scrollbar { display: none !important; }
+                    .sports-tabs button { flex-shrink: 0 !important; padding: 8px 14px !important; font-size: 12px !important; white-space: nowrap !important; }
+
+                    /* ── Every 3-or-4-per-row image/card grid (Photo Carousel, Extra Photos,
+                       event/sport image sets, Certifications, Making Us Proud) — 2-per-row ── */
+                    .sports-grid-2col { grid-template-columns: repeat(2, 1fr) !important; }
+
+                    /* ── Collage slot builder — the fancy asymmetric magazine layout (tall/wide/
+                       landscape slots with fixed row heights) only makes sense at desktop widths;
+                       on mobile it collapses to a plain uniform 2-per-row square grid, still
+                       labeled with the intended shape so the admin knows how to crop each photo ── */
+                    .sports-collage-grid { grid-template-columns: repeat(2, 1fr) !important; grid-template-rows: none !important; gap: 8px !important; }
+                    .sports-collage-grid > div { grid-column: auto !important; grid-row: auto !important; aspect-ratio: 1 !important; }
+                }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
-                <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+                <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: '22px', padding: '2.25rem 2.5rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden', boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
                     <div className="sports-hero-orb" style={{ position: 'absolute', width: '300px', height: '300px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: '-140px', right: '4%', pointerEvents: 'none' }}></div>
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-                        <div className="sports-hero-item">
-                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Sports</p>
-                            <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Sports</h1>
-                            <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                                Manage sports info, events, awards and yearly achievements.
-                            </p>
+                    <div className="sports-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div className="sports-hero-top" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                            <div className="sports-hero-item">
+                                <p className="sports-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Sports</p>
+                                <h1 className="sports-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Sports</h1>
+                                <p className="sports-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
+                                    Manage sports info, events, awards and yearly achievements.
+                                </p>
+                            </div>
+                            <div className="sports-hero-item sports-status-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}>
+                                <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8', flexShrink: 0 }}></div>
+                                <span style={{ fontSize: '10.5px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{isPublished ? 'Published' : 'Draft'}</span>
+                            </div>
                         </div>
-                        <div className="sports-hero-item" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 14px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '6px' }}>
-                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8' }}></div>
-                                <span style={{ fontSize: '12px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.5)', fontWeight: 500 }}>{isPublished ? 'Published' : 'Draft'}</span>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <button onClick={() => handleSave(false)} disabled={saving}
-                                    style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                    {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                        <div className="sports-hero-item sports-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                            <button onClick={() => handleSave(false)} disabled={saving}
+                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
+                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                            </button>
+                            {isPublished ? (
+                                <button onClick={handleUnpublish}
+                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                    Unpublish
                                 </button>
-                                {isPublished ? (
-                                    <button onClick={handleUnpublish}
-                                        style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                        Unpublish
-                                    </button>
-                                ) : (
-                                    <button onClick={() => handleSave(true)} disabled={publishing}
-                                        style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                        {publishing ? 'Publishing...' : 'Publish'}
-                                    </button>
-                                )}
-                            </div>
+                            ) : (
+                                <button onClick={() => handleSave(true)} disabled={publishing}
+                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
+                                    {publishing ? 'Publishing...' : 'Publish'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 {/* Page Tabs */}
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <div className="sports-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                     {PAGES.map(p => (
                         <button key={p.key} onClick={() => setActivePage(p.key)}
                             style={{ padding: '10px 18px', borderRadius: '10px', border: activePage === p.key ? `1.5px solid ${tc.primary}` : '0.5px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activePage === p.key ? tc.light : '#ffffff', color: activePage === p.key ? tc.primary : '#64748b', fontWeight: activePage === p.key ? 600 : 400 }}>
@@ -562,7 +590,7 @@ const Sports = () => {
                                 style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Certification
                             </button>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
+                            <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
                                 {(pageData.certifications || []).map((cert, i) => (
                                     <CertCard key={cert.id} cert={cert} index={i} length={(pageData.certifications || []).length}
                                         onMove={(idx, dir) => updateField('certifications', moveItem(pageData.certifications, idx, dir))}
@@ -587,7 +615,7 @@ const Sports = () => {
                                 style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Student
                             </button>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
+                            <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
                                 {(pageData.proud || []).map((stu, i) => (
                                     <ProudCard key={stu.id} student={stu} index={i} length={(pageData.proud || []).length}
                                         onMove={(idx, dir) => updateField('proud', moveItem(pageData.proud, idx, dir))}
@@ -680,7 +708,7 @@ const EventCard = ({ event, index, length, onMove, onUpdate, onRemove, onAddImag
                 <div>
                     <label style={labelStyle}>Event Images (carousel)</label>
                     <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
+                    <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(event.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
                                 <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -729,7 +757,7 @@ const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAdd
                 <div>
                     <label style={labelStyle}>Sport Images (carousel)</label>
                     <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
+                    <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(sport.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
                                 <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />

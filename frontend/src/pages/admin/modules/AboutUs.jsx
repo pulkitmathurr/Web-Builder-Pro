@@ -425,7 +425,7 @@ const AboutUs = () => {
     },
   ];
 
-  const CropImageBox = ({ label, value, uploadKey, aspectHint, onFileSelected, onRemove, previewAspect, previewMaxWidth }) => {
+  const CropImageBox = ({ label, value, uploadKey, aspectHint, onFileSelected, onRemove, previewAspect, previewMaxWidth, boxClassName }) => {
     const isUploading = uploading[uploadKey];
     // previewAspect/previewMaxWidth make the field preview the same shape (e.g. portrait 3/4)
     // as the image renders on the live site, instead of the default wide banner box.
@@ -435,14 +435,16 @@ const AboutUs = () => {
       <div>
         <label style={labelStyle}>{label}</label>
         <div
+          className={boxClassName}
           onClick={() => document.getElementById(`upload-${uploadKey}`).click()}
           style={{
-            border: "1.5px dashed #e2e8f0",
+            border: value ? "1px solid #e2e8f0" : "1.5px dashed #e2e8f0",
             borderRadius: "12px",
             padding: value ? 0 : "2rem",
             textAlign: "center",
             cursor: "pointer",
             background: value ? "transparent" : "#fafafa",
+            boxShadow: value ? "0 6px 18px rgba(15,23,42,0.08)" : "none",
             overflow: "hidden",
             position: "relative",
             ...(shaped
@@ -519,56 +521,105 @@ const AboutUs = () => {
                 .au-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .au-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .au-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                @media (max-width: 900px) {
+                    .au-awards-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                }
+                @media (max-width: 700px) {
+                    .au-fixed-2col { grid-template-columns: 1fr !important; }
+                    .au-values-grid { grid-template-columns: 1fr !important; }
+                }
+                @media (max-width: 640px) {
+                    /* ── Hero header — compact, same treatment as Dashboard/Settings/Contact Us/Home Page ── */
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .au-hero-inner { gap: 12px !important; }
+                    .au-hero-top { flex-wrap: wrap !important; gap: 10px !important; }
+                    .au-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
+                    .au-hero-title { font-size: 18px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .au-hero-desc { font-size: 11px !important; line-height: 1.5 !important; }
+                    .au-status-badge { padding: 4px 9px !important; }
+                    .au-status-badge span { font-size: 9.5px !important; }
+                    .au-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
+
+                    /* ── Section tabs — horizontal swipeable strip ── */
+                    .au-tabs { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; padding-bottom: 2px !important; }
+                    .au-tabs::-webkit-scrollbar { display: none !important; }
+                    .au-tabs button { flex-shrink: 0 !important; padding: 8px 14px !important; font-size: 12px !important; gap: 5px !important; white-space: nowrap !important; }
+                    .au-tabs button svg { width: 14px !important; height: 14px !important; }
+
+                    /* ── History gallery thumbnails — 2-per-row instead of 4 tiny tiles ── */
+                    .au-gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+                    /* ── Awards & Recognition entry cards — one per row on phones (overrides
+                       the 2-per-row tablet rule above) so each card gets full breathing room ── */
+                    .au-awards-grid { grid-template-columns: 1fr !important; }
+
+                    /* ── Leadership photo / Affiliation logo — center the fixed-width preview
+                       box once its column stacks to full width on mobile, instead of it sitting
+                       awkwardly to the left with empty space beside it ── */
+                    .au-leader-photo-box, .au-affil-photo-box { margin: 0 auto !important; }
+
+                    /* ── Section card headers (Vision/Leadership/Awards/Affiliations) — the
+                       description text has no room next to the icon+title and the "+ Add"
+                       button once squeezed onto mobile widths, so drop it and keep icon,
+                       title and a properly-sized button in one tidy row ── */
+                    .au-card-header-main { flex-wrap: nowrap !important; align-items: center !important; padding: 0.9rem 1rem !important; gap: 10px !important; }
+                    .au-card-header-icon-row { gap: 8px !important; min-width: 0 !important; }
+                    .au-card-header-icon { width: 30px !important; height: 30px !important; border-radius: 8px !important; flex-shrink: 0 !important; }
+                    .au-card-header-icon svg { width: 14px !important; height: 14px !important; }
+                    .au-card-header-title { font-size: 12.5px !important; margin-bottom: 0 !important; white-space: normal !important; overflow-wrap: break-word !important; }
+                    .au-card-header-desc { display: none !important; }
+                    .au-add-btn { padding: 8px 12px !important; font-size: 11px !important; white-space: nowrap !important; flex-shrink: 0 !important; border-radius: 7px !important; }
+                }
             `}</style>
 
       <div style={{ fontFamily: "system-ui, sans-serif", background: bc.surface, margin: "-24px", padding: "24px", minHeight: "100vh" }}>
         {/* Hero Header */}
-        <div style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: "22px", padding: "2.25rem 2.5rem", marginBottom: "1.75rem", position: "relative", overflow: "hidden", boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
+        <div className="dash-hero" style={{ background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`, borderRadius: "22px", padding: "2.25rem 2.5rem", marginBottom: "1.75rem", position: "relative", overflow: "hidden", boxShadow: `0 12px 40px ${hexToRgba(tc.primary, 0.25)}` }}>
           <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)", backgroundSize: "24px 24px", pointerEvents: "none" }}></div>
           <div className="au-hero-orb" style={{ position: "absolute", width: "300px", height: "300px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.25)} 0%, transparent 70%)`, top: "-140px", right: "4%", pointerEvents: "none" }}></div>
-          <div style={{ position: "relative", zIndex: 1, display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
-            <div className="au-hero-item">
-              <p style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>Admin / Pages / About Us</p>
-              <h1 style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", marginBottom: "8px", letterSpacing: "-0.4px" }}>About Us</h1>
-              <p style={{ fontSize: "13.5px", color: "rgba(255,255,255,0.45)", lineHeight: 1.6, maxWidth: "420px" }}>
-                Tell your school's story — vision, history, leadership and values.
-              </p>
+          <div className="au-hero-inner" style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", gap: "18px" }}>
+            <div className="au-hero-top" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "16px" }}>
+              <div className="au-hero-item">
+                <p className="au-hero-eyebrow" style={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: "10px" }}>Admin / Pages / About Us</p>
+                <h1 className="au-hero-title" style={{ fontSize: "26px", fontWeight: 700, color: "#ffffff", marginBottom: "8px", letterSpacing: "-0.4px" }}>About Us</h1>
+                <p className="au-hero-desc" style={{ fontSize: "13.5px", color: "rgba(255,255,255,0.45)", lineHeight: 1.6, maxWidth: "420px" }}>
+                  Tell your school's story — vision, history, leadership and values.
+                </p>
+              </div>
+              <div className="au-hero-item au-status-badge" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "5px 11px", background: isPublished ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.08)", border: `1px solid ${isPublished ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.15)"}`, borderRadius: "999px", flexShrink: 0 }}>
+                <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: isPublished ? "#22c55e" : "#94a3b8", flexShrink: 0 }}></div>
+                <span style={{ fontSize: "10.5px", color: isPublished ? "#86efac" : "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: "0.02em", whiteSpace: "nowrap" }}>{isPublished ? "Published" : "Draft"}</span>
+              </div>
             </div>
-            <div className="au-hero-item" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "10px", flexShrink: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "7px 14px", background: isPublished ? "rgba(34,197,94,0.15)" : "rgba(255,255,255,0.08)", border: `1px solid ${isPublished ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.15)"}`, borderRadius: "6px" }}>
-                <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: isPublished ? "#22c55e" : "#94a3b8" }}></div>
-                <span style={{ fontSize: "12px", color: isPublished ? "#86efac" : "rgba(255,255,255,0.5)", fontWeight: 500 }}>{isPublished ? "Published" : "Draft"}</span>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button onClick={() => handleSave(false)} disabled={saving} style={{ padding: "7px 14px", background: isDirty ? "rgba(250,204,21,0.15)" : "rgba(255,255,255,0.08)", color: isDirty ? "#fde047" : "rgba(255,255,255,0.65)", border: isDirty ? "1px solid rgba(250,204,21,0.35)" : "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", fontSize: "12px", fontWeight: isDirty ? 700 : 500, cursor: "pointer" }}>
-                  {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
+            <div className="au-hero-item au-hero-actions" style={{ display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <button onClick={() => handleSave(false)} disabled={saving} style={{ padding: "7px 14px", background: isDirty ? "rgba(250,204,21,0.15)" : "rgba(255,255,255,0.08)", color: isDirty ? "#fde047" : "rgba(255,255,255,0.65)", border: isDirty ? "1px solid rgba(250,204,21,0.35)" : "1px solid rgba(255,255,255,0.15)", borderRadius: "6px", fontSize: "12px", fontWeight: isDirty ? 700 : 500, cursor: "pointer" }}>
+                {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
+              </button>
+              {isPublished ? (
+                <button onClick={handleUnpublish} style={{ padding: "7px 14px", background: "rgba(239,68,68,0.15)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                  Unpublish
                 </button>
-                {isPublished ? (
-                  <button onClick={handleUnpublish} style={{ padding: "7px 14px", background: "rgba(239,68,68,0.15)", color: "#fca5a5", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "6px", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
-                    Unpublish
-                  </button>
-                ) : (
-                  <button onClick={() => handleSave(true)} disabled={publishing} style={{ padding: "7px 16px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: "#fff", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer", boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}`, display: "flex", alignItems: "center", gap: "6px" }}>
-                    {publishing ? (
-                      <>
-                        <svg style={{ animation: "spin 1s linear infinite", width: "12px", height: "12px" }} viewBox="0 0 24 24" fill="none">
-                          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                        </svg>
-                        Publishing...
-                      </>
-                    ) : (
-                      "Publish"
-                    )}
-                  </button>
-                )}
-              </div>
+              ) : (
+                <button onClick={() => handleSave(true)} disabled={publishing} style={{ padding: "7px 16px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: "#fff", border: "none", borderRadius: "6px", fontSize: "12px", fontWeight: 700, cursor: "pointer", boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}`, display: "flex", alignItems: "center", gap: "6px" }}>
+                  {publishing ? (
+                    <>
+                      <svg style={{ animation: "spin 1s linear infinite", width: "12px", height: "12px" }} viewBox="0 0 24 24" fill="none">
+                        <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                      </svg>
+                      Publishing...
+                    </>
+                  ) : (
+                    "Publish"
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Section Tabs */}
-        <div style={{ display: "flex", gap: "6px", marginBottom: "1.75rem", flexWrap: "wrap" }}>
+        <div className="au-tabs" style={{ display: "flex", gap: "6px", marginBottom: "1.75rem", flexWrap: "wrap" }}>
           {sections.map((s) => (
             <button
               key={s.key}
@@ -599,20 +650,20 @@ const AboutUs = () => {
         {activeSection === "vision" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div style={cardStyle}>
-              <div style={cardHeaderStyle}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#1e3a5f,#2563eb)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(37,99,235,0.3)" }}>
+              <div className="au-card-header-main" style={cardHeaderStyle}>
+                <div className="au-card-header-icon-row" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div className="au-card-header-icon" style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#1e3a5f,#2563eb)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(37,99,235,0.3)" }}>
                     <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </div>
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Vision & Mission</p>
-                    <p style={{ fontSize: "11px", color: "#94a3b8" }}>Add as many statements as you like — you choose the heading for each. These scroll as an animated ticker on your website.</p>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Vision & Mission</p>
+                    <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Add as many statements as you like — you choose the heading for each. These scroll as an animated ticker on your website.</p>
                   </div>
                 </div>
-                <button onClick={addVisionItem} style={addButtonStyle}>+ Add Item</button>
+                <button className="au-add-btn" onClick={addVisionItem} style={addButtonStyle}>+ Add Item</button>
               </div>
             </div>
 
@@ -710,7 +761,7 @@ const AboutUs = () => {
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "1.75rem" }}>
+              <div className="au-fixed-2col" style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "1.75rem" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                   <CropImageBox
                     label="History Image (Vertical Photo)"
@@ -756,7 +807,7 @@ const AboutUs = () => {
                 <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
                   Shown as a horizontal strip below the history text — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each. Max {HISTORY_GALLERY_MAX} images ({(content.historyGalleryImages || []).length}/{HISTORY_GALLERY_MAX} used).
                 </p>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "1.25rem" }}>
+                <div className="au-gallery-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "1.25rem" }}>
                   {(content.historyGalleryImages || []).map((img, i) => (
                     <div key={i} style={{ position: "relative", borderRadius: "10px", overflow: "hidden", aspectRatio: "16/9" }}>
                       <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -802,19 +853,19 @@ const AboutUs = () => {
         {activeSection === "leadership" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div style={cardStyle}>
-              <div style={cardHeaderStyle}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#4a1d96,#7c3aed)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(124,58,237,0.3)" }}>
+              <div className="au-card-header-main" style={cardHeaderStyle}>
+                <div className="au-card-header-icon-row" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div className="au-card-header-icon" style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#4a1d96,#7c3aed)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(124,58,237,0.3)" }}>
                     <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Leadership Messages</p>
-                    <p style={{ fontSize: "11px", color: "#94a3b8" }}>Add a message from anyone in leadership — Principal, Director, Chairperson, etc. Add as many as you like.</p>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Leadership Messages</p>
+                    <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Add a message from anyone in leadership — Principal, Director, Chairperson, etc. Add as many as you like.</p>
                   </div>
                 </div>
-                <button onClick={addLeader} style={addButtonStyle}>+ Add Member</button>
+                <button className="au-add-btn" onClick={addLeader} style={addButtonStyle}>+ Add Member</button>
               </div>
               <div style={{ padding: "1.5rem 1.75rem" }}>
                 <label style={labelStyle}>Section Heading</label>
@@ -857,7 +908,7 @@ const AboutUs = () => {
                     <button onClick={() => removeLeader(m.id)} style={removeButtonStyle}>Remove</button>
                   </div>
                 </div>
-                <div style={{ padding: "1.5rem 1.75rem", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1.75rem" }}>
+                <div className="au-fixed-2col" style={{ padding: "1.5rem 1.75rem", display: "grid", gridTemplateColumns: "220px 1fr", gap: "1.75rem" }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
                     <CropImageBox
                       label="Photo"
@@ -866,6 +917,9 @@ const AboutUs = () => {
                       aspectHint="Portrait crop (4:5) after upload"
                       onFileSelected={(file) => setCropTarget({ mode: "leader", id: m.id, src: URL.createObjectURL(file) })}
                       onRemove={() => updateLeader(m.id, "photo", "")}
+                      previewAspect="4/5"
+                      previewMaxWidth="220px"
+                      boxClassName="au-leader-photo-box"
                     />
                     <div>
                       <label style={labelStyle}>Name</label>
@@ -921,7 +975,7 @@ const AboutUs = () => {
 
         {/* ── Core Values Tab ── */}
         {activeSection === "values" && (
-          <div className="au-section" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="au-section au-values-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             {content.values.map((v, i) => (
               <div key={i} style={cardStyle}>
                 <div style={cardHeaderStyle}>
@@ -964,19 +1018,19 @@ const AboutUs = () => {
         {activeSection === "awards" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div style={cardStyle}>
-              <div style={cardHeaderStyle}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "38px", height: "38px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+              <div className="au-card-header-main" style={cardHeaderStyle}>
+                <div className="au-card-header-icon-row" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div className="au-card-header-icon" style={{ width: "38px", height: "38px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
                     <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                     </svg>
                   </div>
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Awards & Recognition</p>
-                    <p style={{ fontSize: "11px", color: "#94a3b8" }}>Awards won by the school or its staff — e.g. Best Director Award. Add as many as you like.</p>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Awards & Recognition</p>
+                    <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Awards won by the school or its staff — e.g. Best Director Award. Add as many as you like.</p>
                   </div>
                 </div>
-                <button onClick={addAward} style={addButtonStyle}>+ Add Item</button>
+                <button className="au-add-btn" onClick={addAward} style={addButtonStyle}>+ Add Item</button>
               </div>
               <div style={{ padding: "1.5rem 1.75rem" }}>
                 <label style={labelStyle}>Section Heading</label>
@@ -1005,7 +1059,7 @@ const AboutUs = () => {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem" }}>
+            <div className="au-awards-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.25rem" }}>
               {content.awards.map((item, i) => (
                 <div key={item.id} style={{ ...cardStyle }}>
                   <div style={{ ...cardHeaderStyle, padding: "0.85rem 1rem" }}>
@@ -1076,19 +1130,19 @@ const AboutUs = () => {
         {activeSection === "affiliations" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div style={cardStyle}>
-              <div style={cardHeaderStyle}>
-                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#78350f,#f59e0b)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(245,158,11,0.3)" }}>
+              <div className="au-card-header-main" style={cardHeaderStyle}>
+                <div className="au-card-header-icon-row" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div className="au-card-header-icon" style={{ width: "38px", height: "38px", background: "linear-gradient(135deg,#78350f,#f59e0b)", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(245,158,11,0.3)" }}>
                     <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
                   <div>
-                    <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Affiliation & Certification</p>
-                    <p style={{ fontSize: "11px", color: "#94a3b8" }}>Board affiliations, certifications, memberships — e.g. CBSE Affiliation, NCC. Add as many as you like.</p>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Affiliation & Certification</p>
+                    <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Board affiliations, certifications, memberships — e.g. CBSE Affiliation, NCC. Add as many as you like.</p>
                   </div>
                 </div>
-                <button onClick={addAffiliation} style={addButtonStyle}>+ Add Item</button>
+                <button className="au-add-btn" onClick={addAffiliation} style={addButtonStyle}>+ Add Item</button>
               </div>
               <div style={{ padding: "1.5rem 1.75rem" }}>
                 <label style={labelStyle}>Section Heading</label>
@@ -1131,7 +1185,7 @@ const AboutUs = () => {
                     <button onClick={() => removeAffiliation(item.id)} style={removeButtonStyle}>Remove</button>
                   </div>
                 </div>
-                <div style={{ padding: "1.5rem 1.75rem", display: "grid", gridTemplateColumns: "160px 1fr", gap: "1.75rem", alignItems: "start" }}>
+                <div className="au-fixed-2col" style={{ padding: "1.5rem 1.75rem", display: "grid", gridTemplateColumns: "160px 1fr", gap: "1.75rem", alignItems: "start" }}>
                   <CropImageBox
                     label="Image"
                     value={item.image}
@@ -1141,6 +1195,7 @@ const AboutUs = () => {
                     onRemove={() => updateAffiliation(item.id, "image", "")}
                     previewAspect="1/1"
                     previewMaxWidth="160px"
+                    boxClassName="au-affil-photo-box"
                   />
                   <div>
                     <label style={labelStyle}>Heading</label>

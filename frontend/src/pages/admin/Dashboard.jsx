@@ -199,15 +199,44 @@ const AdminDashboard = () => {
                     .dash-modules-grid { grid-template-columns: repeat(3,1fr) !important; }
                 }
                 @media (max-width: 480px) {
-                    .dash-stats-grid { grid-template-columns: 1fr !important; }
                     .dash-modules-grid { grid-template-columns: repeat(2,1fr) !important; }
+                }
+                @media (max-width: 640px) {
+                    /* ── Hero header — compact, ~half the desktop height ── */
+                    .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
+                    .dash-hero-inner { gap: 0.85rem !important; }
+                    .dash-hero-greeting { margin-bottom: 6px !important; }
+                    .dash-hero-greeting p { font-size: 10px !important; }
+                    .dash-hero-greeting svg { width: 12px !important; height: 12px !important; }
+                    .dash-hero-title { font-size: 19px !important; margin-bottom: 4px !important; letter-spacing: -0.3px !important; }
+                    .dash-hero-desc { font-size: 11px !important; line-height: 1.5 !important; max-width: 100% !important; }
+
+                    /* ── School card inside hero — smaller logo/text, full width, no wasted height ── */
+                    .dash-school-card { padding: 0.7rem 0.85rem !important; gap: 10px !important; min-width: 0 !important; width: 100% !important; border-radius: 12px !important; }
+                    .dash-school-card-top { gap: 10px !important; }
+                    .dash-school-logo, .dash-school-logo-placeholder { width: 34px !important; height: 34px !important; border-radius: 9px !important; }
+                    .dash-school-logo-placeholder svg { width: 17px !important; height: 17px !important; }
+                    .dash-school-name { font-size: 12px !important; max-width: 60vw !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; margin-bottom: 4px !important; }
+                    .dash-school-badge { font-size: 9.5px !important; padding: 2px 8px 2px 6px !important; }
+                    .visit-site-link { font-size: 10.5px !important; padding-top: 8px !important; }
+
+                    /* ── Stat cards — 2-per-row grid, tighter padding, no cut/ellipsis text ── */
+                    .dash-stats-grid { gap: 10px !important; margin-bottom: 1rem !important; }
+                    .dash-stat { padding: 0.9rem 0.8rem !important; border-radius: 13px !important; }
+                    .dash-stat-header { margin-bottom: 10px !important; }
+                    .dash-stat-label { font-size: 10px !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; }
+                    .dash-stat-icon { width: 28px !important; height: 28px !important; border-radius: 9px !important; }
+                    .dash-stat-icon svg { width: 16px !important; height: 16px !important; }
+                    .dash-stat-value { font-size: 18px !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; line-height: 1.2 !important; }
+                    .dash-stat-sub { font-size: 10.5px !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; }
+                    .dash-stat:active { transform: scale(0.96) !important; transition: transform 0.12s ease !important; }
                 }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif' }}>
 
                 {/* Welcome Hero */}
-                <div style={{
+                <div className="dash-hero" style={{
                     background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 55%, ${tc.dark} 100%)`,
                     borderRadius: '22px',
                     padding: '2.75rem 3rem',
@@ -224,24 +253,24 @@ const AdminDashboard = () => {
                     <div className="hero-orb-2" style={{ position: 'absolute', width: '250px', height: '250px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.secondary, 0.22)} 0%, transparent 70%)`, bottom: '-100px', right: '35%', pointerEvents: 'none' }}></div>
                     <div style={{ position: 'absolute', width: '150px', height: '150px', borderRadius: '50%', background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.15)} 0%, transparent 70%)`, top: '20%', left: '40%', pointerEvents: 'none' }}></div>
 
-                    <div style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
+                    <div className="dash-hero-inner" style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '2rem', flexWrap: 'wrap' }}>
                         <div style={{ minWidth: 0 }}>
-                            <div className="hero-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', animationDelay: '0.05s' }}>
+                            <div className="hero-item dash-hero-greeting" style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', animationDelay: '0.05s' }}>
                                 <GreetingIcon hour={hour} />
                                 <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
                                     {getGreeting()}
                                 </p>
                             </div>
-                            <h1 className="hero-item" style={{ fontSize: '34px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', lineHeight: 1.15, letterSpacing: '-0.6px', animationDelay: '0.1s' }}>
+                            <h1 className="hero-item dash-hero-title" style={{ fontSize: '34px', fontWeight: 700, color: '#ffffff', marginBottom: '10px', lineHeight: 1.15, letterSpacing: '-0.6px', animationDelay: '0.1s' }}>
                                 Welcome back, {user?.name?.split(' ')[0] || 'Admin'}
                             </h1>
-                            <p className="hero-item" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, maxWidth: '440px', animationDelay: '0.15s' }}>
+                            <p className="hero-item dash-hero-desc" style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.65, maxWidth: '440px', animationDelay: '0.15s' }}>
                                 Here's a snapshot of your school website — manage content, modules and settings, all from one place.
                             </p>
                         </div>
 
                         {/* School Card */}
-                        <div className="hero-item" style={{
+                        <div className="hero-item dash-school-card" style={{
                             background: 'rgba(255,255,255,0.07)',
                             border: '1px solid rgba(255,255,255,0.12)',
                             borderRadius: '18px',
@@ -251,12 +280,12 @@ const AdminDashboard = () => {
                             minWidth: '260px',
                             animationDelay: '0.2s',
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div className="dash-school-card-top" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                                 <div className="school-logo-ring" style={{ borderRadius: '14px', flexShrink: 0 }}>
                                     {school?.logo_url ? (
-                                        <img src={school.logo_url} alt="School" style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', border: '1.5px solid rgba(255,255,255,0.18)', display: 'block' }} />
+                                        <img className="dash-school-logo" src={school.logo_url} alt="School" style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', border: '1.5px solid rgba(255,255,255,0.18)', display: 'block' }} />
                                     ) : (
-                                        <div style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.08)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.12)' }}>
+                                        <div className="dash-school-logo-placeholder" style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.08)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(255,255,255,0.12)' }}>
                                             <svg width="24" height="24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="1.5" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                                             </svg>
@@ -264,8 +293,8 @@ const AdminDashboard = () => {
                                     )}
                                 </div>
                                 <div style={{ minWidth: 0 }}>
-                                    <p style={{ fontSize: '13.5px', fontWeight: 600, color: '#ffffff', marginBottom: '7px', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }}>{school?.name}</p>
-                                    <span style={{
+                                    <p className="dash-school-name" style={{ fontSize: '13.5px', fontWeight: 600, color: '#ffffff', marginBottom: '7px', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '150px' }}>{school?.name}</p>
+                                    <span className="dash-school-badge" style={{
                                         fontSize: '11px', padding: '3px 10px 3px 8px', borderRadius: '20px', fontWeight: 600,
                                         background: isLive ? 'rgba(21,128,61,0.25)' : 'rgba(161,98,7,0.25)',
                                         color: isLive ? '#86efac' : '#fde68a',
@@ -306,14 +335,14 @@ const AdminDashboard = () => {
                             {/* Top accent line */}
                             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '3px', background: s.gradient }}></div>
 
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px' }}>
-                                <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
+                            <div className="dash-stat-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '14px', gap: '8px' }}>
+                                <p className="dash-stat-label" style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.label}</p>
                                 <div className="dash-stat-icon" style={{ width: '36px', height: '36px', borderRadius: '11px', background: s.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${s.shadowColor}`, flexShrink: 0 }}>
                                     {s.icon}
                                 </div>
                             </div>
-                            <p style={{ fontSize: '26px', fontWeight: 700, color: '#0f172a', marginBottom: '6px', lineHeight: 1 }}>{s.value}</p>
-                            <p style={{ fontSize: '12px', color: '#94a3b8' }}>{s.sub}</p>
+                            <p className="dash-stat-value" style={{ fontSize: '26px', fontWeight: 700, color: '#0f172a', marginBottom: '6px', lineHeight: 1 }}>{s.value}</p>
+                            <p className="dash-stat-sub" style={{ fontSize: '12px', color: '#94a3b8' }}>{s.sub}</p>
                         </div>
                     ))}
                 </div>

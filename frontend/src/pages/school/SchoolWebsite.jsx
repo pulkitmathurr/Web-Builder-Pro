@@ -27,6 +27,7 @@ const WaterButton = ({ children, variant = 'solid', tc, onClick }) => {
             onClick={onClick}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={handleLeave}
+            className="hero-water-btn"
             style={{
                 position: 'relative', overflow: 'hidden', isolation: 'isolate',
                 padding: '14px 32px', borderRadius: '6px', cursor: 'pointer',
@@ -70,6 +71,52 @@ const WaterButton = ({ children, variant = 'solid', tc, onClick }) => {
     );
 };
 
+// ── Intro text layout — SVG <text> can't wrap on its own, so measure with a
+// scratch canvas and greedily wrap into lines, shrinking the font until every
+// line fits the screen width and the whole block fits the screen height ──
+let introMeasureCtx = null;
+const measureIntroTextWidth = (text, fontSize) => {
+    if (!introMeasureCtx) introMeasureCtx = document.createElement('canvas').getContext('2d');
+    introMeasureCtx.font = `900 ${fontSize}px Inter, system-ui, sans-serif`;
+    const letterSpacingExtra = Math.max(0, text.length - 1) * fontSize * 0.02;
+    return introMeasureCtx.measureText(text).width + letterSpacingExtra;
+};
+
+const wrapIntroLines = (text, fontSize, maxWidth) => {
+    const words = text.split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = '';
+    words.forEach(word => {
+        const candidate = current ? `${current} ${word}` : word;
+        if (!current || measureIntroTextWidth(candidate, fontSize) <= maxWidth) {
+            current = candidate;
+        } else {
+            lines.push(current);
+            current = word;
+        }
+    });
+    if (current) lines.push(current);
+    return lines;
+};
+
+const computeIntroLayout = (text) => {
+    const upper = text.toUpperCase();
+    const maxWidth = window.innerWidth * 0.88;
+    const maxHeight = window.innerHeight * 0.7;
+    let fontSize = Math.min(Math.max(window.innerWidth * 0.14, 80), 180);
+    let lines = wrapIntroLines(upper, fontSize, maxWidth);
+    let guard = 0;
+    while (
+        guard < 40 && fontSize > 14 &&
+        (lines.length * fontSize * 1.05 > maxHeight || lines.some(l => measureIntroTextWidth(l, fontSize) > maxWidth))
+    ) {
+        fontSize -= Math.max(1, fontSize * 0.05);
+        lines = wrapIntroLines(upper, fontSize, maxWidth);
+        guard++;
+    }
+    return { lines, fontSize };
+};
+
 const SchoolWebsite = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
@@ -81,8 +128,17 @@ const SchoolWebsite = () => {
     const [introPhase, setIntroPhase] = useState('enter');
     const [bannerIndex, setBannerIndex] = useState(0);
     const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+    const [introLayout, setIntroLayout] = useState({ lines: [], fontSize: 80 });
 
     useEffect(() => { fetchSchool(); }, [slug]);
+
+    useEffect(() => {
+        if (!school?.intro_message) return;
+        const recompute = () => setIntroLayout(computeIntroLayout(school.intro_message));
+        recompute();
+        window.addEventListener('resize', recompute);
+        return () => window.removeEventListener('resize', recompute);
+    }, [school?.intro_message]);
 
     const heroBanners = homeContent?.heroBgType === 'banner' ? (homeContent?.heroBanners || []) : [];
 
@@ -188,9 +244,13 @@ const SchoolWebsite = () => {
                             <mask id="textMask">
                                 <rect width="100%" height="100%" fill="white"/>
                                 <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle" fill="black"
-                                    style={{ fontSize: 'clamp(80px, 14vw, 180px)', fontWeight: 900, fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: '0.02em', textTransform: 'uppercase', transition: 'font-size 1.2s cubic-bezier(0.16,1,0.3,1)' }}
-                                    fontSize="clamp(80px, 14vw, 180px)" fontWeight="900" fontFamily="'Inter', system-ui, sans-serif" letterSpacing="2">
-                                    {school.intro_message.toUpperCase()}
+                                    style={{ fontSize: `${introLayout.fontSize}px`, fontWeight: 900, fontFamily: "'Inter', system-ui, sans-serif", letterSpacing: '0.02em', textTransform: 'uppercase', transition: 'font-size 0.2s ease' }}
+                                    fontWeight="900" fontFamily="'Inter', system-ui, sans-serif">
+                                    {introLayout.lines.map((line, i) => (
+                                        <tspan key={i} x="50%" dy={i === 0 ? `${-(introLayout.lines.length - 1) * 0.55}em` : '1.1em'}>
+                                            {line}
+                                        </tspan>
+                                    ))}
                                 </text>
                             </mask>
                         </defs>
@@ -241,6 +301,10 @@ const SchoolWebsite = () => {
 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                @media (max-width: 480px) {
+                    .hero-buttons-row { flex-wrap: nowrap !important; gap: 6px !important; }
+                    .hero-water-btn { padding: 9px 8px !important; font-size: 9px !important; letter-spacing: 0.02em !important; white-space: nowrap !important; flex: 1 1 0 !important; text-align: center !important; }
+                }
             `}</style>
 
             <div style={{ width: '100%', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: '#020617', position: 'relative', overflowX: 'hidden' }}>
@@ -292,7 +356,7 @@ const SchoolWebsite = () => {
                             <div className="rte-content" style={{ fontFamily: homeContent.subTextFont ? getFontFamily(homeContent.subTextFont) : undefined, fontSize: 'clamp(14px,2vw,18px)', color: homeContent.subTextColor || 'rgba(255,255,255,0.55)', lineHeight: 1.8, marginBottom: '2.5rem', width: '100%', maxWidth: '1040px', overflowWrap: 'normal', wordBreak: 'normal' }}
                                 dangerouslySetInnerHTML={{ __html: homeContent.subText }} />
                         )}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
+                        <div className="hero-buttons-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
                             <WaterButton variant="solid" tc={tc} onClick={() => navigate(`/school/${slug}/about`)}>Explore School</WaterButton>
                             <WaterButton variant="outline" tc={tc} onClick={() => window.dispatchEvent(new Event('open-admission-enquiry'))}>Admission Enquiry</WaterButton>
                         </div>
