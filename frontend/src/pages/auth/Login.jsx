@@ -63,11 +63,9 @@ const Login = () => {
 
         /* ── Mobile-only decorative layer + floating glass card ── */
         .login-mobile-blob { display: none; }
-        .login-badge { display: none; }
 
         @keyframes loginBlobDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(14px,-12px) scale(1.07); } }
         @keyframes loginFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes loginBadgePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(139,34,82,0.35); } 50% { box-shadow: 0 0 0 9px rgba(139,34,82,0); } }
         @keyframes loginShimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
 
         @media (max-width: 860px) {
@@ -99,20 +97,12 @@ const Login = () => {
             padding: 2.25rem 1.5rem 1.75rem;
           }
 
-          .login-badge {
-            display: flex; align-items: center; justify-content: center;
-            width: 54px; height: 54px; border-radius: 16px; margin: 0 auto 1.1rem;
-            background: linear-gradient(135deg, #8b2252, #c9687e);
-            box-shadow: 0 8px 20px rgba(139,34,82,0.35);
-            animation: loginBadgePulse 2.6s ease-in-out infinite;
-          }
-
           .login-anim-1 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
           .login-anim-2 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
           .login-anim-3 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
           .login-anim-4 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.35s both; }
 
-          .login-right-logo { margin: 0 auto 0.5rem !important; display: block !important; }
+          .login-right-logo { width: clamp(220px, 32vh, 320px) !important; height: auto !important; margin: 0 auto 0.75rem !important; display: block !important; }
           .login-mobile-heading { text-align: center !important; background: linear-gradient(90deg, #6d1840, #b2405f, #6d1840); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: loginShimmer 5s linear infinite; }
           .login-mobile-sub { text-align: center !important; }
           .login-mobile-footer { text-align: center !important; }
@@ -196,13 +186,6 @@ const Login = () => {
           <div className="login-mobile-blob login-blob-3"></div>
 
           <div className="login-mobile-card">
-
-          {/* Lock badge — mobile only */}
-          <div className="login-badge login-anim-1">
-            <svg width="24" height="24" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
 
           {/* Logo — right panel top */}
           <img
