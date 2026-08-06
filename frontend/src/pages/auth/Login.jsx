@@ -57,16 +57,69 @@ const Login = () => {
           transform: translateY(-1px);
           box-shadow: 0 8px 22px rgba(139,34,82,0.38);
         }
+        .login-submit-btn:not(:disabled):active {
+          transform: scale(0.97);
+        }
+
+        /* ── Mobile-only decorative layer + floating glass card ── */
+        .login-mobile-blob { display: none; }
+        .login-badge { display: none; }
+
+        @keyframes loginBlobDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(14px,-12px) scale(1.07); } }
+        @keyframes loginFadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes loginBadgePulse { 0%,100% { box-shadow: 0 0 0 0 rgba(139,34,82,0.35); } 50% { box-shadow: 0 0 0 9px rgba(139,34,82,0); } }
+        @keyframes loginShimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+
         @media (max-width: 860px) {
           .login-shell { grid-template-columns: 1fr !important; height: auto !important; min-height: 100vh !important; overflow: visible !important; }
           .login-left-panel { display: none !important; }
-          .login-right-panel { padding-inline: 1.5rem !important; padding-block: 2.5rem 2rem !important; overflow-y: visible !important; }
+          .login-right-panel {
+            padding: 3rem 1.1rem 2.5rem !important;
+            overflow-y: visible !important;
+            overflow-x: hidden !important;
+            position: relative;
+            background: linear-gradient(160deg, #fdf1f4 0%, #f8dbe4 45%, #f0bfcc 100%) !important;
+            min-height: 100vh !important;
+          }
+
+          .login-mobile-blob { display: block; position: absolute; border-radius: 50%; pointer-events: none; z-index: 0; }
+          .login-blob-1 { width: 220px; height: 220px; background: #e8a0a0; opacity: 0.4; top: -70px; right: -60px; animation: loginBlobDrift 8s ease-in-out infinite; }
+          .login-blob-2 { width: 170px; height: 170px; background: #8b2252; opacity: 0.16; bottom: 40px; left: -60px; animation: loginBlobDrift 10s ease-in-out infinite reverse; }
+          .login-blob-3 { width: 90px; height: 90px; background: #c9687e; opacity: 0.28; top: 44%; left: -35px; animation: loginBlobDrift 7s ease-in-out infinite; }
+
+          .login-mobile-card {
+            position: relative; z-index: 1;
+            width: 100%; max-width: 420px; margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 24px;
+            border: 1px solid rgba(255,255,255,0.7);
+            box-shadow: 0 24px 60px rgba(139,34,82,0.22), 0 2px 14px rgba(0,0,0,0.05);
+            padding: 2.25rem 1.5rem 1.75rem;
+          }
+
+          .login-badge {
+            display: flex; align-items: center; justify-content: center;
+            width: 54px; height: 54px; border-radius: 16px; margin: 0 auto 1.1rem;
+            background: linear-gradient(135deg, #8b2252, #c9687e);
+            box-shadow: 0 8px 20px rgba(139,34,82,0.35);
+            animation: loginBadgePulse 2.6s ease-in-out infinite;
+          }
+
+          .login-anim-1 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+          .login-anim-2 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.15s both; }
+          .login-anim-3 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.25s both; }
+          .login-anim-4 { animation: loginFadeUp 0.65s cubic-bezier(0.16,1,0.3,1) 0.35s both; }
+
+          .login-right-logo { margin: 0 auto 0.5rem !important; display: block !important; }
+          .login-mobile-heading { text-align: center !important; background: linear-gradient(90deg, #6d1840, #b2405f, #6d1840); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: loginShimmer 5s linear infinite; }
+          .login-mobile-sub { text-align: center !important; }
+          .login-mobile-footer { text-align: center !important; }
         }
         @media (max-width: 400px) {
-          .login-right-panel { padding-inline: 1.1rem !important; }
-        }
-        @media (max-width: 860px) {
-          .login-right-logo { margin-left: 0 !important; }
+          .login-right-panel { padding-inline: 0.85rem !important; }
+          .login-mobile-card { padding: 1.85rem 1.1rem 1.5rem !important; }
         }
       `}</style>
 
@@ -137,11 +190,25 @@ const Login = () => {
           minHeight: 0,
         }}>
 
+          {/* ── Mobile-only decorative blobs, floating behind the card ── */}
+          <div className="login-mobile-blob login-blob-1"></div>
+          <div className="login-mobile-blob login-blob-2"></div>
+          <div className="login-mobile-blob login-blob-3"></div>
+
+          <div className="login-mobile-card">
+
+          {/* Lock badge — mobile only */}
+          <div className="login-badge login-anim-1">
+            <svg width="24" height="24" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          </div>
+
           {/* Logo — right panel top */}
           <img
             src={logo}
             alt="Web Builder Pro Logo"
-            className="login-right-logo"
+            className="login-right-logo login-anim-1"
             style={{
     width: 'clamp(170px, 24vh, 320px)',
     height: 'clamp(85px, 12vh, 160px)',
@@ -151,7 +218,7 @@ const Login = () => {
 }}
           />
 
-          <h1 style={{
+          <h1 className="login-mobile-heading login-anim-2" style={{
             fontFamily: "'Playfair Display', serif",
             fontSize: "clamp(24px, 3.6vh, 38px)",
             fontWeight: 700,
@@ -161,11 +228,11 @@ const Login = () => {
           }}>
             Login to your Account
           </h1>
-          <p style={{ color: "#b06080", fontSize: "clamp(12px, 1.4vh, 14px)", marginBottom: "clamp(1rem, 3vh, 2.5rem)", lineHeight: 1.4 }}>
+          <p className="login-mobile-sub login-anim-2" style={{ color: "#b06080", fontSize: "clamp(12px, 1.4vh, 14px)", marginBottom: "clamp(1rem, 3vh, 2.5rem)", lineHeight: 1.4 }}>
             Your school, your rules — step inside<br />and take control.
           </p>
 
-          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "clamp(0.75rem, 1.8vh, 1.25rem)" }}>
+          <form onSubmit={handleSubmit} className="login-anim-3" style={{ display: "flex", flexDirection: "column", gap: "clamp(0.75rem, 1.8vh, 1.25rem)" }}>
 
             {/* Email */}
             <div>
@@ -229,9 +296,11 @@ const Login = () => {
             </button>
           </form>
 
-          <p style={{ textAlign: "center", color: "#d4a0b5", fontSize: "12px", marginTop: "clamp(0.75rem, 3vh, 2rem)" }}>
+          <p className="login-mobile-footer login-anim-4" style={{ textAlign: "center", color: "#d4a0b5", fontSize: "12px", marginTop: "clamp(0.75rem, 3vh, 2rem)" }}>
             Secure login · Web Builder Pro
           </p>
+
+          </div>
         </div>
       </div>
     </>
