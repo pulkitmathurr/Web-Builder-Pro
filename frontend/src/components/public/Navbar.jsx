@@ -39,7 +39,7 @@ const ChevronDownSm = ({ color, open }) => (
 // ── Shared top navbar — logo/name on the left, Home + hover dropdowns on the right.
 // Dropdown items with subItems (Infrastructure, Courses, and the top-level Sports item)
 // open a nested flyout to the right on hover, instead of listing everything inline. ──
-const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false }) => {
+const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, topOffset = 0 }) => {
     const navigate = useNavigate();
     const navbarSolid = forceSolid || scrollY > 60;
     const navFont = getFontFamily(school.nav_font);
@@ -159,7 +159,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false }
                 @keyframes mobileDrawerIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
             `}</style>
             <nav className="navbar-inner" style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000,
+                position: 'fixed', top: `${topOffset}px`, left: 0, right: 0, zIndex: 1000,
                 height: '92px', padding: '0 3rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 background: (navbarSolid || mobileOpen) ? 'rgba(255,255,255,0.95)' : 'transparent',
@@ -277,7 +277,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false }
                 since hover-based dropdowns don't work on touch devices. ── */}
             {mobileOpen && (
                 <div style={{
-                    position: 'fixed', top: '92px', left: 0, right: 0, bottom: 0, zIndex: 999,
+                    position: 'fixed', top: `${92 + topOffset}px`, left: 0, right: 0, bottom: 0, zIndex: 999,
                     background: '#ffffff', overflowY: 'auto', animation: 'mobileDrawerIn 0.2s ease',
                     padding: '0.5rem 0 2rem',
                 }}>

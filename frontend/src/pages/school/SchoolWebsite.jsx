@@ -4,8 +4,42 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors } from "../../constants/publicNav";
+import { getThemeColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { parseDate, shortDate } from "../../utils/dateTimeFormat";
+
+// ── Thin autoscrolling strip, fixed above the navbar, surfacing the
+// latest announcements — admin-toggleable from the Home Page settings ──
+const AnnouncementTicker = ({ slug, tc, items }) => {
+    const navigate = useNavigate();
+
+    const label = items
+        .map(a => `${a.title}${a.date ? ` (${shortDate(a.date)})` : ''}`)
+        .join('   •   ');
+
+    return (
+        <div
+            onClick={() => navigate(`/school/${slug}/announcements`)}
+            role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') navigate(`/school/${slug}/announcements`); }}
+            className="announcement-ticker"
+            style={{
+                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1001,
+                height: '34px', display: 'flex', alignItems: 'center',
+                background: 'rgba(2,6,23,0.85)', backdropFilter: 'blur(6px)',
+                borderBottom: `1px solid ${tc.primary}40`, cursor: 'pointer', overflow: 'hidden',
+            }}
+            title="View all announcements"
+        >
+            <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '6px', padding: '0 14px', height: '100%', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, fontSize: '10.5px', fontWeight: 700, color: '#fff', letterSpacing: '0.08em', textTransform: 'uppercase', zIndex: 1 }}>
+                🔔 Latest
+            </span>
+            <div className="announcement-ticker-track" style={{ display: 'flex', whiteSpace: 'nowrap', animation: `tickerScroll ${Math.max(14, items.length * 7)}s linear infinite` }}>
+                <span style={{ padding: '0 24px', fontSize: '12.5px', color: 'rgba(255,255,255,0.85)' }}>{label}</span>
+                <span style={{ padding: '0 24px', fontSize: '12.5px', color: 'rgba(255,255,255,0.85)' }}>{label}</span>
+            </div>
+        </div>
+    );
+};
 
 // ── Premium "water fill" hover button — fills up like water on hover,
 // drains back down with a few trailing drips when the pointer leaves ──
@@ -122,6 +156,7 @@ const SchoolWebsite = () => {
     const navigate = useNavigate();
     const [school, setSchool] = useState(null);
     const [homeContent, setHomeContent] = useState(null);
+    const [announcementsContent, setAnnouncementsContent] = useState(null);
     const [loading, setLoading] = useState(true);
     const [scrollY, setScrollY] = useState(0);
     const [introVisible, setIntroVisible] = useState(true);
@@ -185,6 +220,7 @@ const SchoolWebsite = () => {
             setSchool(res.data);
             if (res.data?.id) {
                 fetchHomeContent(res.data.id);
+                fetchAnnouncementsContent(res.data.id);
             }
         } catch (e) {
             navigate("/school-not-found");
@@ -199,6 +235,15 @@ const SchoolWebsite = () => {
             if (res.data) setHomeContent(res.data);
         } catch (e) {
             console.log('No home content published yet');
+        }
+    };
+
+    const fetchAnnouncementsContent = async (schoolId) => {
+        try {
+            const res = await getPublicModuleContentApi(schoolId, 'announcements');
+            if (res.data) setAnnouncementsContent(res.data);
+        } catch (e) {
+            console.log('No announcements published yet');
         }
     };
 
@@ -217,6 +262,17 @@ const SchoolWebsite = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+
+    const tickerItems = homeContent?.showAnnouncementTicker !== false && isModuleEnabled(school, 'announcements')
+        ? [...(announcementsContent?.announcements || [])]
+            .filter(a => a.title)
+            .sort((a, b) => {
+                if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+                return (parseDate(b.date) || 0) - (parseDate(a.date) || 0);
+            })
+            .slice(0, 5)
+        : [];
+    const tickerVisible = tickerItems.length > 0;
 
     return (
         <>
@@ -286,6 +342,8 @@ const SchoolWebsite = () => {
                 @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
                 @keyframes waterWave { from { transform: translateX(0); } to { transform: translateX(-20px); } }
                 @keyframes waterDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
+                @keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+                .announcement-ticker:hover .announcement-ticker-track { animation-play-state: paused; }
 .rte-content p { margin-bottom: 0.8em; }
 .rte-content p:last-child { margin-bottom: 0; }
 .rte-content strong { font-weight: 700; }
@@ -309,8 +367,15 @@ const SchoolWebsite = () => {
 
             <div style={{ width: '100%', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: '#020617', position: 'relative', overflowX: 'hidden' }}>
 
+                {/* ── Latest Announcement Ticker — admin-toggleable in Home Page settings.
+                     Sits above the Navbar (topOffset pushes the fixed Navbar down by the
+                     ticker's height) so it's only ever present on this page. ── */}
+                {tickerVisible && (
+                    <AnnouncementTicker slug={slug} tc={tc} items={tickerItems} />
+                )}
+
                 {/* ── Shared Navbar ── */}
-                <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" />
+                <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" topOffset={tickerVisible ? 34 : 0} />
 
                 {/* ── Hero — video / banner slideshow background — taller than one viewport (fixed
                      px buffer on top of 100vh, not a vh percentage, so it stays taller than the

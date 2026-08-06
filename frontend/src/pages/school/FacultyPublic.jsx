@@ -47,20 +47,35 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-// ── Single level section — a real wrapping grid (5 per row on desktop, 3 per row on
-// mobile — see .faculty-grid in the stylesheet below), every member shown at once with a
-// staggered scroll-reveal fade-up per card instead of the old auto-advancing slideshow. ──
+// ── Single level section. Levels with more than 5 members become a continuously
+// auto-scrolling ticker row (same tickerScroll marquee used by About Us's "What
+// Drives Us" cards, list duplicated for a seamless loop), sized so ~5 cards sit
+// in view on desktop and ~3 on mobile (see .faculty-ticker-card below). 5 or
+// fewer members already fit on screen, so they render as a static centered row
+// with no animation instead. ──
 const LevelSection = ({ levelKey, members, tc, bc }) => {
+    const shouldScroll = members.length > 5;
+    const track = shouldScroll ? [...members, ...members] : members;
     return (
-        <div style={{ padding: '3.5rem clamp(1.25rem,6vw,5rem)', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>
-            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+        <div style={{ padding: '3.5rem 0', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>
+            <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,5rem)' }}>
                 <Reveal>
                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.75rem' }}>{LEVEL_LABELS[levelKey]}</p>
                 </Reveal>
+            </div>
 
-                <div className="faculty-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 190px))', justifyContent: 'center', gap: '14px' }}>
-                    {members.map((m, idx) => (
-                        <Reveal key={m.id} delay={Math.min(idx * 0.05, 0.6)}>
+            <div style={{ position: 'relative', overflow: 'hidden' }}>
+                {shouldScroll && (
+                    <>
+                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '80px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '80px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                    </>
+                )}
+
+                <div className={shouldScroll ? 'faculty-ticker-track' : 'faculty-ticker-track faculty-ticker-track-static'}
+                    style={shouldScroll ? { animationDuration: `${Math.max(20, members.length * 6)}s` } : undefined}>
+                    {track.map((m, idx) => (
+                        <div key={`${m.id}-${idx}`} className="faculty-ticker-card">
                             <div className="faculty-card"
                                 style={{
                                     borderRadius: '6px',
@@ -92,7 +107,7 @@ const LevelSection = ({ levelKey, members, tc, bc }) => {
                                     )}
                                 </div>
                             </div>
-                        </Reveal>
+                        </div>
                     ))}
                 </div>
             </div>
@@ -218,6 +233,13 @@ const FacultyPublic = () => {
                 html { scroll-behavior: smooth; }
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+                .faculty-ticker-track { display: flex; width: max-content; animation-name: tickerScroll; animation-timing-function: linear; animation-iteration-count: infinite; }
+                .faculty-ticker-track:hover { animation-play-state: paused; }
+                /* ── 5 or fewer members: no scroll needed, just a static centered/wrapping row ── */
+                .faculty-ticker-track-static { animation: none; width: 100%; flex-wrap: wrap; justify-content: center; }
+                /* ── Card footprint tuned so ~5 sit in view on desktop, ~3 on mobile ── */
+                .faculty-ticker-card { flex-shrink: 0; width: 220px; margin: 0 10px; }
                 .faculty-card { position: relative; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease, border-color 0.35s ease; }
                 .faculty-card::before { content: ''; position: absolute; inset: 5px; border: 1px solid transparent; border-radius: 3px; pointer-events: none; transition: border-color 0.35s ease, inset 0.35s ease; }
                 .faculty-card:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgba(15,23,42,0.14); border-color: var(--tc-primary); }
@@ -233,8 +255,8 @@ const FacultyPublic = () => {
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
                 @media (max-width: 640px) {
-                    /* ── 3-per-row on mobile instead of 5 — smaller cards, tighter text ── */
-                    .faculty-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; }
+                    /* ── ~3-in-view on mobile instead of ~5 — smaller cards, tighter text ── */
+                    .faculty-ticker-card { width: 96px; margin: 0 8px; }
                     .faculty-card { border-radius: 5px !important; padding: 4px !important; }
                     .faculty-card-plate { padding: 6px 2px 2px !important; }
                     .faculty-card-name { font-size: 9.5px !important; }
@@ -243,7 +265,7 @@ const FacultyPublic = () => {
                 }
             `}</style>
 
-            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh', overflowX: 'hidden' }}>
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="faculty" />

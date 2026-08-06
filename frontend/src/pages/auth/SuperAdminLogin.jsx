@@ -69,17 +69,21 @@ const SuperAdminLogin = () => {
                 }
                 .sa-forgot { transition: color 0.2s; }
                 .sa-forgot:hover { color: #8C6A3F !important; }
+                @media (max-width: 480px) {
+                    .sa-content { padding-top: 2rem !important; padding-inline: 1.25rem !important; }
+                    .sa-mountain { height: 34vh !important; }
+                }
             `}</style>
 
             <div style={{
                 width: '100vw', minHeight: '100vh',
-                position: 'relative', overflow: 'hidden',
+                position: 'relative', overflowX: 'hidden', overflowY: 'auto',
                 background: '#FBEEC9',
                 display: 'flex', flexDirection: 'column',
                 fontFamily: "'Inter', sans-serif",
             }}>
                 {/* Mountain art — bottom of viewport */}
-                <svg viewBox="0 0 1440 500" preserveAspectRatio="none"
+                <svg viewBox="0 0 1440 500" preserveAspectRatio="none" className="sa-mountain"
                     style={{ position: 'absolute', bottom: 0, left: 0, width: '100%', height: '46vh', zIndex: 0 }}>
                     <defs>
                         <filter id="saGrain">
@@ -101,7 +105,7 @@ const SuperAdminLogin = () => {
                 }}></div>
 
                 {/* Content */}
-                <div style={{
+                <div className="sa-content" style={{
                     position: 'relative', zIndex: 2,
                     width: '100%', maxWidth: '380px',
                     margin: '0 auto', padding: 'clamp(3rem, 10vh, 6rem) 1.5rem 0',

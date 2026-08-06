@@ -57,9 +57,20 @@ const Login = () => {
           transform: translateY(-1px);
           box-shadow: 0 8px 22px rgba(139,34,82,0.38);
         }
+        @media (max-width: 860px) {
+          .login-shell { grid-template-columns: 1fr !important; height: auto !important; min-height: 100vh !important; overflow: visible !important; }
+          .login-left-panel { display: none !important; }
+          .login-right-panel { padding-inline: 1.5rem !important; padding-block: 2.5rem 2rem !important; overflow-y: visible !important; }
+        }
+        @media (max-width: 400px) {
+          .login-right-panel { padding-inline: 1.1rem !important; }
+        }
+        @media (max-width: 860px) {
+          .login-right-logo { margin-left: 0 !important; }
+        }
       `}</style>
 
-      <div style={{
+      <div className="login-shell" style={{
         display: "grid",
         gridTemplateColumns: "60fr 40fr",
         width: "100vw",
@@ -68,8 +79,8 @@ const Login = () => {
         fontFamily: "'Poppins', system-ui, sans-serif",
       }}>
 
-        {/* ── Left Panel 60% ── */}
-        <div style={{
+        {/* ── Left Panel 60% — hidden on mobile, right panel already carries its own logo ── */}
+        <div className="login-left-panel" style={{
           background: "linear-gradient(145deg, #f9e0e8 0%, #f5cdd8 50%, #f0bfcc 100%)",
           display: "flex",
           flexDirection: "column",
@@ -115,7 +126,7 @@ const Login = () => {
         </div>
 
         {/* ── Right Panel 40% ── */}
-        <div style={{
+        <div className="login-right-panel" style={{
           background: "#ffffff",
           display: "flex",
           flexDirection: "column",
@@ -130,6 +141,7 @@ const Login = () => {
           <img
             src={logo}
             alt="Web Builder Pro Logo"
+            className="login-right-logo"
             style={{
     width: 'clamp(170px, 24vh, 320px)',
     height: 'clamp(85px, 12vh, 160px)',

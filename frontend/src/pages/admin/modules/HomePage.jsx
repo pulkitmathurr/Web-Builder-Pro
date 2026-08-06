@@ -30,6 +30,7 @@ const defaultContent = {
     schoolNameFont: '',
     taglineColor: '',
     subTextColor: '',
+    showAnnouncementTicker: true,
 };
 
 // ── Small inline color-picker used for the hero text-color overrides ──
@@ -445,6 +446,25 @@ const HomePage = () => {
                             )}
                         </div>
                     )}
+                </div>
+
+                {/* ── Announcement Ticker ── */}
+                <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: '1.25rem' }}>
+                    <div style={{ padding: '1.25rem 1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}`, flexShrink: 0 }}>
+                                <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                            </div>
+                            <div>
+                                <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Latest Announcement Ticker</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>Small autoscrolling strip on the home page linking to your latest announcement</p>
+                            </div>
+                        </div>
+                        <button type="button" onClick={() => handleChange('showAnnouncementTicker', !content.showAnnouncementTicker)}
+                            style={{ width: '42px', height: '23px', borderRadius: '999px', border: 'none', cursor: 'pointer', background: content.showAnnouncementTicker ? tc.primary : '#e2e8f0', position: 'relative', transition: 'background 0.2s', flexShrink: 0, padding: 0 }}>
+                            <span style={{ position: 'absolute', top: '2.5px', left: content.showAnnouncementTicker ? '21px' : '3px', width: '18px', height: '18px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Hero Section ── */}
