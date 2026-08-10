@@ -16,9 +16,12 @@ const SocialIcon = ({ type }) => {
     return <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d={icons[type]} /></svg>;
 };
 
-// ── Footer nav categories (Milestone 2 links only) ──
+// ── Footer nav categories ──
 // `key` on every link maps to the module's `module_key` in tbl_module_content, so the footer
 // can filter itself down to only modules the school has actually published (see publishedKeys).
+// NOTE: this is a separate, independently-maintained list from `FOOTER_NAV_GROUPS` in
+// constants/publicNav.js — that export is currently unused by this component. Editing
+// FOOTER_NAV_GROUPS alone does NOT change what renders here; update both when adding a link.
 const FOOTER_NAV = [
     {
         heading: 'About Us',
@@ -27,15 +30,18 @@ const FOOTER_NAV = [
             { key: 'faculty',        label: 'Faculty',        path: (slug) => `/school/${slug}/faculty` },
             { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure` },
             { key: 'alumni',         label: 'Alumni',         path: (slug) => `/school/${slug}/alumni` },
+            { key: 'testimonials',   label: 'Testimonials',   path: (slug) => `/school/${slug}/testimonials` },
             { key: 'tc',             label: 'TC Information', path: (slug) => `/school/${slug}/tc` },
         ],
     },
     {
         heading: 'Academics',
         links: [
-            { key: 'courses',    label: 'Courses',           path: (slug) => `/school/${slug}/courses` },
-            { key: 'fee',        label: 'Fee Structure',     path: (slug) => `/school/${slug}/fee` },
-            { key: 'disclosure', label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
+            { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses` },
+            { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
+            { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
+            { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
+            { key: 'disclosure',         label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {

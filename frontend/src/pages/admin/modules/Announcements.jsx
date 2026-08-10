@@ -179,16 +179,6 @@ const Announcements = () => {
                     </div>
                 </div>
 
-                {/* Add Announcement */}
-                <div style={{ display: 'flex', marginBottom: '1.25rem' }}>
-                    <button className="announcements-addbtn" onClick={() => updateField('announcements', [{
-                        id: `ann-${Date.now()}`, title: '', date: new Date().toISOString().slice(0, 10), time: new Date().toTimeString().slice(0, 5), tag: 'General', body: '', images: [], pinned: false
-                    }, ...content.announcements])}
-                        style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
-                        + Add Announcement
-                    </button>
-                </div>
-
                 <div className="announcements-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                     {/* Top section — description RTE now fills the card's full width instead of
@@ -212,6 +202,16 @@ const Announcements = () => {
                                 placeholder="A short note about how parents/students can stay updated..." minHeight="120px"
                                 fontSize="15px" />
                         </div>
+                    </div>
+
+                    {/* Add Announcement */}
+                    <div style={{ display: 'flex' }}>
+                        <button className="announcements-addbtn" onClick={() => updateField('announcements', [{
+                            id: `ann-${Date.now()}`, title: '', date: new Date().toISOString().slice(0, 10), time: new Date().toTimeString().slice(0, 5), tag: 'General', body: '', images: [], pinned: false
+                        }, ...content.announcements])}
+                            style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
+                            + Add Announcement
+                        </button>
                     </div>
 
                     {/* Announcement list */}

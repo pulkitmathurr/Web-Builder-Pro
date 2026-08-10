@@ -35,7 +35,7 @@ const updateSchoolProfileService = async (schoolId, data) => {
         'map_url', 'facebook', 'instagram', 'youtube', 'twitter', 'linkedin',
         'hero_video_url', 'hero_video_title', 'logo_url', 'intro_message',
         'welcome_banner_enabled', 'welcome_banner_url', 'welcome_banner_link',
-        'footer_bg_url'
+        'footer_bg_url', 'bg_music_enabled', 'bg_music_track', 'affiliation_badges'
     ];
 
     const fieldsToUpdate = allowedFields.filter((field) =>
@@ -84,8 +84,8 @@ const selectModulesService = async (schoolId, modules) => {
 
     const validModules = [
         "home", "about", "fee", "courses", "faculty", "infrastructure",
-        "sports", "gallery", "achievements", "alumni", "disclosure", "tc",
-        "events", "calendar", "announcements", "circulars", "admission",
+        "sports", "gallery", "achievements", "alumni", "testimonials", "disclosure", "tc",
+        "events", "calendar", "announcements", "circulars", "admissionProcedure", "bookList", "admission",
         "career", "contact", "settings",
     ];
 
@@ -136,7 +136,7 @@ const getPublicSchoolService = async (slug) => {
             s.facebook, s.instagram, s.youtube, s.twitter, s.linkedin,
             s.hero_video_url, s.hero_video_title, s.intro_message,
             s.welcome_banner_enabled, s.welcome_banner_url, s.welcome_banner_link,
-            s.footer_bg_url
+            s.footer_bg_url, s.bg_music_enabled, s.bg_music_track, s.affiliation_badges
         FROM tbl_schools s
         WHERE s.slug = ? AND s.status = 'active'`,
         [slug]
@@ -150,6 +150,9 @@ const getPublicSchoolService = async (slug) => {
     school.selected_modules = typeof school.selected_modules === 'string'
         ? JSON.parse(school.selected_modules)
         : (school.selected_modules || []);
+    school.affiliation_badges = typeof school.affiliation_badges === 'string'
+        ? JSON.parse(school.affiliation_badges)
+        : (school.affiliation_badges || []);
 
     return school;
 };

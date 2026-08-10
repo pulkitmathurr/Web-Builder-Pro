@@ -123,7 +123,20 @@
       "Bash(npx --yes playwright --help)",
       "Bash(mkdir -p /c/Users/mudit/AppData/Local/Temp/claude/C--Users-mudit-Desktop-school-saas/70e144d3-6f80-48d7-9b15-ebe5fbfbf52e/scratchpad)",
       "Bash(npx --yes playwright screenshot --wait-for-timeout 2500 --viewport-size 1440,900 \"http://localhost:5173/school/st-marys-convent-school\" \"/c/Users/mudit/AppData/Local/Temp/claude/C--Users-mudit-Desktop-school-saas/70e144d3-6f80-48d7-9b15-ebe5fbfbf52e/scratchpad/home-ticker.png\")",
-      "Bash(npx *)"
+      "Bash(npx *)",
+      "Bash(mysql -u root db_school_saas)",
+      "Bash(npm root *)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT id, school_id, email FROM tbl_admins LIMIT 5;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT id, name, slug, status FROM tbl_schools WHERE id=9;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"DELETE FROM tbl_module_content WHERE school_id=9 AND module_key='testimonials';\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT selected_modules FROM tbl_schools WHERE id=9;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT id, updated_at, created_at FROM tbl_schools WHERE id=9;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT id, selected_modules FROM tbl_schools WHERE id IN \\(10,11,12,25\\);\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT module_key, is_published FROM tbl_module_content WHERE school_id=9 AND module_key='testimonials';\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"UPDATE tbl_schools SET selected_modules = JSON_ARRAY_APPEND\\(selected_modules, '$', 'admissionProcedure'\\) WHERE id=9;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT id, email, map_url, phone, phone2, address FROM tbl_schools WHERE id=9;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"UPDATE tbl_schools SET selected_modules = JSON_ARRAY_APPEND\\(selected_modules, '$', 'bookList'\\) WHERE id=9;\" 2>&1)",
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT content FROM tbl_module_content WHERE module_key='circulars' AND school_id=9 LIMIT 1;\" 2>&1)"
     ]
   }
 }

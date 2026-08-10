@@ -223,8 +223,8 @@ const Achievements = () => {
                 .ach-remove-btn:hover { background: #ef4444 !important; color: #fff !important; transform: rotate(90deg) scale(1.05); }
                 .ach-photobox { transition: border-color 0.2s ease, background 0.2s ease; }
                 .ach-photobox:hover { border-color: ${tc.primary} !important; background: ${hexToRgba(tc.primary, 0.04)} !important; }
-                .ach-addbtn { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-                .ach-addbtn:hover { transform: translateY(-2px); box-shadow: 0 10px 22px ${hexToRgba(tc.primary, 0.35)}; }
+                .ach-addbtn { transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; }
+                .ach-addbtn:hover { transform: translateY(-1px); background: ${hexToRgba(tc.primary, 0.05)}; box-shadow: 0 4px 14px ${hexToRgba(tc.primary, 0.14)}; }
                 .ach-cert-addbtn { transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease; }
                 .ach-cert-addbtn:hover { border-color: ${tc.primary} !important; color: ${tc.primary} !important; background: ${hexToRgba(tc.primary, 0.04)} !important; }
                 .ach-cert-card { animation: fadeInUp 0.4s ease both; transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease; overflow: hidden; }
@@ -304,7 +304,7 @@ const Achievements = () => {
                 <div className="ach-section" style={{ marginBottom: '1.25rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                         <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}><span className="ach-section-dot"></span>Achievement Entries <span style={{ color: '#94a3b8', fontWeight: 400 }}>({content.achievements.length})</span></p>
-                        <button className="ach-addbtn" onClick={addAchievement} style={{ padding: '8px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 3px 10px ${hexToRgba(tc.primary, 0.25)}` }}>
+                        <button className="ach-addbtn" onClick={addAchievement} style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
                             + Add Achievement
                         </button>
                     </div>

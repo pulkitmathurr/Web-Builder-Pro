@@ -346,12 +346,12 @@ const AboutUs = () => {
   };
 
   const addButtonStyle = {
-    padding: "8px 16px",
-    background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
-    color: "#fff",
-    border: "none",
+    padding: "11px 20px",
+    background: "#ffffff",
+    color: tc.primary,
+    border: `1.5px dashed ${tc.primary}55`,
     borderRadius: "8px",
-    fontSize: "12px",
+    fontSize: "13px",
     fontWeight: 600,
     cursor: "pointer",
   };

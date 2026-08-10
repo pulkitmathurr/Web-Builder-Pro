@@ -177,16 +177,6 @@ const Circulars = () => {
                     </div>
                 </div>
 
-                {/* Add Circular */}
-                <div style={{ display: 'flex', marginBottom: '1.25rem' }}>
-                    <button className="circulars-addbtn" onClick={() => updateField('circulars', [{
-                        id: `cir-${Date.now()}`, title: '', date: new Date().toISOString().slice(0, 10), tag: 'General', pdfUrl: '', linkUrl: '', note: ''
-                    }, ...content.circulars])}
-                        style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
-                        + Add Circular
-                    </button>
-                </div>
-
                 <div className="circulars-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
                     {/* Top section — description RTE now fills the card's full width instead of
@@ -210,6 +200,16 @@ const Circulars = () => {
                                 placeholder="A short note about where to find official circulars..." minHeight="120px"
                                 fontSize="15px" />
                         </div>
+                    </div>
+
+                    {/* Add Circular */}
+                    <div style={{ display: 'flex' }}>
+                        <button className="circulars-addbtn" onClick={() => updateField('circulars', [{
+                            id: `cir-${Date.now()}`, title: '', date: new Date().toISOString().slice(0, 10), tag: 'General', pdfUrl: '', linkUrl: '', note: ''
+                        }, ...content.circulars])}
+                            style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
+                            + Add Circular
+                        </button>
                     </div>
 
                     {/* Circular list */}

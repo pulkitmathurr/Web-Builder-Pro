@@ -26,6 +26,9 @@ import Sports from './pages/admin/modules/Sports';
 import Gallery from './pages/admin/modules/Gallery';
 import Achievements from './pages/admin/modules/Achievements';
 import Alumni from './pages/admin/modules/Alumni';
+import Testimonials from './pages/admin/modules/Testimonials';
+import AdmissionProcedure from './pages/admin/modules/AdmissionProcedure';
+import BookList from './pages/admin/modules/BookList';
 import PublicDisclosure from './pages/admin/modules/PublicDisclosure';
 import TCInformation from './pages/admin/modules/TCInformation';
 import Announcements from './pages/admin/modules/Announcements';
@@ -47,6 +50,9 @@ import GalleryPublic from './pages/school/GalleryPublic';
 import SportsPublic from './pages/school/SportsPublic';
 import AchievementsPublic from './pages/school/AchievementsPublic';
 import AlumniPublic from './pages/school/AlumniPublic';
+import TestimonialsPublic from './pages/school/TestimonialsPublic';
+import AdmissionProcedurePublic from './pages/school/AdmissionProcedurePublic';
+import BookListPublic from './pages/school/BookListPublic';
 import PublicDisclosurePublic from './pages/school/PublicDisclosurePublic';
 import TCInformationPublic from './pages/school/TCInformationPublic';
 import AnnouncementsPublic from './pages/school/AnnouncementsPublic';
@@ -89,6 +95,9 @@ function App() {
                 <Route path="/school/:slug/gallery" element={<GalleryPublic />} />
                 <Route path="/school/:slug/achievements" element={<AchievementsPublic />} />
                 <Route path="/school/:slug/alumni" element={<AlumniPublic />} />
+                <Route path="/school/:slug/testimonials" element={<TestimonialsPublic />} />
+                <Route path="/school/:slug/admission-procedure" element={<AdmissionProcedurePublic />} />
+                <Route path="/school/:slug/book-list" element={<BookListPublic />} />
                 <Route path="/school/:slug/public-disclosure" element={<PublicDisclosurePublic />} />
                 <Route path="/school/:slug/tc" element={<TCInformationPublic />} />
                 <Route path="/school/:slug/announcements/:id" element={<AnnouncementDetailPublic />} />
@@ -135,6 +144,9 @@ function App() {
                     <Route path="module/gallery" element={<Gallery />} />
                     <Route path="module/achievements" element={<Achievements />} />
                     <Route path="module/alumni" element={<Alumni />} />
+                    <Route path="module/testimonials" element={<Testimonials />} />
+                    <Route path="module/admissionProcedure" element={<AdmissionProcedure />} />
+                    <Route path="module/bookList" element={<BookList />} />
                     <Route path="module/disclosure" element={<PublicDisclosure />} />
                     <Route path="module/tc" element={<TCInformation />} />
                     <Route path="module/announcements" element={<Announcements />} />

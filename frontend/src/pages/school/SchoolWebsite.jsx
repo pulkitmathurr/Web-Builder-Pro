@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import { getThemeColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
 import { parseDate, shortDate } from "../../utils/dateTimeFormat";
+import { getMusicTrack } from "../../constants/musicTracks";
 
 // ── Thin autoscrolling strip, fixed above the navbar, surfacing the
 // latest announcements — admin-toggleable from the Home Page settings ──
@@ -38,6 +39,49 @@ const AnnouncementTicker = ({ slug, tc, items }) => {
                 <span style={{ padding: '0 24px', fontSize: '12.5px', color: 'rgba(255,255,255,0.85)' }}>{label}</span>
             </div>
         </div>
+    );
+};
+
+// ── Floating background-music toggle — starts muted (browsers block
+// autoplay-with-sound anyway) with a speaker icon so the visitor opts in ──
+const BackgroundMusicPlayer = ({ track, tc }) => {
+    const audioRef = useRef(null);
+    const [muted, setMuted] = useState(true);
+
+    useEffect(() => {
+        audioRef.current?.play().catch(() => {});
+    }, [track.url]);
+
+    const toggleMute = () => {
+        const next = !muted;
+        setMuted(next);
+        if (!next) audioRef.current?.play().catch(() => {});
+    };
+
+    return (
+        <>
+            <audio ref={audioRef} src={track.url} loop autoPlay muted={muted} />
+            <button
+                onClick={toggleMute}
+                aria-label={muted ? `Play background music: ${track.label}` : `Mute background music: ${track.label}`}
+                title={muted ? `Play "${track.label}"` : `Mute "${track.label}"`}
+                style={{
+                    position: 'fixed', bottom: '24px', right: '24px', zIndex: 1200,
+                    width: '48px', height: '48px', borderRadius: '50%', border: 'none',
+                    background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
+                    color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.35)', transition: 'transform 0.2s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.08)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+            >
+                {muted ? (
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M23 9l-6 6m0-6l6 6" /></svg>
+                ) : (
+                    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14" /></svg>
+                )}
+            </button>
+        </>
     );
 };
 
@@ -334,6 +378,11 @@ const SchoolWebsite = () => {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* ── Background Music — optional, set from Settings; muted until the visitor opts in ── */}
+            {school.bg_music_enabled && school.bg_music_track && getMusicTrack(school.bg_music_track) && (
+                <BackgroundMusicPlayer track={getMusicTrack(school.bg_music_track)} tc={tc} />
             )}
 
             <style>{`

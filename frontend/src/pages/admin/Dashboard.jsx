@@ -191,8 +191,8 @@ const AdminDashboard = () => {
                 .hero-orb-2 { animation: drift2 11s ease-in-out infinite; }
                 .live-dot { animation: dotPulse 1.8s ease-in-out infinite; }
                 .school-logo-ring { animation: ringPulse 2.6s ease-out infinite; }
-                .visit-site-link { transition: all 0.2s ease; }
-                .visit-site-link:hover { color: #ffffff !important; gap: 8px !important; }
+                .visit-site-link { transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease; }
+                .visit-site-link:hover { transform: translateY(-1px); filter: brightness(1.08); }
                 @media (max-width: 900px) {
                     .dash-stats-grid { grid-template-columns: repeat(2,1fr) !important; }
                     .dash-bottom-grid { grid-template-columns: 1fr !important; }
@@ -218,7 +218,7 @@ const AdminDashboard = () => {
                     .dash-school-logo-placeholder svg { width: 17px !important; height: 17px !important; }
                     .dash-school-name { font-size: 12px !important; max-width: 60vw !important; white-space: normal !important; overflow-wrap: break-word !important; word-break: normal !important; margin-bottom: 4px !important; }
                     .dash-school-badge { font-size: 9.5px !important; padding: 2px 8px 2px 6px !important; }
-                    .visit-site-link { font-size: 10.5px !important; padding-top: 8px !important; }
+                    .visit-site-link { font-size: 11px !important; padding: 9px 12px !important; }
 
                     /* ── Stat cards — 2-per-row grid, tighter padding, no cut/ellipsis text ── */
                     .dash-stats-grid { gap: 10px !important; margin-bottom: 1rem !important; }
@@ -308,8 +308,15 @@ const AdminDashboard = () => {
                             </div>
                             {school?.slug && (
                                 <a href={`/school/${school.slug}`} target="_blank" rel="noreferrer" className="visit-site-link"
-                                    style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'rgba(255,255,255,0.6)', textDecoration: 'none', fontWeight: 500, borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '12px' }}>
-                                    View live website <IconExternalLink size={11} />
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+                                        fontSize: '12.5px', fontWeight: 700, color: '#ffffff', textDecoration: 'none',
+                                        background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
+                                        borderRadius: '10px', padding: '10px 14px', marginTop: '2px',
+                                        boxShadow: `0 6px 16px ${hexToRgba(tc.primary, 0.4)}`,
+                                        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+                                    }}>
+                                    View Live Website <IconExternalLink size={12} />
                                 </a>
                             )}
                         </div>

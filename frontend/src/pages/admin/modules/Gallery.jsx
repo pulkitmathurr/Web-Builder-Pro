@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi, uploadVideoFileApi } from '../../../api/content.api';
+import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi } from '../../../api/content.api';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import useSchoolStore from '../../../store/schoolStore';
 import toast from 'react-hot-toast';
@@ -51,16 +51,6 @@ const IconCheck = ({ size = 16, color = 'currentColor' }) => (
 const IconUpload = ({ size = 16, color = 'currentColor' }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
         <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-    </svg>
-);
-const IconLink = ({ size = 14, color = 'currentColor' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5" />
-    </svg>
-);
-const IconFile = ({ size = 14, color = 'currentColor' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6" />
     </svg>
 );
 const IconSpinner = ({ size = 24, color = '#8b2252' }) => (
@@ -256,19 +246,6 @@ const Gallery = () => {
 
     const updateVideo = (videoId, field, value) => updateNodes(nodes.map(n => n.id === currentFolderId ? { ...n, videos: n.videos.map(v => v.id === videoId ? { ...v, [field]: value } : v) } : n));
     const removeVideo = (videoId) => updateNodes(nodes.map(n => n.id === currentFolderId ? { ...n, videos: n.videos.filter(v => v.id !== videoId) } : n));
-
-    const uploadVideoFile = async (videoId, file) => {
-        setUploading(prev => ({ ...prev, [`vidfile-${videoId}`]: true }));
-        try {
-            const res = await uploadVideoFileApi(file);
-            updateVideo(videoId, 'videoUrl', res.data.url);
-            toast.success('Video uploaded');
-        } catch (e) {
-            toast.error('Failed to upload video');
-        } finally {
-            setUploading(prev => ({ ...prev, [`vidfile-${videoId}`]: false }));
-        }
-    };
 
     const uploadVideoThumb = async (videoId, file) => {
         setUploading(prev => ({ ...prev, [`vidthumb-${videoId}`]: true }));
@@ -556,13 +533,11 @@ const Gallery = () => {
                                 <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Thumbnail: landscape (16:9) works best · JPG, PNG, WEBP · Max 5MB.</p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '1.25rem' }}>
                                     {(currentFolder.videos || []).map(v => {
-                                        const isYoutube = (v.sourceType || 'youtube') === 'youtube';
-                                        const uploadKey = `vidfile-${v.id}`;
                                         const thumbKey = `vidthumb-${v.id}`;
                                         return (
                                             <div key={v.id} style={{ border: '1px solid #f1f5f9', borderRadius: '12px', padding: '1rem', background: '#fafbfc' }}>
                                                 <div style={{ display: 'flex', gap: '14px' }}>
-                                                    {/* Thumbnail — shown for both YouTube and uploaded videos */}
+                                                    {/* Thumbnail */}
                                                     <div style={{ flexShrink: 0 }}>
                                                         <div onClick={() => document.getElementById(`vidthumb-input-${v.id}`).click()}
                                                             style={{
@@ -604,41 +579,7 @@ const Gallery = () => {
                                                             </button>
                                                         </div>
 
-                                                        {/* Source type toggle */}
-                                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
-                                                            <button className="source-toggle" onClick={() => updateVideo(v.id, 'sourceType', 'youtube')}
-                                                                style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: isYoutube ? `1.5px solid ${tc.primary}` : '1px solid #e5e7eb', background: isYoutube ? tc.light : '#ffffff', color: isYoutube ? tc.primary : '#64748b', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                                <IconLink size={12} /> YouTube Link
-                                                            </button>
-                                                            <button className="source-toggle" onClick={() => updateVideo(v.id, 'sourceType', 'upload')}
-                                                                style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: !isYoutube ? `1.5px solid ${tc.primary}` : '1px solid #e5e7eb', background: !isYoutube ? tc.light : '#ffffff', color: !isYoutube ? tc.primary : '#64748b', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                                                                <IconFile size={12} /> Upload from Device
-                                                            </button>
-                                                        </div>
-
-                                                        {isYoutube ? (
-                                                            <input type="text" value={v.youtubeUrl} onChange={e => updateVideo(v.id, 'youtubeUrl', e.target.value)} placeholder="https://youtube.com/watch?v=..." style={inputStyle} />
-                                                        ) : (
-                                                            <div>
-                                                                {v.videoUrl ? (
-                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
-                                                                        <IconCheck size={14} color="#15803d" />
-                                                                        <span style={{ fontSize: '12px', color: '#15803d', flex: 1 }}>Video uploaded</span>
-                                                                        <button onClick={() => document.getElementById(`vidfile-input-${v.id}`).click()} style={{ fontSize: '11px', color: '#64748b', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}>Replace</button>
-                                                                    </div>
-                                                                ) : (
-                                                                    <div onClick={() => document.getElementById(`vidfile-input-${v.id}`).click()}
-                                                                        style={{ border: '1.5px dashed #e5e7eb', borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
-                                                                        {uploading[uploadKey] ? <IconSpinner size={20} color={tc.primary} /> : (
-                                                                            <p style={{ fontSize: '12px', color: '#64748b' }}>Click to upload video file (MP4, max 50MB)</p>
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                                <input id={`vidfile-input-${v.id}`} type="file" accept="video/mp4,video/webm,video/mov"
-                                                                    onChange={e => { const f = e.target.files[0]; if (f) uploadVideoFile(v.id, f); e.target.value = ''; }}
-                                                                    style={{ display: 'none' }} />
-                                                            </div>
-                                                        )}
+                                                        <input type="text" value={v.youtubeUrl} onChange={e => updateVideo(v.id, 'youtubeUrl', e.target.value)} placeholder="https://youtube.com/watch?v=..." style={inputStyle} />
                                                     </div>
                                                 </div>
                                             </div>

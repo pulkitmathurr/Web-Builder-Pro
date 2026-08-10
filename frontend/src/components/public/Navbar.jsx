@@ -104,6 +104,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
     };
 
     const textColor = navbarSolid ? '#0f172a' : '#ffffff';
+    const affiliationBadges = Array.isArray(school.affiliation_badges) ? school.affiliation_badges.filter(b => b?.url) : [];
 
     const dropdownPanelStyle = (isOpen) => ({
         position: 'absolute', top: 'calc(100% + 18px)', left: '50%',
@@ -147,7 +148,12 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
             <style>{`
                 @media (max-width: 960px) {
                     .navbar-desktop-items { display: none !important; }
+                    .navbar-badges { display: none !important; }
                     .navbar-hamburger { display: flex !important; }
+                }
+                @media (max-width: 1280px) {
+                    .navbar-badges img { height: 34px !important; }
+                    .navbar-right { gap: 1rem !important; }
                 }
                 @media (max-width: 480px) {
                     .navbar-logo-box { width: 42px !important; height: 42px !important; }
@@ -185,6 +191,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                     {mobileOpen ? <CloseIcon color="#0f172a" /> : <MenuIcon color={textColor} />}
                 </button>
 
+                <div className="navbar-right" style={{ display: 'flex', alignItems: 'center', gap: '1.75rem', flexShrink: 0 }}>
                 <div className="navbar-desktop-items" style={{ display: 'flex', alignItems: 'center', gap: '1.4rem', flexShrink: 0 }}>
                     {visibleNavItems.map(item => {
                         // ── Plain link (Home, Mandatory Public Disclosure) ──
@@ -270,6 +277,16 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                             </div>
                         );
                     })}
+                </div>
+
+                {affiliationBadges.length > 0 && (
+                    <div className="navbar-badges" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '1.4rem', borderLeft: `1px solid ${navbarSolid ? '#e2e8f0' : 'rgba(255,255,255,0.25)'}`, flexShrink: 0, transition: 'border-color 0.3s' }}>
+                        {affiliationBadges.map(badge => (
+                            <img key={badge.id || badge.url} src={badge.url} alt={badge.label || ''} title={badge.label || ''}
+                                style={{ height: '44px', width: 'auto', maxWidth: '64px', objectFit: 'contain', flexShrink: 0 }} />
+                        ))}
+                    </div>
+                )}
                 </div>
             </nav>
 

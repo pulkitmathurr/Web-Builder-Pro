@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
 import { getSchoolProfileApi, updateSchoolProfileApi, updateSchoolSettingsApi, uploadSchoolLogoApi, uploadWelcomeBannerApi, uploadFooterBackgroundApi } from '../../api/school.api';
+import { uploadContentImageApi } from '../../api/content.api';
 import useSchoolStore from '../../store/schoolStore';
 import ImageCropModal from '../../components/common/ImageCropModal';
 import { FONT_OPTIONS, GOOGLE_FONTS_URL, getFontFamily } from '../../constants/fonts';
 import { BASE_COLOR_OPTIONS } from '../../constants/publicNav';
+import { MUSIC_TRACKS } from '../../constants/musicTracks';
 import toast from 'react-hot-toast';
+
+const MAX_AFFILIATION_BADGES = 3;
 
 const InfoIcon = () => (
     <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -55,6 +59,14 @@ const AdminSettings = () => {
     const [uploadingFooterBg, setUploadingFooterBg] = useState(false);
     const [removingFooterBg, setRemovingFooterBg] = useState(false);
 
+    const [musicData, setMusicData] = useState({ bg_music_enabled: false, bg_music_track: '' });
+    const [selectingTrack, setSelectingTrack] = useState(false);
+    const [togglingMusic, setTogglingMusic] = useState(false);
+
+    const [badges, setBadges] = useState([]);
+    const [uploadingBadge, setUploadingBadge] = useState(null);
+    const [savingBadges, setSavingBadges] = useState(false);
+
     useEffect(() => { fetchProfile(); }, []);
 
     const fetchProfile = async () => {
@@ -83,6 +95,14 @@ const AdminSettings = () => {
                 welcome_banner_link: school.welcome_banner_link || '',
             });
             setFooterBgUrl(school.footer_bg_url || '');
+            setMusicData({
+                bg_music_enabled: !!school.bg_music_enabled,
+                bg_music_track: school.bg_music_track || '',
+            });
+            const parsedBadges = typeof school.affiliation_badges === 'string'
+                ? JSON.parse(school.affiliation_badges || '[]')
+                : (school.affiliation_badges || []);
+            setBadges(Array.isArray(parsedBadges) ? parsedBadges : []);
         } catch (e) {
             toast.error('Failed to load profile');
         } finally {
@@ -311,6 +331,77 @@ const AdminSettings = () => {
         }
     };
 
+    // ── Background Music (optional, plays on the homepage) — school picks from a
+    // small curated preset rather than uploading their own file, to avoid
+    // copyright issues; `bg_music_track` stores the preset track's key ──
+    const handleMusicTrackSelect = async (key) => {
+        setSelectingTrack(true);
+        try {
+            await updateSchoolProfileApi({ bg_music_track: key });
+            setMusicData(prev => ({ ...prev, bg_music_track: key }));
+            toast.success('Track selected!');
+        } catch (e) {
+            toast.error('Failed to select track');
+        } finally {
+            setSelectingTrack(false);
+        }
+    };
+
+    const handleMusicToggle = async () => {
+        const next = !musicData.bg_music_enabled;
+        setTogglingMusic(true);
+        try {
+            await updateSchoolProfileApi({ bg_music_enabled: next ? 1 : 0 });
+            setMusicData(prev => ({ ...prev, bg_music_enabled: next }));
+            toast.success(next ? 'Background music enabled' : 'Background music disabled');
+        } catch (e) {
+            toast.error('Failed to update music status');
+        } finally {
+            setTogglingMusic(false);
+        }
+    };
+
+    // ── Affiliation Badges (optional, up to 3) — shown top-right of the navbar next to
+    // the nav items, e.g. a board seal (CBSE) or accreditation logo (Cambridge) ──
+    const addBadgeSlot = () => {
+        if (badges.length >= MAX_AFFILIATION_BADGES) return;
+        setBadges(prev => [...prev, { id: `badge-${Date.now()}`, url: '', label: '' }]);
+    };
+
+    const updateBadge = (id, field, value) => {
+        setBadges(prev => prev.map(b => b.id === id ? { ...b, [field]: value } : b));
+    };
+
+    const removeBadge = (id) => {
+        setBadges(prev => prev.filter(b => b.id !== id));
+    };
+
+    const uploadBadgeImage = async (id, file) => {
+        setUploadingBadge(id);
+        try {
+            const res = await uploadContentImageApi(file);
+            updateBadge(id, 'url', res.data.url);
+        } catch (e) {
+            toast.error('Failed to upload badge image');
+        } finally {
+            setUploadingBadge(null);
+        }
+    };
+
+    const handleBadgesSave = async () => {
+        setSavingBadges(true);
+        try {
+            const cleaned = badges.filter(b => b.url);
+            await updateSchoolProfileApi({ affiliation_badges: JSON.stringify(cleaned) });
+            setBadges(cleaned);
+            toast.success('Affiliation badges saved!');
+        } catch (e) {
+            toast.error('Failed to save badges');
+        } finally {
+            setSavingBadges(false);
+        }
+    };
+
     const themes = [
         { key: 'default', label: 'Rose Pink', desc: 'Warm & elegant', color: '#8b2252', gradient: 'linear-gradient(135deg,#8b2252,#c9687e)', shadow: 'rgba(139,34,82,0.35)' },
         { key: 'blue', label: 'Ocean Blue', desc: 'Professional & trustworthy', color: '#1e3a5f', gradient: 'linear-gradient(135deg,#1e3a5f,#2563eb)', shadow: 'rgba(37,99,235,0.35)' },
@@ -355,6 +446,8 @@ const AdminSettings = () => {
         { key: 'fonts', label: 'Fonts', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h7M17 12l3 6m0 0l-3-6m3 6h-6"/></svg> },
         { key: 'welcomeBanner', label: 'Welcome Banner', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg> },
         { key: 'footerBg', label: 'Footer Background', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 15l4-4a2 2 0 012.8 0L16 16m-3-3l1.6-1.6a2 2 0 012.8 0L20 14"/></svg> },
+        { key: 'bgMusic', label: 'Background Music', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg> },
+        { key: 'affiliationBadges', label: 'Affiliation Badges', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8.5 13.5L7 21l5-2.5L17 21l-1.5-7.5"/></svg> },
     ];
 
     if (loading) {
@@ -996,10 +1089,188 @@ const AdminSettings = () => {
                                 ) : (
                                     <div style={{ marginTop: '14px', padding: '10px 12px', background: '#fefce8', borderRadius: '8px', border: '0.5px solid #fde68a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         <svg width="14" height="14" fill="none" stroke="#a16207" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-                                        <p style={{ fontSize: '12px', color: '#a16207', fontWeight: 500 }}>No background set — footer stays a plain solid color</p>
+                        <p style={{ fontSize: '12px', color: '#a16207', fontWeight: 500 }}>No background set — footer stays a plain solid color</p>
                                     </div>
                                 )}
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Background Music Tab — school picks from a small curated preset (no upload) to avoid copyright issues ── */}
+                {activeTab === 'bgMusic' && (
+                    <div className="settings-section" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                            <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                    <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Background Music</p>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional — plays softly on your homepage. Pick from a curated royalty-free set (no custom upload) so there's no copyright risk.</p>
+                                </div>
+                            </div>
+                            <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                                {/* Enable/disable */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: musicData.bg_music_enabled ? '#f0fdf4' : '#f8fafc', border: `1px solid ${musicData.bg_music_enabled ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '8px' }}>
+                                    <div>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>Play Background Music</p>
+                                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>Starts muted for visitors — they tap a speaker icon to turn it on</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleMusicToggle}
+                                        disabled={togglingMusic || (!musicData.bg_music_track && !musicData.bg_music_enabled)}
+                                        title={!musicData.bg_music_track && !musicData.bg_music_enabled ? 'Select a track first' : ''}
+                                        style={{
+                                            width: '42px', height: '23px', borderRadius: '999px', border: 'none',
+                                            cursor: togglingMusic ? 'wait' : 'pointer',
+                                            background: musicData.bg_music_enabled ? tc.primary : '#e2e8f0',
+                                            position: 'relative', transition: 'background 0.2s', flexShrink: 0, padding: 0,
+                                            opacity: (!musicData.bg_music_track && !musicData.bg_music_enabled) ? 0.5 : 1,
+                                        }}>
+                                        <span style={{
+                                            position: 'absolute', top: '2.5px', left: musicData.bg_music_enabled ? '21px' : '3px',
+                                            width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                                            transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                                        }} />
+                                    </button>
+                                </div>
+
+                                {/* Track picker */}
+                                <div>
+                                    <label style={labelStyle}>Choose a Track</label>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                        {MUSIC_TRACKS.map(track => {
+                                            const selected = musicData.bg_music_track === track.key;
+                                            return (
+                                                <div key={track.key}
+                                                    onClick={() => !selectingTrack && handleMusicTrackSelect(track.key)}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+                                                        border: `1.5px solid ${selected ? tc.primary : '#e2e8f0'}`,
+                                                        background: selected ? hexToRgba(tc.primary, 0.06) : '#fff',
+                                                        borderRadius: '8px', cursor: selectingTrack ? 'wait' : 'pointer', transition: 'all 0.15s',
+                                                    }}>
+                                                    <div style={{
+                                                        width: '18px', height: '18px', borderRadius: '50%', flexShrink: 0,
+                                                        border: `2px solid ${selected ? tc.primary : '#cbd5e1'}`,
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    }}>
+                                                        {selected && <div style={{ width: '9px', height: '9px', borderRadius: '50%', background: tc.primary }} />}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{track.label}</p>
+                                                        <p style={{ fontSize: '11px', color: '#94a3b8' }}>{track.description}</p>
+                                                    </div>
+                                                    <audio
+                                                        src={track.url} controls preload="none"
+                                                        onClick={e => e.stopPropagation()}
+                                                        style={{ height: '30px', maxWidth: '160px' }}
+                                                    />
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '10px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                        <InfoIcon /> All tracks are royalty-free — safe to use without any copyright concerns.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                            <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg,#064e3b,#059669)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(5,150,105,0.3)' }}>
+                                    <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Status</p>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>How this looks to visitors on your homepage</p>
+                                </div>
+                            </div>
+                            <div style={{ padding: '1.5rem 1.75rem' }}>
+                                <div style={{ padding: '2.5rem 1.5rem', textAlign: 'center', border: '1.5px dashed #e2e8f0', borderRadius: '12px', background: '#fafafa' }}>
+                                    <div style={{ width: '48px', height: '48px', margin: '0 auto 12px', borderRadius: '50%', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5L6 9H2v6h4l5 4V5z"/><path strokeLinecap="round" strokeLinejoin="round" d="M23 9l-6 6m0-6l6 6"/></svg>
+                                    </div>
+                                    <p style={{ fontSize: '13px', color: '#64748b' }}>A floating speaker icon appears bottom-right on your homepage. Visitors tap it to play/mute — nothing plays automatically with sound.</p>
+                                </div>
+                                <div style={{ marginTop: '14px', padding: '10px 12px', background: musicData.bg_music_enabled ? '#f0fdf4' : '#fefce8', borderRadius: '8px', border: `0.5px solid ${musicData.bg_music_enabled ? '#bbf7d0' : '#fde68a'}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    {musicData.bg_music_enabled ? (
+                                        <>
+                                            <svg width="14" height="14" fill="none" stroke="#15803d" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                            <p style={{ fontSize: '12px', color: '#15803d', fontWeight: 500 }}>Live — {MUSIC_TRACKS.find(t => t.key === musicData.bg_music_track)?.label || 'a track'} is playable on your homepage ✓</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg width="14" height="14" fill="none" stroke="#a16207" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                            <p style={{ fontSize: '12px', color: '#a16207', fontWeight: 500 }}>Disabled — not shown on your website</p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Affiliation Badges Tab — board/accreditation logos (e.g. CBSE, Cambridge) shown top-right of the navbar ── */}
+                {activeTab === 'affiliationBadges' && (
+                    <div className="settings-section" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8.5 13.5L7 21l5-2.5L17 21l-1.5-7.5"/></svg>
+                            </div>
+                            <div>
+                                <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Affiliation Badges</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional — up to {MAX_AFFILIATION_BADGES} board/accreditation logos (e.g. CBSE, Cambridge Assessment) shown top-right of your navbar, next to the menu</p>
+                            </div>
+                        </div>
+                        <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                            {badges.length === 0 && (
+                                <div style={{ padding: '2rem', textAlign: 'center', border: '1.5px dashed #e2e8f0', borderRadius: '12px', background: '#fafafa' }}>
+                                    <p style={{ fontSize: '13px', color: '#94a3b8' }}>No badges added yet</p>
+                                </div>
+                            )}
+
+                            {badges.map((badge, idx) => (
+                                <div key={badge.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', border: '1px solid #f1f5f9', borderRadius: '10px' }}>
+                                    <div onClick={() => document.getElementById(`badge-upload-${badge.id}`).click()}
+                                        style={{ width: '64px', height: '64px', flexShrink: 0, borderRadius: '10px', border: badge.url ? '1px solid #e2e8f0' : '1.5px dashed #cbd5e1', background: badge.url ? '#fff' : '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                                        {uploadingBadge === badge.id ? (
+                                            <div style={{ width: '18px', height: '18px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                        ) : badge.url ? (
+                                            <img src={badge.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                        ) : (
+                                            <span style={{ fontSize: '10px', color: '#94a3b8', textAlign: 'center' }}>Upload</span>
+                                        )}
+                                    </div>
+                                    <input id={`badge-upload-${badge.id}`} type="file" accept="image/png,image/jpg,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }}
+                                        onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) uploadBadgeImage(badge.id, f); }} />
+                                    <div style={{ flex: 1 }}>
+                                        <input type="text" value={badge.label} onChange={e => updateBadge(badge.id, 'label', e.target.value)}
+                                            placeholder="Enter Label (e.g. CBSE Affiliated)" style={inputStyle} />
+                                    </div>
+                                    <button type="button" onClick={() => removeBadge(badge.id)}
+                                        style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px', flexShrink: 0 }}>×</button>
+                                </div>
+                            ))}
+
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button type="button" onClick={addBadgeSlot} disabled={badges.length >= MAX_AFFILIATION_BADGES}
+                                    style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: badges.length >= MAX_AFFILIATION_BADGES ? '#cbd5e1' : tc.primary, cursor: badges.length >= MAX_AFFILIATION_BADGES ? 'not-allowed' : 'pointer' }}>
+                                    + Add Badge
+                                </button>
+                                <button onClick={handleBadgesSave} disabled={savingBadges}
+                                    style={{ padding: '11px 20px', background: savingBadges ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: savingBadges ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                    {savingBadges ? 'Saving...' : 'Save Badges'}
+                                </button>
+                            </div>
+                            <p style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <InfoIcon /> Badges without an uploaded image are ignored on save. Small square/landscape logos with a transparent background work best.
+                            </p>
                         </div>
                     </div>
                 )}

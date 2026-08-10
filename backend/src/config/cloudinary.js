@@ -29,13 +29,23 @@ const contentImageStorage = new CloudinaryStorage({
     },
 });
 
-// PDF upload
+// PDF upload — NOTE: this Cloudinary account has the "Restricted media types"
+// security default ON, which blocks public *delivery* of PDF/ZIP files entirely
+// (visitors get a 401 "deny or ACL failure" placeholder instead of the real file,
+// which is why downloads were coming through empty/wrong-format rather than a
+// real PDF). This is an account-level Cloudinary setting, not something fixable
+// from upload code — resource_type (raw vs image) and URL flags like
+// fl_attachment were both tested and neither bypasses it. Fix: in the Cloudinary
+// dashboard, Settings -> Security -> disable "Restricted media types" (or enable
+// "Allow delivery of PDF and ZIP files"). The public_id below is still forced to
+// end in ".pdf" so filenames are clean once delivery is unblocked.
 const pdfStorage = new CloudinaryStorage({
     cloudinary,
     params: {
         folder: 'school-saas/documents',
         resource_type: 'raw',
         allowed_formats: ['pdf'],
+        public_id: (req, file) => `${Date.now()}-${file.originalname.replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`,
     },
 });
 

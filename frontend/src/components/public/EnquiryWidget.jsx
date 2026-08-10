@@ -4,9 +4,9 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { submitEnquiryApi } from "../../api/enquiry.api";
 import { uploadPdfApi } from "../../api/content.api";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
+import AdmissionEnquiryForm from "./AdmissionEnquiryForm";
 import toast from "react-hot-toast";
 
-const GENDER_OPTIONS = ["Male", "Female", "Other"];
 const AUTO_POPUP_DELAY_MS = 4000;
 
 const inputStyleBase = {
@@ -75,17 +75,16 @@ const ModalShell = ({ open, onClose, bc, title, submitted, successTitle, success
     );
 };
 
-const emptyAdmissionForm = { name: '', studentName: '', classApplying: '', gender: '', phone: '', email: '', address: '', message: '' };
-
 // ── Admission Enquiry modal — opens on floating tab click, on the "Admission
 // Enquiry" CTA elsewhere on the site (via the 'open-admission-enquiry' window
-// event, see SchoolWebsite.jsx), and once automatically per browser session. ──
-const AdmissionEnquiryModal = ({ school, tc, bc }) => {
+// event, see SchoolWebsite.jsx), and once automatically per browser session.
+// The auto-popup is skipped on the Admission Procedure page (suppressAutoPopup) —
+// that page already embeds this exact form inline, so popping this modal on top
+// of it would just be a redundant duplicate of what's already on the page.
+// Renders the same shared <AdmissionEnquiryForm/> used on that page, so the
+// fields are always identical no matter where a visitor fills the form. ──
+const AdmissionEnquiryModal = ({ school, tc, bc, suppressAutoPopup = false }) => {
     const [open, setOpen] = useState(false);
-    const [form, setForm] = useState(emptyAdmissionForm);
-    const [errors, setErrors] = useState({});
-    const [submitting, setSubmitting] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
         const handler = () => setOpen(true);
@@ -94,6 +93,7 @@ const AdmissionEnquiryModal = ({ school, tc, bc }) => {
     }, []);
 
     useEffect(() => {
+        if (suppressAutoPopup) return;
         if (!school || !isModuleEnabled(school, 'admission')) return;
         const key = `enquiryModalShown_${school.id}`;
         if (sessionStorage.getItem(key)) return;
@@ -102,114 +102,13 @@ const AdmissionEnquiryModal = ({ school, tc, bc }) => {
             sessionStorage.setItem(key, '1');
         }, AUTO_POPUP_DELAY_MS);
         return () => clearTimeout(t);
-    }, [school]);
+    }, [school, suppressAutoPopup]);
 
     if (!isModuleEnabled(school, 'admission')) return null;
 
-    const update = (field, value) => {
-        setForm(prev => ({ ...prev, [field]: value }));
-        if (value.trim()) setErrors(prev => ({ ...prev, [field]: false }));
-    };
-    const resetAndClose = () => { setSubmitted(false); setForm(emptyAdmissionForm); setErrors({}); setOpen(false); };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const newErrors = {};
-        if (!form.name.trim()) newErrors.name = true;
-        if (!form.phone.trim()) newErrors.phone = true;
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            toast.error('Please fill in all required fields');
-            return;
-        }
-        setSubmitting(true);
-        try {
-            await submitEnquiryApi(school.id, {
-                type: 'admission',
-                name: form.name.trim(),
-                phone: form.phone.trim(),
-                email: form.email.trim() || undefined,
-                message: form.message.trim() || undefined,
-                extra: {
-                    studentName: form.studentName.trim(),
-                    classApplying: form.classApplying.trim(),
-                    gender: form.gender,
-                    address: form.address.trim(),
-                },
-            });
-            setSubmitted(true);
-        } catch (e) {
-            toast.error('Failed to submit. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
-    };
-
     return (
-        <ModalShell open={open} onClose={() => setOpen(false)} tc={tc} bc={bc}
-            title="Enquire Form"
-            submitted={submitted} successTitle="Enquiry Submitted!"
-            successMessage="Thank you for reaching out. Our admissions team will get in touch with you shortly."
-            onResetAndClose={resetAndClose}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div>
-                    <label style={labelStyle}>Name Of the Child</label>
-                    <input className="enq-widget-input" type="text" value={form.studentName} onChange={e => update('studentName', e.target.value)} placeholder="Enter student's name" style={inputStyleBase} />
-                </div>
-
-                <div className="enq-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                        <label style={labelStyle}>Class Applying For</label>
-                        <input className="enq-widget-input" type="text" value={form.classApplying} onChange={e => update('classApplying', e.target.value)} placeholder="e.g. Nursery, Class 3" style={inputStyleBase} />
-                    </div>
-                    <div>
-                        <label style={labelStyle}>Gender</label>
-                        <div style={{ display: 'flex', gap: '12px', height: '35px', alignItems: 'center' }}>
-                            {GENDER_OPTIONS.map(g => (
-                                <label key={g} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px', color: '#334155', cursor: 'pointer' }}>
-                                    <input type="radio" name="admission-gender" value={g} checked={form.gender === g} onChange={() => update('gender', g)}
-                                        style={{ width: '14px', height: '14px', accentColor: tc.primary, cursor: 'pointer' }} />
-                                    {g}
-                                </label>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="enq-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                        <label style={labelStyle}>Parent Name<Required /></label>
-                        <input className="enq-widget-input" type="text" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Enter your full name" style={{ ...inputStyleBase, ...(errors.name ? errorInputStyle : {}) }} required />
-                        <FieldError show={errors.name} />
-                    </div>
-                    <div>
-                        <label style={labelStyle}>Parent Phone Number<Required /></label>
-                        <input className="enq-widget-input" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="Enter phone number" style={{ ...inputStyleBase, ...(errors.phone ? errorInputStyle : {}) }} required />
-                        <FieldError show={errors.phone} />
-                    </div>
-                </div>
-
-                <div className="enq-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                        <label style={labelStyle}>Parent Email Address</label>
-                        <input className="enq-widget-input" type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="Enter email address" style={inputStyleBase} />
-                    </div>
-                    <div>
-                        <label style={labelStyle}>Address</label>
-                        <input className="enq-widget-input" type="text" value={form.address} onChange={e => update('address', e.target.value)} placeholder="Enter your address" style={inputStyleBase} />
-                    </div>
-                </div>
-
-                <div>
-                    <label style={labelStyle}>Message</label>
-                    <textarea className="enq-widget-input" value={form.message} onChange={e => update('message', e.target.value)} placeholder="Any questions or additional details..." rows={2} style={{ ...inputStyleBase, resize: 'vertical', fontFamily: 'inherit' }} />
-                </div>
-
-                <button type="submit" disabled={submitting} className="enq-widget-submit"
-                    style={{ marginTop: '4px', alignSelf: 'flex-start', padding: '11px 28px', background: tc.primary, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', transition: 'filter 0.2s ease' }}>
-                    {submitting ? 'Submitting...' : 'Send Message'}
-                </button>
-            </form>
+        <ModalShell open={open} onClose={() => setOpen(false)} tc={tc} bc={bc} title="Enquire Form" submitted={false}>
+            <AdmissionEnquiryForm school={school} tc={tc} dense />
         </ModalShell>
     );
 };
@@ -364,6 +263,7 @@ const EnquiryWidget = () => {
     const bc = getBaseColors(school.base_theme);
     const admissionOn = isModuleEnabled(school, 'admission');
     const careerOn = isModuleEnabled(school, 'career');
+    const onAdmissionProcedurePage = location.pathname.endsWith('/admission-procedure');
 
     return (
         <>
@@ -412,7 +312,7 @@ const EnquiryWidget = () => {
                 </button>
             )}
 
-            <AdmissionEnquiryModal school={school} tc={tc} bc={bc} />
+            <AdmissionEnquiryModal school={school} tc={tc} bc={bc} suppressAutoPopup={onAdmissionProcedurePage} />
             <CareerEnquiryModal school={school} tc={tc} bc={bc} />
         </>
     );

@@ -97,15 +97,19 @@ export const NAVBAR_ITEMS = [
             { key: 'faculty',        label: 'Faculty',        path: (slug) => `/school/${slug}/faculty` },
             { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure`, dynamicSubItems: 'infrastructure' },
             { key: 'alumni',         label: 'Our Proud Alumni',         path: (slug) => `/school/${slug}/alumni` },
+            { key: 'testimonials',   label: 'Testimonials',   path: (slug) => `/school/${slug}/testimonials` },
         ],
     },
     {
         label: 'Academics',
         links: [
-            { key: 'courses',      label: 'Courses',        path: (slug) => `/school/${slug}/courses`, subItems: COURSE_LEVELS, dynamicSubItems: 'courses' },
-            { key: 'fee',          label: 'Fee Structure',  path: (slug) => `/school/${slug}/fee` },
-            { key: 'tc',           label: 'TC Information', path: (slug) => `/school/${slug}/tc` },
-            { key: 'achievements', label: 'Achievements',   path: (slug) => `/school/${slug}/achievements` },
+            { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses`, subItems: COURSE_LEVELS, dynamicSubItems: 'courses' },
+            { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
+            { key: 'tc',                 label: 'TC Information',       path: (slug) => `/school/${slug}/tc` },
+            { key: 'achievements',       label: 'Achievements',         path: (slug) => `/school/${slug}/achievements` },
+            { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
+            { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
+            { key: 'disclosure',         label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {
@@ -133,7 +137,6 @@ export const NAVBAR_ITEMS = [
             { key: 'circulars',     label: 'Circulars',           path: (slug) => `/school/${slug}/circulars` },
         ],
     },
-    DISCLOSURE_LINK,
 ];
 
 // ── Footer nav — same links, grouped by heading for the footer columns ──
@@ -147,15 +150,18 @@ export const FOOTER_NAV_GROUPS = [
             { key: 'faculty',        label: 'Faculty',         path: (slug) => `/school/${slug}/faculty` },
             { key: 'infrastructure', label: 'Infrastructure',  path: (slug) => `/school/${slug}/infrastructure` },
             { key: 'alumni',         label: 'Alumni',          path: (slug) => `/school/${slug}/alumni` },
+            { key: 'testimonials',   label: 'Testimonials',    path: (slug) => `/school/${slug}/testimonials` },
             { key: 'tc',             label: 'TC Information',  path: (slug) => `/school/${slug}/tc` },
         ],
     },
     {
         heading: 'Academics',
         links: [
-            { key: 'courses',     label: 'Courses',           path: (slug) => `/school/${slug}/courses` },
-            { key: 'fee',         label: 'Fee Structure',     path: (slug) => `/school/${slug}/fee` },
-            { key: 'disclosure',  label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
+            { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses` },
+            { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
+            { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
+            { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
+            { key: 'disclosure',         label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {
