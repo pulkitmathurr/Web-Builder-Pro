@@ -7,7 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import AdmissionEnquiryForm from "../../components/public/AdmissionEnquiryForm";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
-import { getFontFamily } from "../../constants/fonts";
+import { getFontFamily, getHeadingSizeCss } from "../../constants/fonts";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -49,6 +49,38 @@ const PinIcon = ({ color }) => (
 );
 const DocIcon = ({ color }) => (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" /><path d="M14 2v6h6" /></svg>
+);
+
+// ── One "Explain Your Admission Procedure" block — a large ghost numeral marks each
+// section editorially (Stripe/Linear-style), heading picks up its own color/font/size,
+// description renders through the same RTE pipeline as everywhere else. ──
+const ProcedureBlock = ({ block, idx, isLast, tc }) => (
+    <Reveal delay={Math.min(idx * 0.08, 0.4)}>
+        <div style={{ position: 'relative', padding: idx === 0 ? '0 0 2.25rem' : '2.25rem 0', borderBottom: isLast ? 'none' : '1px solid #eef1f6' }}>
+            <div style={{ position: 'absolute', top: idx === 0 ? '-8px' : '14px', left: 0, fontSize: 'clamp(46px,6.5vw,78px)', fontWeight: 800, color: tc.light, lineHeight: 1, userSelect: 'none', zIndex: 0 }}>
+                {String(idx + 1).padStart(2, '0')}
+            </div>
+            <div style={{ position: 'relative', zIndex: 1, paddingLeft: 'clamp(58px,8.5vw,104px)' }}>
+                {block.heading && (
+                    <h3 style={{
+                        fontFamily: block.headingFont ? getFontFamily(block.headingFont) : "'Playfair Display', Georgia, serif",
+                        fontSize: getHeadingSizeCss(block.headingSize),
+                        fontWeight: 700,
+                        color: block.headingColor || tc.dark,
+                        fontStyle: block.headingItalic ? 'italic' : 'normal',
+                        marginBottom: '10px',
+                        letterSpacing: '-0.3px',
+                    }}>
+                        {block.heading}
+                    </h3>
+                )}
+                {block.description && (
+                    <div className="rte-content" style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85 }}
+                        dangerouslySetInnerHTML={{ __html: block.description }} />
+                )}
+            </div>
+        </div>
+    </Reveal>
 );
 
 // ── One "Ways to Reach Us" row — icon chip + label, optionally a clickable link ──
@@ -114,6 +146,7 @@ const AdmissionProcedurePublic = () => {
     if (!content) return <NotPublished tc={tc} slug={slug} label="Admission Procedure" />;
 
     const formUrl = content.formPdfUrl || content.formLinkUrl;
+    const visibleBlocks = (content.procedureBlocks || []).filter(b => b.heading || b.description);
 
     return (
         <>
@@ -158,6 +191,23 @@ const AdmissionProcedurePublic = () => {
                         <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
                 </div>
+
+                {/* ── Admission Procedure Explained — admin-authored, repeatable heading + description blocks ── */}
+                {visibleBlocks.length > 0 && (
+                    <div style={{ padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.5rem', background: bc.surface }}>
+                        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+                            <Reveal>
+                                <div style={{ textAlign: 'center', marginBottom: '2.75rem' }}>
+                                    <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>How It Works</p>
+                                    <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(26px,3vw,36px)', fontWeight: 800, color: tc.dark, letterSpacing: '-1px' }}>Admission Process</h2>
+                                </div>
+                            </Reveal>
+                            {visibleBlocks.map((block, idx) => (
+                                <ProcedureBlock key={block.id || idx} block={block} idx={idx} isLast={idx === visibleBlocks.length - 1} tc={tc} />
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Get in touch — contact info + map (left) and inline admission form (right) ── */}
                 <div style={{ padding: '4rem clamp(1.25rem,6vw,3rem) 7rem' }}>

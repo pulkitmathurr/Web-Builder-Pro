@@ -6,6 +6,7 @@ import {
   uploadContentImageApi,
 } from "../../../api/content.api";
 import RichTextEditor from "../../../components/common/RichTextEditor";
+import ModuleActionButtons from "../../../components/admin/ModuleActionButtons";
 import ImageCropModal from "../../../components/common/ImageCropModal";
 import ItalicToggle from "../../../components/common/ItalicToggle";
 import HeadingStyleField from "../../../components/common/HeadingStyleField";
@@ -335,57 +336,16 @@ const Infrastructure = () => {
               </div>
             </div>
             <div className="infra-hero-item infra-hero-actions" style={{ display: "flex", justifyContent: 'flex-end', gap: "8px" }}>
-                <button
-                  onClick={() => handleSave(false)}
-                  disabled={saving}
-                  style={{
-                    padding: "7px 14px",
-                    background: isDirty ? "rgba(250,204,21,0.15)" : "rgba(255,255,255,0.08)",
-                    color: isDirty ? "#fde047" : "rgba(255,255,255,0.65)",
-                    border: isDirty ? "1px solid rgba(250,204,21,0.35)" : "1px solid rgba(255,255,255,0.15)",
-                    borderRadius: "6px",
-                    fontSize: "12px",
-                    fontWeight: isDirty ? 700 : 500,
-                    cursor: "pointer",
-                  }}
-                >
-                  {saving ? "Saving..." : isDirty ? "● Save" : "Save"}
-                </button>
-                {isPublished ? (
-                  <button
-                    onClick={handleUnpublish}
-                    style={{
-                      padding: "7px 14px",
-                      background: "rgba(239,68,68,0.15)",
-                      color: "#fca5a5",
-                      border: "1px solid rgba(239,68,68,0.3)",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Unpublish
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleSave(true)}
-                    disabled={publishing}
-                    style={{
-                      padding: "7px 16px",
-                      background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}`,
-                    }}
-                  >
-                    {publishing ? "Publishing..." : "Publish"}
-                  </button>
-                )}
+                <ModuleActionButtons
+                  tc={tc}
+                  saving={saving}
+                  publishing={publishing}
+                  isPublished={isPublished}
+                  isDirty={isDirty}
+                  onSave={() => handleSave(false)}
+                  onPublish={() => handleSave(true)}
+                  onUnpublish={handleUnpublish}
+                />
               </div>
             </div>
           </div>

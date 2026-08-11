@@ -21,3 +21,20 @@ export const GOOGLE_FONTS_URL =
 
 export const getFontFamily = (key) =>
     FONT_OPTIONS.find((f) => f.key === key)?.family || FONT_OPTIONS[0].family;
+
+// ── Optional size scale for HeadingStyleField — a small, restyleable heading (not the
+// page's main H1) picks one of these instead of a raw px value, so public pages stay
+// responsive via clamp() rather than a fixed size breaking on mobile. ──
+export const HEADING_SIZE_OPTIONS = [
+    { key: 'small', label: 'Small' },
+    { key: '', label: 'Default' },
+    { key: 'large', label: 'Large' },
+    { key: 'xlarge', label: 'Extra Large' },
+];
+
+export const getHeadingSizeCss = (key) => ({
+    small: 'clamp(17px, 2vw, 20px)',
+    '': 'clamp(21px, 2.6vw, 27px)',
+    large: 'clamp(25px, 3vw, 32px)',
+    xlarge: 'clamp(29px, 3.6vw, 40px)',
+}[key || ''] || 'clamp(21px, 2.6vw, 27px)');

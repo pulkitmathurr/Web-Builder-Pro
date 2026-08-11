@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi, uploadPdfApi } from '../../../api/content.api';
+import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
@@ -401,21 +402,16 @@ const Sports = () => {
                             </div>
                         </div>
                         <div className="sports-hero-item sports-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button onClick={() => handleSave(false)} disabled={saving}
-                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
-                            </button>
-                            {isPublished ? (
-                                <button onClick={handleUnpublish}
-                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                    Unpublish
-                                </button>
-                            ) : (
-                                <button onClick={() => handleSave(true)} disabled={publishing}
-                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                    {publishing ? 'Publishing...' : 'Publish'}
-                                </button>
-                            )}
+                            <ModuleActionButtons
+                                tc={tc}
+                                saving={saving}
+                                publishing={publishing}
+                                isPublished={isPublished}
+                                isDirty={isDirty}
+                                onSave={() => handleSave(false)}
+                                onPublish={() => handleSave(true)}
+                                onUnpublish={handleUnpublish}
+                            />
                         </div>
                     </div>
                 </div>
@@ -861,11 +857,19 @@ const YearlyAwardRow = ({ yearItem, onUpdate, onRemove, uploading, onUploadStart
     return (
         <div className="sports-award-row" style={{ display: 'grid', gridTemplateColumns: '160px 1fr 100px', gap: '10px', alignItems: 'center', padding: '10px 0', borderBottom: '0.5px solid #f8fafc' }}>
             <input className="sports-input" type="text" value={yearItem.year} onChange={e => onUpdate('year', e.target.value)} placeholder="Enter Year" style={inputStyle} />
-            <div onClick={() => document.getElementById(`pdf-${yearItem.id}`).click()}
-                style={{ padding: '9px 12px', border: '1px dashed #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: yearItem.pdfUrl ? '#15803d' : '#64748b', background: yearItem.pdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
-                {uploading ? 'Uploading...' : yearItem.pdfUrl ? '✓ PDF uploaded — click to change' : '📄 Click to upload PDF'}
+            <div>
+                <div onClick={() => document.getElementById(`pdf-${yearItem.id}`).click()}
+                    style={{ padding: '9px 12px', border: '1px dashed #e2e8f0', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', color: yearItem.pdfUrl ? '#15803d' : '#64748b', background: yearItem.pdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
+                    {uploading ? 'Uploading...' : yearItem.pdfUrl ? '✓ PDF uploaded — click to change' : '📄 Click to upload PDF'}
+                </div>
+                <input id={`pdf-${yearItem.id}`} type="file" accept="application/pdf" onChange={e => { const f = e.target.files[0]; if (f) handlePdfUpload(f); }} style={{ display: 'none' }} />
+                {yearItem.pdfUrl && !uploading && (
+                    <button type="button" onClick={() => onUpdate('pdfUrl', '')}
+                        style={{ marginTop: '4px', fontSize: '11px', fontWeight: 600, color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+                        Remove PDF
+                    </button>
+                )}
             </div>
-            <input id={`pdf-${yearItem.id}`} type="file" accept="application/pdf" onChange={e => { const f = e.target.files[0]; if (f) handlePdfUpload(f); }} style={{ display: 'none' }} />
             <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: 'pointer', fontSize: '12px', padding: '9px' }}>Remove</button>
         </div>
     );

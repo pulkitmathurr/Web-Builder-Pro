@@ -25,6 +25,19 @@ const TEACHES_AT_LABELS = {
     general: 'General (All Levels)',
 };
 
+// Mirrors the `@media (max-width: 640px)` breakpoint used below for the ticker's
+// mobile card sizing, so the scroll-vs-wrap threshold matches how many cards
+// actually fit per row at each width.
+const useIsMobile = (breakpoint = 640) => {
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= breakpoint);
+    useEffect(() => {
+        const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [breakpoint]);
+    return isMobile;
+};
+
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -47,14 +60,17 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-// ── Single level section. Levels with more than 5 members become a continuously
-// auto-scrolling ticker row (same tickerScroll marquee used by About Us's "What
-// Drives Us" cards, list duplicated for a seamless loop), sized so ~5 cards sit
-// in view on desktop and ~3 on mobile (see .faculty-ticker-card below). 5 or
-// fewer members already fit on screen, so they render as a static centered row
-// with no animation instead. ──
+// ── Single level section. Levels with more members than fit in one row become a
+// continuously auto-scrolling ticker row (same tickerScroll marquee used by About
+// Us's "What Drives Us" cards, list duplicated for a seamless loop) — ~5 cards sit
+// in view on desktop, ~3 on mobile (see .faculty-ticker-card below), and the
+// scroll-vs-wrap threshold (`shouldScroll`) matches that per useIsMobile so a 4th
+// mobile card animates in from the right instead of wrapping to a second line.
+// Levels within the fit-on-screen count render as a static centered row with no
+// animation instead. ──
 const LevelSection = ({ levelKey, members, tc, bc }) => {
-    const shouldScroll = members.length > 5;
+    const isMobile = useIsMobile(640);
+    const shouldScroll = members.length > (isMobile ? 3 : 5);
     const track = shouldScroll ? [...members, ...members] : members;
     return (
         <div style={{ padding: '3.5rem 0', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>

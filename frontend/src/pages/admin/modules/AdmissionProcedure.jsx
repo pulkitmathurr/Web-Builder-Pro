@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadPdfApi } from '../../../api/content.api';
+import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import ImageSizeHint from '../../../components/admin/ImageSizeHint';
+import ReorderButtons from '../../../components/common/ReorderButtons';
+import { moveItem } from '../../../utils/reorder';
 import useSchoolStore from '../../../store/schoolStore';
 import toast from 'react-hot-toast';
 
@@ -13,7 +16,7 @@ const hexToRgba = (hex, alpha) => {
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 };
 
-const defaultContent = { heading: '', description: '', formPdfUrl: '', formLinkUrl: '' };
+const defaultContent = { heading: '', description: '', formPdfUrl: '', formLinkUrl: '', procedureBlocks: [] };
 
 const AdmissionProcedure = () => {
     const { tc, bc } = useSchoolStore();
@@ -93,6 +96,16 @@ const AdmissionProcedure = () => {
         finally { setUploadingForm(false); }
     };
 
+    const addProcedureBlock = () => updateField('procedureBlocks', [...content.procedureBlocks, {
+        id: `pb-${Date.now()}`, heading: '', headingItalic: false, headingColor: '', headingFont: '', headingSize: '', description: '',
+    }]);
+    const updateProcedureBlock = (idx, field, value) => {
+        const updated = [...content.procedureBlocks];
+        updated[idx] = { ...updated[idx], [field]: value };
+        updateField('procedureBlocks', updated);
+    };
+    const removeProcedureBlock = (idx) => updateField('procedureBlocks', content.procedureBlocks.filter((_, i) => i !== idx));
+
     const inputStyle = {
         width: '100%', padding: '11px 14px', border: '1px solid #e5e9f0',
         borderRadius: '10px', fontSize: '13.5px', color: '#0f172a', outline: 'none',
@@ -135,6 +148,12 @@ const AdmissionProcedure = () => {
                 .ap-section-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, ${tc.primary}, ${tc.secondary}); margin-right: 8px; }
                 .ap-pdf { transition: border-color 0.2s ease, transform 0.2s ease; }
                 .ap-pdf:hover { transform: translateY(-1px); }
+                .ap-block { transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease; animation: fadeInUp 0.3s ease forwards; }
+                .ap-block:hover { border-color: ${hexToRgba(tc.primary, 0.3)} !important; box-shadow: 0 6px 20px rgba(15,23,42,0.06); }
+                .ap-block-num { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+                .ap-block:hover .ap-block-num { transform: scale(1.08) rotate(-4deg); }
+                .ap-add-block:hover { border-color: ${tc.primary} !important; background: ${tc.light} !important; transform: translateY(-1px); }
+                .ap-add-block { transition: all 0.2s ease; }
             `}</style>
 
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
@@ -148,7 +167,7 @@ const AdmissionProcedure = () => {
                                 <p className="ap-hero-eyebrow" style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '10px' }}>Admin / Pages / Admission Procedure</p>
                                 <h1 className="ap-hero-title" style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', marginBottom: '8px', letterSpacing: '-0.4px' }}>Admission Procedure</h1>
                                 <p className="ap-hero-desc" style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.45)', lineHeight: 1.6, maxWidth: '420px' }}>
-                                    A short intro and an admission form attachment for parents on your website's Admission Procedure page.
+                                    A short intro, an admission form attachment, and as many explainer sections as you need for parents on your website's Admission Procedure page.
                                 </p>
                             </div>
                             <div className="ap-status-badge" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}>
@@ -157,21 +176,16 @@ const AdmissionProcedure = () => {
                             </div>
                         </div>
                         <div className="ap-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            <button onClick={() => handleSave(false)} disabled={saving}
-                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
-                            </button>
-                            {isPublished ? (
-                                <button onClick={handleUnpublish}
-                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
-                                    Unpublish
-                                </button>
-                            ) : (
-                                <button onClick={() => handleSave(true)} disabled={publishing}
-                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                                    {publishing ? 'Publishing...' : 'Publish'}
-                                </button>
-                            )}
+                            <ModuleActionButtons
+                                tc={tc}
+                                saving={saving}
+                                publishing={publishing}
+                                isPublished={isPublished}
+                                isDirty={isDirty}
+                                onSave={() => handleSave(false)}
+                                onPublish={() => handleSave(true)}
+                                onUnpublish={handleUnpublish}
+                            />
                         </div>
                     </div>
                 </div>
@@ -210,6 +224,12 @@ const AdmissionProcedure = () => {
                                     <input type="file" accept="application/pdf" style={{ display: 'none' }}
                                         onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleFormUpload(f); }} />
                                 </label>
+                                {content.formPdfUrl && !uploadingForm && (
+                                    <button type="button" onClick={() => updateField('formPdfUrl', '')}
+                                        style={{ marginTop: '6px', fontSize: '11.5px', fontWeight: 600, color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+                                        Remove PDF
+                                    </button>
+                                )}
                                 <ImageSizeHint>Under 10MB. Parents download this directly to fill and submit.</ImageSizeHint>
                             </div>
                             <div>
@@ -217,6 +237,64 @@ const AdmissionProcedure = () => {
                                 <input className="ap-input" type="text" value={content.formLinkUrl || ''} onChange={e => updateField('formLinkUrl', e.target.value)} placeholder="https://..." style={inputStyle} />
                             </div>
                         </div>
+                    </div>
+
+                    {/* Explain the Admission Procedure — repeatable heading + description blocks */}
+                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div>
+                            <label style={labelStyle}><span className="ap-section-dot"></span>Explain Your Admission Procedure</label>
+                            <p style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '4px' }}>
+                                Add as many sections as you need — eligibility criteria, step-by-step process, documents required, fee timeline. Each gets its own heading and rich description, styled independently.
+                            </p>
+                        </div>
+
+                        {content.procedureBlocks.length === 0 ? (
+                            <div style={{ padding: '2.5rem', textAlign: 'center', border: '1.5px dashed #e2e8f0', borderRadius: '12px' }}>
+                                <p style={{ fontSize: '13px', color: '#94a3b8' }}>No sections yet — click "+ Add Section" to explain your admission procedure to parents.</p>
+                            </div>
+                        ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                {content.procedureBlocks.map((block, idx) => (
+                                    <div key={block.id} className="ap-block" style={{ background: '#fafbfc', border: '1px solid #eef1f6', borderRadius: '14px', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <div className="ap-block-num" style={{ width: '30px', height: '30px', borderRadius: '9px', background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`, color: '#fff', fontSize: '12.5px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 3px 10px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                                {String(idx + 1).padStart(2, '0')}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <ReorderButtons index={idx} length={content.procedureBlocks.length} onMove={(i, dir) => updateField('procedureBlocks', moveItem(content.procedureBlocks, i, dir))} vertical={false} />
+                                                <button type="button" onClick={() => removeProcedureBlock(idx)}
+                                                    style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px', flexShrink: 0 }}>×</button>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label style={labelStyle}>Heading</label>
+                                            <div style={{ display: 'flex', gap: '8px' }}>
+                                                <input className="ap-input" type="text" value={block.heading} onChange={e => updateProcedureBlock(idx, 'heading', e.target.value)}
+                                                    placeholder="Enter Heading (e.g. Eligibility Criteria)" style={{ ...inputStyle, fontStyle: block.headingItalic ? 'italic' : 'normal' }} />
+                                                <ItalicToggle active={!!block.headingItalic} onToggle={() => updateProcedureBlock(idx, 'headingItalic', !block.headingItalic)} />
+                                            </div>
+                                            <HeadingStyleField
+                                                color={block.headingColor} onColorChange={val => updateProcedureBlock(idx, 'headingColor', val)}
+                                                font={block.headingFont} onFontChange={val => updateProcedureBlock(idx, 'headingFont', val)}
+                                                size={block.headingSize} onSizeChange={val => updateProcedureBlock(idx, 'headingSize', val)}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label style={labelStyle}>Description</label>
+                                            <RichTextEditor value={block.description} onChange={val => updateProcedureBlock(idx, 'description', val)}
+                                                placeholder="Explain this part of the admission procedure..." minHeight="100px" fontSize="14px" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <button type="button" className="ap-add-block" onClick={addProcedureBlock}
+                            style={{ padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
+                            + Add Section
+                        </button>
                     </div>
                 </div>
             </div>

@@ -152,7 +152,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                     .navbar-hamburger { display: flex !important; }
                 }
                 @media (max-width: 1280px) {
-                    .navbar-badges img { height: 34px !important; }
+                    .navbar-badges img { height: 46px !important; }
                     .navbar-right { gap: 1rem !important; }
                 }
                 @media (max-width: 480px) {
@@ -160,9 +160,15 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                     .navbar-school-name { font-size: 14px !important; }
                     .navbar-inner { padding: 0 1.1rem !important; }
                 }
-                .mobile-drawer-row { transition: background 0.15s ease; }
-                .mobile-drawer-row:active { background: #f8fafc; }
-                @keyframes mobileDrawerIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+                .mobile-drawer-row { transition: background 0.18s ease, transform 0.15s ease; }
+                .mobile-drawer-row:active { transform: scale(0.98); }
+                @keyframes mobileDrawerIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes mobileRowIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+                .mobile-drawer-row-wrap { animation: mobileRowIn 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+                .mobile-submenu { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s cubic-bezier(0.16,1,0.3,1); }
+                .mobile-submenu.open { grid-template-rows: 1fr; }
+                .mobile-submenu > div { overflow: hidden; }
+                .mobile-chevron-btn { transition: background 0.2s ease, color 0.2s ease; }
             `}</style>
             <nav className="navbar-inner" style={{
                 position: 'fixed', top: `${topOffset}px`, left: 0, right: 0, zIndex: 1000,
@@ -283,7 +289,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                     <div className="navbar-badges" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '1.4rem', borderLeft: `1px solid ${navbarSolid ? '#e2e8f0' : 'rgba(255,255,255,0.25)'}`, flexShrink: 0, transition: 'border-color 0.3s' }}>
                         {affiliationBadges.map(badge => (
                             <img key={badge.id || badge.url} src={badge.url} alt={badge.label || ''} title={badge.label || ''}
-                                style={{ height: '44px', width: 'auto', maxWidth: '64px', objectFit: 'contain', flexShrink: 0 }} />
+                                style={{ height: '60px', width: 'auto', maxWidth: '84px', objectFit: 'contain', flexShrink: 0 }} />
                         ))}
                     </div>
                 )}
@@ -295,17 +301,20 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
             {mobileOpen && (
                 <div style={{
                     position: 'fixed', top: `${92 + topOffset}px`, left: 0, right: 0, bottom: 0, zIndex: 999,
-                    background: '#ffffff', overflowY: 'auto', animation: 'mobileDrawerIn 0.2s ease',
-                    padding: '0.5rem 0 2rem',
+                    background: `linear-gradient(180deg, ${tc.light} 0%, #ffffff 140px)`, overflowY: 'auto', animation: 'mobileDrawerIn 0.25s cubic-bezier(0.16,1,0.3,1)',
+                    padding: '0.75rem 0 2rem',
                 }}>
-                    {visibleNavItems.map(item => {
+                    {visibleNavItems.map((item, idx) => {
                         // Plain link
                         if (item.path && !item.links && !item.subItems) {
                             const isActive = activeKey === item.key;
                             return (
-                                <div key={item.key} onClick={() => go(item.path(slug))} className="mobile-drawer-row"
-                                    style={{ padding: '15px 1.5rem', fontSize: '14.5px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
-                                    {item.label}
+                                <div key={item.key} className="mobile-drawer-row-wrap" style={{ borderBottom: '1px solid #f1f5f9', animationDelay: `${idx * 0.04}s` }}>
+                                    <div onClick={() => go(item.path(slug))} className="mobile-drawer-row"
+                                        style={{ padding: '15px 1.5rem', position: 'relative', fontSize: '14.5px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', background: isActive ? tc.light : 'transparent', cursor: 'pointer' }}>
+                                        {isActive && <span style={{ position: 'absolute', left: 0, top: '22%', bottom: '22%', width: '3px', borderRadius: '0 3px 3px 0', background: `linear-gradient(180deg, ${tc.primary}, ${tc.secondary})` }} />}
+                                        {item.label}
+                                    </div>
                                 </div>
                             );
                         }
@@ -315,17 +324,19 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                             const isExpanded = mobileGroup === item.label;
                             const isActive = activeKey === item.key;
                             return (
-                                <div key={item.label} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                    <div className="mobile-drawer-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 1.5rem' }}>
+                                <div key={item.label} className="mobile-drawer-row-wrap" style={{ borderBottom: '1px solid #f1f5f9', animationDelay: `${idx * 0.04}s` }}>
+                                    <div className="mobile-drawer-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 1.5rem', position: 'relative', background: (isActive || isExpanded) ? tc.light : 'transparent' }}>
+                                        {(isActive || isExpanded) && <span style={{ position: 'absolute', left: 0, top: '22%', bottom: '22%', width: '3px', borderRadius: '0 3px 3px 0', background: `linear-gradient(180deg, ${tc.primary}, ${tc.secondary})` }} />}
                                         <span onClick={() => go(item.path(slug))} style={{ fontSize: '14.5px', fontWeight: 700, color: isActive ? tc.primary : '#0f172a', cursor: 'pointer' }}>
                                             {item.label}
                                         </span>
-                                        <span onClick={() => toggleMobileGroup(item.label)} style={{ padding: '6px', cursor: 'pointer', color: '#94a3b8' }}>
-                                            <ChevronDownSm color="#94a3b8" open={isExpanded} />
+                                        <span onClick={() => toggleMobileGroup(item.label)} className="mobile-chevron-btn"
+                                            style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: isExpanded ? '#ffffff' : 'transparent', color: isExpanded ? tc.primary : '#94a3b8' }}>
+                                            <ChevronDownSm color={isExpanded ? tc.primary : '#94a3b8'} open={isExpanded} />
                                         </span>
                                     </div>
-                                    {isExpanded && (
-                                        <div style={{ background: '#f8fafc', padding: '4px 0' }}>
+                                    <div className={`mobile-submenu${isExpanded ? ' open' : ''}`}>
+                                        <div style={{ background: tc.light, padding: '4px 0' }}>
                                             {item.subItems.map(sub => (
                                                 <div key={sub.label} onClick={() => go(sub.path(slug))} className="mobile-drawer-row"
                                                     style={{ padding: '12px 1.5rem 12px 2.5rem', fontSize: '13.5px', fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
@@ -333,7 +344,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                                                 </div>
                                             ))}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             );
                         }
@@ -342,14 +353,17 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                         const isExpanded = mobileGroup === item.label;
                         const groupHasActive = item.links.some(l => l.key === activeKey);
                         return (
-                            <div key={item.label} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <div key={item.label} className="mobile-drawer-row-wrap" style={{ borderBottom: '1px solid #f1f5f9', animationDelay: `${idx * 0.04}s` }}>
                                 <div onClick={() => toggleMobileGroup(item.label)} className="mobile-drawer-row"
-                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 1.5rem', cursor: 'pointer' }}>
+                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '15px 1.5rem', position: 'relative', cursor: 'pointer', background: (groupHasActive || isExpanded) ? tc.light : 'transparent' }}>
+                                    {(groupHasActive || isExpanded) && <span style={{ position: 'absolute', left: 0, top: '22%', bottom: '22%', width: '3px', borderRadius: '0 3px 3px 0', background: `linear-gradient(180deg, ${tc.primary}, ${tc.secondary})` }} />}
                                     <span style={{ fontSize: '14.5px', fontWeight: 700, color: groupHasActive ? tc.primary : '#0f172a' }}>{item.label}</span>
-                                    <ChevronDownSm color="#94a3b8" open={isExpanded} />
+                                    <span className="mobile-chevron-btn" style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isExpanded ? '#ffffff' : 'transparent', color: isExpanded ? tc.primary : '#94a3b8' }}>
+                                        <ChevronDownSm color={isExpanded ? tc.primary : '#94a3b8'} open={isExpanded} />
+                                    </span>
                                 </div>
-                                {isExpanded && (
-                                    <div style={{ background: '#f8fafc', padding: '4px 0' }}>
+                                <div className={`mobile-submenu${isExpanded ? ' open' : ''}`}>
+                                    <div style={{ background: tc.light, padding: '4px 0' }}>
                                         {item.links.map(link => {
                                             const isCourses = link.key === 'courses';
                                             const subItems = getSubItems(link);
@@ -358,32 +372,36 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                                             const isActive = activeKey === link.key;
                                             return (
                                                 <div key={link.key}>
-                                                    <div className="mobile-drawer-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 1.5rem 12px 2.5rem' }}>
+                                                    <div className="mobile-drawer-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 1.5rem 12px 2.5rem', position: 'relative' }}>
+                                                        {isActive && <span style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', width: '5px', height: '5px', borderRadius: '50%', background: tc.primary }} />}
                                                         <span onClick={() => { if (!isCourses) go(link.path(slug)); else if (hasSub) toggleMobileSub(link.key); }}
                                                             style={{ fontSize: '13.5px', fontWeight: 600, color: isActive ? tc.primary : '#334155', cursor: 'pointer' }}>
                                                             {link.label}
                                                         </span>
                                                         {hasSub && (
-                                                            <span onClick={() => toggleMobileSub(link.key)} style={{ padding: '6px', cursor: 'pointer', color: '#94a3b8' }}>
-                                                                <ChevronDownSm color="#94a3b8" open={isSubExpanded} />
+                                                            <span onClick={() => toggleMobileSub(link.key)} className="mobile-chevron-btn"
+                                                                style={{ width: '26px', height: '26px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', background: isSubExpanded ? '#ffffff' : 'transparent', color: isSubExpanded ? tc.primary : '#94a3b8' }}>
+                                                                <ChevronDownSm color={isSubExpanded ? tc.primary : '#94a3b8'} open={isSubExpanded} />
                                                             </span>
                                                         )}
                                                     </div>
-                                                    {hasSub && isSubExpanded && (
-                                                        <div style={{ background: '#eef2f7', padding: '4px 0' }}>
-                                                            {subItems.map(sub => (
-                                                                <div key={sub.label} onClick={() => go(sub.path(slug))} className="mobile-drawer-row"
-                                                                    style={{ padding: '11px 1.5rem 11px 3.5rem', fontSize: '13px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
-                                                                    {sub.label}
-                                                                </div>
-                                                            ))}
+                                                    {hasSub && (
+                                                        <div className={`mobile-submenu${isSubExpanded ? ' open' : ''}`}>
+                                                            <div style={{ background: '#ffffff', padding: '4px 0', borderLeft: `2px solid ${tc.primary}30` }}>
+                                                                {subItems.map(sub => (
+                                                                    <div key={sub.label} onClick={() => go(sub.path(slug))} className="mobile-drawer-row"
+                                                                        style={{ padding: '11px 1.5rem 11px 3.5rem', fontSize: '13px', fontWeight: 600, color: '#475569', cursor: 'pointer' }}>
+                                                                        {sub.label}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     )}
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                )}
+                                </div>
                             </div>
                         );
                     })}

@@ -11,6 +11,7 @@ import {
     uploadPdfApi,
 } from '../../../api/content.api';
 import RichTextEditor from '../../../components/common/RichTextEditor';
+import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
 import useSchoolStore from '../../../store/schoolStore';
 import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
@@ -352,29 +353,25 @@ const TCInformation = () => {
                                 signed TC as a PDF. Students can then search and download it from the public page.
                             </p>
                         </div>
-                        <span
+                        <div
                             className="tc-status-badge"
-                            style={{
-                                fontSize: 11.5,
-                                fontWeight: 700,
-                                padding: '4px 12px',
-                                borderRadius: 999,
-                                background: isPublished ? 'rgba(34,197,94,0.18)' : 'rgba(250,204,21,0.15)',
-                                color: isPublished ? '#4ade80' : '#fde047',
-                                border: `1px solid ${isPublished ? 'rgba(74,222,128,0.4)' : 'rgba(253,224,71,0.35)'}`,
-                                flexShrink: 0,
-                            }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 11px', background: isPublished ? 'rgba(34,197,94,0.15)' : 'rgba(255,255,255,0.08)', border: `1px solid ${isPublished ? 'rgba(34,197,94,0.3)' : 'rgba(255,255,255,0.15)'}`, borderRadius: '999px', flexShrink: 0 }}
                         >
-                            {isPublished ? 'PUBLISHED' : 'DRAFT'}
-                        </span>
+                            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: isPublished ? '#22c55e' : '#94a3b8', flexShrink: 0 }}></div>
+                            <span style={{ fontSize: '10.5px', color: isPublished ? '#86efac' : 'rgba(255,255,255,0.55)', fontWeight: 600, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>{isPublished ? 'Published' : 'Draft'}</span>
+                        </div>
                     </div>
                     <div className="tc-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                        <button onClick={handleSave} disabled={saving} style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: 6, fontSize: 12, fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                            {saving ? 'Saving…' : isDirty ? '● Save' : 'Save'}
-                        </button>
-                        <button onClick={handlePublishToggle} disabled={publishing} style={isPublished ? { padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' } : { padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}` }}>
-                            {publishing ? 'Working…' : isPublished ? 'Unpublish' : 'Publish'}
-                        </button>
+                        <ModuleActionButtons
+                            tc={tc}
+                            saving={saving}
+                            publishing={publishing}
+                            isPublished={isPublished}
+                            isDirty={isDirty}
+                            onSave={handleSave}
+                            onPublish={handlePublishToggle}
+                            onUnpublish={handlePublishToggle}
+                        />
                     </div>
                 </div>
             </div>
@@ -540,8 +537,8 @@ const TCInformation = () => {
                                             <a href={addForm.pdfUrl} target="_blank" rel="noreferrer" style={{ fontSize: 13.5, fontWeight: 600, color: tc.primary }}>
                                                 📄 View uploaded PDF
                                             </a>
-                                            <button onClick={() => setAddForm((p) => ({ ...p, pdfUrl: '' }))} style={{ ...btnGhost, padding: '4px 10px', fontSize: 12.5 }}>
-                                                Replace
+                                            <button onClick={() => setAddForm((p) => ({ ...p, pdfUrl: '' }))} style={{ ...btnGhost, padding: '4px 10px', fontSize: 12.5, color: '#dc2626', borderColor: '#fecaca' }}>
+                                                Remove PDF
                                             </button>
                                         </div>
                                     ) : (

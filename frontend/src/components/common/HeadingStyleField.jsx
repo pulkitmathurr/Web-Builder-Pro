@@ -1,13 +1,18 @@
-import { FONT_OPTIONS } from "../../constants/fonts";
+import { FONT_OPTIONS, HEADING_SIZE_OPTIONS } from "../../constants/fonts";
 
-// Color + font picker for plain-text heading fields — the same idea as the color swatches
-// already used on the Home page banner (schoolNameColor/taglineColor), extended with a font
-// choice so any heading across the admin can be restyled without touching a stylesheet.
+// Color + font (+ optional size) picker for plain-text heading fields — the same idea as the
+// color swatches already used on the Home page banner (schoolNameColor/taglineColor), extended
+// with a font choice so any heading across the admin can be restyled without touching a
+// stylesheet. The size dropdown is opt-in: pass `size`/`onSizeChange` to show it (e.g. for
+// repeatable content blocks where each heading may want a different weight); omit both and
+// this renders exactly as before for the ~10 other call sites that don't need it.
 const HeadingStyleField = ({
   color,
   onColorChange,
   font,
   onFontChange,
+  size,
+  onSizeChange,
   defaultColor = "#0f172a",
 }) => {
   const inputStyle = {
@@ -52,6 +57,17 @@ const HeadingStyleField = ({
           <option key={f.key} value={f.key}>{f.label}</option>
         ))}
       </select>
+
+      {onSizeChange && (
+        <>
+          <span style={{ fontSize: "11px", fontWeight: 600, color: "#64748b", marginLeft: "8px" }}>Size</span>
+          <select value={size || ""} onChange={(e) => onSizeChange(e.target.value)} style={inputStyle}>
+            {HEADING_SIZE_OPTIONS.map((s) => (
+              <option key={s.key} value={s.key}>{s.label}</option>
+            ))}
+          </select>
+        </>
+      )}
     </div>
   );
 };

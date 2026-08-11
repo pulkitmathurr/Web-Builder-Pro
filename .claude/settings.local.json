@@ -136,7 +136,13 @@
       "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"UPDATE tbl_schools SET selected_modules = JSON_ARRAY_APPEND\\(selected_modules, '$', 'admissionProcedure'\\) WHERE id=9;\" 2>&1)",
       "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT id, email, map_url, phone, phone2, address FROM tbl_schools WHERE id=9;\" 2>&1)",
       "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"UPDATE tbl_schools SET selected_modules = JSON_ARRAY_APPEND\\(selected_modules, '$', 'bookList'\\) WHERE id=9;\" 2>&1)",
-      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT content FROM tbl_module_content WHERE module_key='circulars' AND school_id=9 LIMIT 1;\" 2>&1)"
+      "PowerShell(& \"C:\\\\xampp\\\\mysql\\\\bin\\\\mysql.exe\" -u root db_school_saas -e \"SELECT content FROM tbl_module_content WHERE module_key='circulars' AND school_id=9 LIMIT 1;\" 2>&1)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(find .claude/skills -iname \"SKILL.md\")",
+      "Bash(ls .claude/skills)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(tasklist //FI \"IMAGENAME eq node.exe\")"
     ]
   }
 }
