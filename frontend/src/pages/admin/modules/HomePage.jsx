@@ -6,6 +6,9 @@ import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import useSchoolStore from '../../../store/schoolStore';
 import { FONT_OPTIONS, getFontFamily } from '../../../constants/fonts';
+import { SHIELD_PATH_D, SHIELD_ASPECT } from '../../../constants/shieldShape';
+
+const CAMPUS_IMAGES_MAX = 10;
 
 const VideoIcon = ({ size = 28, color = '#94a3b8' }) => (
     <svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -13,6 +16,18 @@ const VideoIcon = ({ size = 28, color = '#94a3b8' }) => (
 
 const BannerIcon = ({ size = 28, color = '#94a3b8' }) => (
     <svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14M4 6h16a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V7a1 1 0 011-1z" /></svg>
+);
+
+const SaveIcon = ({ size = 13, color = 'currentColor' }) => (
+    <svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M17 21v-8H7v8M7 3v5h8" /></svg>
+);
+
+const RocketIcon = ({ size = 13, color = 'currentColor' }) => (
+    <svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z" /><path strokeLinecap="round" strokeLinejoin="round" d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" /><path strokeLinecap="round" strokeLinejoin="round" d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" /></svg>
+);
+
+const EyeOffIcon = ({ size = 13, color = 'currentColor' }) => (
+    <svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17.94 17.94A10.94 10.94 0 0112 20c-7 0-11-8-11-8a21.8 21.8 0 015.06-6.06M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 8 11 8a21.77 21.77 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" /><path strokeLinecap="round" strokeLinejoin="round" d="M1 1l22 22" /></svg>
 );
 
 const hexToRgba = (hex, alpha) => {
@@ -31,6 +46,17 @@ const defaultContent = {
     taglineColor: '',
     subTextColor: '',
     showAnnouncementTicker: true,
+    introHeading: '',
+    introHeadingColor: '',
+    introHeadingFont: '',
+    introDescription: '',
+    introImage1: '',
+    introImage2: '',
+    campusHeading: 'Campus Glimpses',
+    campusHeadingColor: '',
+    campusHeadingFont: '',
+    campusSubtext: '',
+    campusImages: [], // [{ id, url }]
 };
 
 // ── Small inline color-picker used for the hero text-color overrides ──
@@ -64,6 +90,44 @@ const FontField = ({ label, value, onChange }) => (
     </div>
 );
 
+// ── Single-photo upload tile (with preview + remove), used by the two Homepage
+// Highlight photos — same visual language as the banner grid tiles below.
+// `shield` clips the preview to the same shield shape used on the public page,
+// so the admin sees a true preview of the final framed photo. ──
+const SingleImageUploadBox = ({ label, url, inputId, onSelect, onRemove, uploading, tc, shield = false }) => (
+    <div>
+        <label style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', display: 'block' }}>{label}</label>
+        <div onClick={() => document.getElementById(inputId).click()}
+            style={{
+                position: 'relative', width: shield ? '70%' : '100%', maxWidth: shield ? '180px' : undefined,
+                aspectRatio: shield ? `${SHIELD_ASPECT}` : '16/9', margin: shield ? '0 auto' : 0,
+                borderRadius: shield ? 0 : '8px', clipPath: shield ? 'url(#admin-shield-clip)' : 'none',
+                overflow: 'hidden', border: shield ? 'none' : (url ? '0.5px solid #e2e8f0' : '1.5px dashed #e2e8f0'),
+                cursor: uploading ? 'not-allowed' : 'pointer', background: url ? '#f8fafc' : '#fafafa',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: shield && url ? '0 6px 18px rgba(0,0,0,0.14)' : 'none',
+            }}>
+            {url ? (
+                <img src={url} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : uploading ? (
+                <svg style={{ animation: 'spin 1s linear infinite', width: '22px', height: '22px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke={tc.primary} strokeWidth="4" /><path style={{ opacity: 0.75 }} fill={tc.primary} d="M4 12a8 8 0 018-8v8z" /></svg>
+            ) : (
+                <div style={{ textAlign: 'center' }}>
+                    <BannerIcon size={22} />
+                    <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500, marginTop: '6px' }}>Click to upload</p>
+                </div>
+            )}
+            {url && (
+                <button type="button" onClick={e => { e.stopPropagation(); onRemove(); }}
+                    style={{ position: 'absolute', top: shield ? '10%' : '6px', right: shield ? '10%' : '6px', width: '22px', height: '22px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '13px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    ✕
+                </button>
+            )}
+        </div>
+        <input id={inputId} type="file" accept="image/jpeg,image/jpg,image/png,image/webp" onChange={onSelect} style={{ display: 'none' }} />
+    </div>
+);
+
 const HomePage = () => {
     const { tc, bc, school, fetchSchool } = useSchoolStore();
     const [loading, setLoading] = useState(true);
@@ -77,9 +141,10 @@ const HomePage = () => {
     const [videoPreview, setVideoPreview] = useState(null);
     const [uploadingVideo, setUploadingVideo] = useState(false);
     const [removingVideo, setRemovingVideo] = useState(false);
-    const [uploadingBanners, setUploadingBanners] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
     const [cropSrc, setCropSrc] = useState(null);
-    const [imageQueue, setImageQueue] = useState([]); // remaining banner files still waiting to be cropped
+    const [cropTarget, setCropTarget] = useState('banner'); // 'banner' | 'intro1' | 'intro2' | 'campus'
+    const [imageQueue, setImageQueue] = useState([]); // remaining files still waiting to be cropped
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -156,26 +221,46 @@ const HomePage = () => {
         if (file) { setVideoFile(file); setVideoPreview(URL.createObjectURL(file)); }
     };
 
-    // Each banner is cropped one at a time (freeform, adjustable from every side) before
-    // upload. Once confirmed, the next queued file automatically opens in the crop modal.
-    const handleBannerFilesSelected = (e) => {
-        const files = Array.from(e.target.files || []);
+    // Every image field (hero banners, the two intro highlight photos, campus glimpse
+    // images) shares one crop flow — files are cropped one at a time (freeform, adjustable
+    // from every side unless a fixed shape is enforced, see below); once confirmed, the next
+    // queued file automatically opens in the crop modal. `cropTarget` says which field the
+    // current crop session is feeding.
+    const openImageCrop = (e, target) => {
+        let files = Array.from(e.target.files || []);
         e.target.value = '';
         if (files.length === 0) return;
+        if (target === 'campus') {
+            const remaining = Math.max(0, CAMPUS_IMAGES_MAX - content.campusImages.length);
+            if (remaining === 0) { toast.error(`You can upload up to ${CAMPUS_IMAGES_MAX} photos in Campus Glimpses`); return; }
+            if (files.length > remaining) {
+                toast.error(`Only ${remaining} more photo${remaining === 1 ? '' : 's'} can be added (max ${CAMPUS_IMAGES_MAX})`);
+                files = files.slice(0, remaining);
+            }
+        }
+        setCropTarget(target);
         setImageQueue(files.slice(1));
         setCropSrc(URL.createObjectURL(files[0]));
     };
 
-    const onBannerCropConfirmed = async (croppedFile) => {
+    const onImageCropConfirmed = async (croppedFile) => {
         setCropSrc(null);
-        setUploadingBanners(true);
+        setUploadingImage(true);
         try {
             const res = await uploadContentImageApi(croppedFile);
-            setContent(prev => ({ ...prev, heroBanners: [...prev.heroBanners, { id: `banner-${Date.now()}`, url: res.data.url }] }));
+            if (cropTarget === 'banner') {
+                setContent(prev => ({ ...prev, heroBanners: [...prev.heroBanners, { id: `banner-${Date.now()}`, url: res.data.url }] }));
+            } else if (cropTarget === 'intro1') {
+                setContent(prev => ({ ...prev, introImage1: res.data.url }));
+            } else if (cropTarget === 'intro2') {
+                setContent(prev => ({ ...prev, introImage2: res.data.url }));
+            } else if (cropTarget === 'campus') {
+                setContent(prev => ({ ...prev, campusImages: [...prev.campusImages, { id: `campus-${Date.now()}`, url: res.data.url }] }));
+            }
         } catch (e) {
-            toast.error('Failed to upload banner image');
+            toast.error('Failed to upload image');
         } finally {
-            setUploadingBanners(false);
+            setUploadingImage(false);
             if (imageQueue.length > 0) {
                 const [next, ...rest] = imageQueue;
                 setImageQueue(rest);
@@ -186,6 +271,10 @@ const HomePage = () => {
 
     const removeBanner = (id) => {
         setContent(prev => ({ ...prev, heroBanners: prev.heroBanners.filter(b => b.id !== id) }));
+    };
+
+    const removeCampusImage = (id) => {
+        setContent(prev => ({ ...prev, campusImages: prev.campusImages.filter(b => b.id !== id) }));
     };
 
     const handleVideoUpload = async () => {
@@ -260,6 +349,26 @@ const HomePage = () => {
                 .hp-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
                 .hp-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .hp-hero-orb { animation: drift1 9s ease-in-out infinite; }
+
+                /* ── Save / Publish / Unpublish buttons ── */
+                .hp-btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; position: relative; overflow: hidden; letter-spacing: 0.01em; transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease, filter 0.25s ease; }
+                .hp-btn:disabled { cursor: not-allowed; opacity: 0.65; }
+                .hp-btn:active:not(:disabled) { transform: translateY(0) scale(0.96) !important; }
+                .hp-btn-icon { display: inline-flex; transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+                .hp-btn:hover:not(:disabled) .hp-btn-icon { transform: scale(1.15) rotate(-6deg); }
+                .hp-btn-publish:hover:not(:disabled) .hp-btn-icon { transform: translate(2px,-2px) scale(1.12) rotate(0deg); }
+                .hp-btn-unpublish:hover:not(:disabled) .hp-btn-icon { transform: scale(1.12) rotate(0deg); }
+
+                .hp-btn-save:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(0.96); box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 10px 22px rgba(0,0,0,0.28) !important; }
+                .hp-btn-save.is-dirty:hover:not(:disabled) { filter: brightness(1.06); box-shadow: 0 2px 4px rgba(120,70,0,0.3), 0 12px 28px rgba(234,179,8,0.5) !important; }
+                @keyframes hpDirtyPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(66,32,6,0.5); } 50% { box-shadow: 0 0 0 4px rgba(66,32,6,0); } }
+                .hp-btn-dot { animation: hpDirtyPulse 1.6s ease-out infinite; }
+
+                .hp-btn-unpublish:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); box-shadow: 0 2px 4px rgba(127,29,29,0.35), 0 12px 28px rgba(220,38,38,0.5) !important; }
+
+                .hp-btn-publish::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent); transform: skewX(-20deg); transition: left 0.65s ease; pointer-events: none; }
+                .hp-btn-publish:hover:not(:disabled) { transform: translateY(-2px) scale(1.02); filter: brightness(1.08); box-shadow: 0 2px 4px ${hexToRgba(tc.dark, 0.3)}, 0 14px 32px ${hexToRgba(tc.primary, 0.6)} !important; }
+                .hp-btn-publish:hover:not(:disabled)::after { left: 130%; }
                 @media (max-width: 700px) {
                     .hp-2col { grid-template-columns: 1fr !important; }
                 }
@@ -289,6 +398,14 @@ const HomePage = () => {
                 .rte-content .ql-size-huge { font-size: 2.5em; }
             `}</style>
 
+            <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+                <defs>
+                    <clipPath id="admin-shield-clip" clipPathUnits="objectBoundingBox">
+                        <path d={SHIELD_PATH_D} />
+                    </clipPath>
+                </defs>
+            </svg>
+
             <div style={{ fontFamily: 'system-ui, sans-serif', background: bc.surface, margin: '-24px', padding: '24px', minHeight: '100vh' }}>
 
                 {/* Hero Header */}
@@ -311,20 +428,40 @@ const HomePage = () => {
                                 </span>
                             </div>
                         </div>
-                        <div className="hp-hero-item hp-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <div className="hp-hero-item hp-hero-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
                             <button onClick={() => handleSave(false)} disabled={saving}
-                                style={{ padding: '7px 14px', background: isDirty ? 'rgba(250,204,21,0.15)' : 'rgba(255,255,255,0.08)', color: isDirty ? '#fde047' : 'rgba(255,255,255,0.65)', border: isDirty ? '1px solid rgba(250,204,21,0.35)' : '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', fontSize: '12px', fontWeight: isDirty ? 700 : 500, cursor: 'pointer' }}>
-                                {saving ? 'Saving...' : isDirty ? '● Save' : 'Save'}
+                                className={`hp-btn hp-btn-save${isDirty ? ' is-dirty' : ''}`}
+                                style={{
+                                    padding: '10px 20px', borderRadius: '12px', fontSize: '12.5px', fontWeight: isDirty ? 700 : 600,
+                                    background: isDirty ? 'linear-gradient(160deg,#fcd34d,#eab308 60%,#ca8a04)' : 'linear-gradient(160deg,#ffffff,#e8edf4)',
+                                    color: isDirty ? '#422006' : '#1e293b',
+                                    border: 'none',
+                                    boxShadow: isDirty
+                                        ? 'inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(120,70,0,0.25), 0 6px 16px rgba(234,179,8,0.4)'
+                                        : 'inset 0 1px 0 rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.08), 0 6px 14px rgba(0,0,0,0.16)',
+                                }}>
+                                {saving ? (
+                                    <svg style={{ animation: 'spin 1s linear infinite', width: '13px', height: '13px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.3 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" /><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" /></svg>
+                                ) : (
+                                    <span className="hp-btn-icon"><SaveIcon size={13} color={isDirty ? '#422006' : '#1e293b'} /></span>
+                                )}
+                                {saving ? 'Saving...' : 'Save'}
+                                {isDirty && !saving && <span className="hp-btn-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#422006' }} />}
                             </button>
                             {isPublished ? (
-                                <button onClick={handleUnpublish}
-                                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.15)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                                <button onClick={handleUnpublish} className="hp-btn hp-btn-unpublish"
+                                    style={{ padding: '10px 20px', borderRadius: '12px', fontSize: '12.5px', fontWeight: 700, background: 'linear-gradient(160deg,#f87171,#dc2626 65%,#b91c1c)', color: '#ffffff', border: 'none', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 4px rgba(127,29,29,0.3), 0 6px 16px rgba(220,38,38,0.4)' }}>
+                                    <span className="hp-btn-icon"><EyeOffIcon size={13} color="#ffffff" /></span>
                                     Unpublish
                                 </button>
                             ) : (
-                                <button onClick={() => handleSave(true)} disabled={publishing}
-                                    style={{ padding: '7px 16px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', boxShadow: `0 2px 10px ${hexToRgba(tc.primary, 0.35)}`, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    {publishing ? <><svg style={{ animation: 'spin 1s linear infinite', width: '12px', height: '12px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Publishing...</> : 'Publish'}
+                                <button onClick={() => handleSave(true)} disabled={publishing} className="hp-btn hp-btn-publish"
+                                    style={{ padding: '10px 24px', borderRadius: '12px', background: `linear-gradient(160deg,${tc.secondary},${tc.primary} 65%,${tc.dark})`, color: '#fff', border: 'none', fontSize: '12.5px', fontWeight: 700, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.3), 0 2px 4px ${hexToRgba(tc.dark, 0.3)}, 0 8px 20px ${hexToRgba(tc.primary, 0.5)}` }}>
+                                    {publishing ? (
+                                        <><svg style={{ animation: 'spin 1s linear infinite', width: '13px', height: '13px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.3 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" /><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" /></svg>Publishing...</>
+                                    ) : (
+                                        <><span className="hp-btn-icon"><RocketIcon size={13} color="#fff" /></span>Publish</>
+                                    )}
                                 </button>
                             )}
                         </div>
@@ -429,8 +566,8 @@ const HomePage = () => {
                                     </div>
                                 ))}
                                 <div onClick={() => document.getElementById('heroBannerInput').click()}
-                                    style={{ height: '90px', border: '1.5px dashed #e2e8f0', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: uploadingBanners ? 'not-allowed' : 'pointer', background: '#fafafa' }}>
-                                    {uploadingBanners ? (
+                                    style={{ height: '90px', border: '1.5px dashed #e2e8f0', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: (uploadingImage && cropTarget === 'banner') ? 'not-allowed' : 'pointer', background: '#fafafa' }}>
+                                    {(uploadingImage && cropTarget === 'banner') ? (
                                         <svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke={tc.primary} strokeWidth="4"/><path style={{ opacity: 0.75 }} fill={tc.primary} d="M4 12a8 8 0 018-8v8z"/></svg>
                                     ) : (
                                         <>
@@ -440,7 +577,7 @@ const HomePage = () => {
                                     )}
                                 </div>
                             </div>
-                            <input id="heroBannerInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple onChange={handleBannerFilesSelected} style={{ display: 'none' }} />
+                            <input id="heroBannerInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple onChange={e => openImageCrop(e, 'banner')} style={{ display: 'none' }} />
                             {content.heroBanners.length === 0 && (
                                 <p style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '10px' }}>No banners uploaded yet — until you add at least one, the video (or theme gradient) will show instead.</p>
                             )}
@@ -523,14 +660,115 @@ const HomePage = () => {
                     </div>
                 </div>
 
+                {/* ── Homepage Highlight ── */}
+                <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginTop: '1.25rem' }}>
+                    <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Homepage Highlight</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional section shown below the hero — two feature photos plus a heading and description</p>
+                        </div>
+                    </div>
+                    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div className="hp-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            <SingleImageUploadBox label="Photo 1 (main)" inputId="introImage1Input" url={content.introImage1} shield
+                                uploading={uploadingImage && cropTarget === 'intro1'} tc={tc}
+                                onSelect={e => openImageCrop(e, 'intro1')} onRemove={() => handleChange('introImage1', '')} />
+                            <SingleImageUploadBox label="Photo 2 (overlapping)" inputId="introImage2Input" url={content.introImage2} shield
+                                uploading={uploadingImage && cropTarget === 'intro2'} tc={tc}
+                                onSelect={e => openImageCrop(e, 'intro2')} onRemove={() => handleChange('introImage2', '')} />
+                        </div>
+                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '-10px' }}>Portrait-oriented photos work best — the crop tool shows the shield-shaped frame they'll appear in on the public page.</p>
+                        <div>
+                            <label style={labelStyle}>Section Heading</label>
+                            <input type="text" value={content.introHeading} onChange={e => handleChange('introHeading', e.target.value)}
+                                placeholder="Enter section heading" style={inputStyle} />
+                            <ColorField label="Heading Color" value={content.introHeadingColor} defaultColor={tc.primary}
+                                onChange={val => handleChange('introHeadingColor', val)} />
+                            <FontField label="Heading Font" value={content.introHeadingFont} onChange={val => handleChange('introHeadingFont', val)} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Description</label>
+                            <RichTextEditor value={content.introDescription} onChange={val => handleChange('introDescription', val)}
+                                placeholder="Enter description" minHeight="100px" fontSize="14px" fontFamily="'Inter', system-ui, sans-serif" />
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Campus Glimpses ── */}
+                <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginTop: '1.25rem' }}>
+                    <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Campus Glimpses</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional photo grid shown below the highlight section — up to {CAMPUS_IMAGES_MAX} photos</p>
+                        </div>
+                    </div>
+                    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div>
+                            <label style={labelStyle}>Heading</label>
+                            <input type="text" value={content.campusHeading} onChange={e => handleChange('campusHeading', e.target.value)}
+                                placeholder="Enter heading" style={inputStyle} />
+                            <ColorField label="Heading Color" value={content.campusHeadingColor} defaultColor={tc.primary}
+                                onChange={val => handleChange('campusHeadingColor', val)} />
+                            <FontField label="Heading Font" value={content.campusHeadingFont} onChange={val => handleChange('campusHeadingFont', val)} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Subtext</label>
+                            <textarea value={content.campusSubtext} onChange={e => handleChange('campusSubtext', e.target.value)}
+                                placeholder="Enter a short description" rows={2}
+                                style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} />
+                        </div>
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <label style={{ ...labelStyle, marginBottom: 0 }}>Photos</label>
+                                <span style={{ fontSize: '11px', color: content.campusImages.length >= CAMPUS_IMAGES_MAX ? '#dc2626' : '#94a3b8', fontWeight: 600 }}>{content.campusImages.length} / {CAMPUS_IMAGES_MAX}</span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
+                                {content.campusImages.map((img, i) => (
+                                    <div key={img.id} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '0.5px solid #e2e8f0', height: '110px' }}>
+                                        <img src={img.url} alt={`Campus ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                        <button onClick={() => removeCampusImage(img.id)}
+                                            style={{ position: 'absolute', top: '5px', right: '5px', width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '12px', lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                                {content.campusImages.length < CAMPUS_IMAGES_MAX && (
+                                    <div onClick={() => document.getElementById('campusImagesInput').click()}
+                                        style={{ height: '110px', border: '1.5px dashed #e2e8f0', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: (uploadingImage && cropTarget === 'campus') ? 'not-allowed' : 'pointer', background: '#fafafa' }}>
+                                        {(uploadingImage && cropTarget === 'campus') ? (
+                                            <svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke={tc.primary} strokeWidth="4" /><path style={{ opacity: 0.75 }} fill={tc.primary} d="M4 12a8 8 0 018-8v8z" /></svg>
+                                        ) : (
+                                            <>
+                                                <BannerIcon size={20} />
+                                                <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500 }}>Add Photo(s)</p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                            <input id="campusImagesInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple onChange={e => openImageCrop(e, 'campus')} style={{ display: 'none' }} />
+                            {content.campusImages.length === 0 && (
+                                <p style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '10px' }}>No photos uploaded yet — this section stays hidden on the public page until you add at least one.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
             {cropSrc && (
                 <ImageCropModal
                     imageSrc={cropSrc}
-                    aspect={null}
+                    aspect={(cropTarget === 'intro1' || cropTarget === 'intro2') ? SHIELD_ASPECT : null}
+                    maskShape={(cropTarget === 'intro1' || cropTarget === 'intro2') ? 'shield' : undefined}
                     onCancel={() => { setCropSrc(null); setImageQueue([]); }}
-                    onCropComplete={onBannerCropConfirmed}
+                    onCropComplete={onImageCropConfirmed}
                 />
             )}
         </>

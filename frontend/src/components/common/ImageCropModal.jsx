@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
+import { SHIELD_PATH_D } from '../../constants/shieldShape';
 
 // aspect = width/height ratio for the crop box, e.g. 16/9 for banners, 1 for square.
 // Pass aspect={null} to allow free-form cropping (no fixed ratio).
@@ -8,7 +9,10 @@ import 'react-image-crop/dist/ReactCrop.css';
 // (e.g. Super Admin's indigo/violet vs. School Admin's default pink).
 // outputFormat = 'image/jpeg' (default, smaller files) or 'image/png' — use png for logos/anything
 // with transparency, since exporting a transparent PNG as JPEG flattens the alpha to black.
-const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete, accent = '#8b2252', accentLight = '#c9687e', confirmTextColor = '#fff', outputFormat = 'image/jpeg' }) => {
+// maskShape = 'shield' overlays a dimmed shield-outline preview on top of the (still
+// rectangular) crop selection, so the admin can see exactly what the final shield-framed
+// photo will show before uploading — used for the Home Page highlight photos.
+const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete, accent = '#8b2252', accentLight = '#c9687e', confirmTextColor = '#fff', outputFormat = 'image/jpeg', maskShape }) => {
     const [crop, setCrop] = useState();
     const [completedCrop, setCompletedCrop] = useState();
     const imgRef = useRef(null);
@@ -92,15 +96,29 @@ const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete, a
 
                 {/* Crop area */}
                 <div style={{ padding: '1.5rem', overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', flex: 1 }}>
+                    {maskShape === 'shield' && (
+                        <style>{`.ReactCrop__selection-addon { position: absolute; inset: 0; }`}</style>
+                    )}
                     <ReactCrop
                         crop={crop}
                         onChange={(_, percentCrop) => setCrop(percentCrop)}
                         onComplete={(c) => setCompletedCrop(c)}
                         aspect={aspect}
+                        renderSelectionAddon={maskShape === 'shield' ? () => (
+                            <svg viewBox="0 0 1 1" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                                <path fillRule="evenodd" d={`M0,0 H1 V1 H0 Z ${SHIELD_PATH_D}`} fill="rgba(0,0,0,0.55)" />
+                                <path d={SHIELD_PATH_D} fill="none" stroke="#ffffff" strokeWidth="0.012" />
+                            </svg>
+                        ) : undefined}
                     >
                         <img ref={imgRef} src={imageSrc} onLoad={onImageLoad} alt="Crop preview" style={{ maxHeight: '60vh', display: 'block' }} />
                     </ReactCrop>
                 </div>
+                {maskShape === 'shield' && (
+                    <p style={{ padding: '0 1.75rem 1rem', fontSize: '11px', color: '#94a3b8', textAlign: 'center' }}>
+                        The dimmed area outside the shield outline won't be visible in the final frame — keep the important part of the photo inside it.
+                    </p>
+                )}
 
                 {/* Footer */}
                 <div style={{ padding: '1.25rem 1.75rem', borderTop: '0.5px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>

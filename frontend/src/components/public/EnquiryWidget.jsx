@@ -10,20 +10,28 @@ import toast from "react-hot-toast";
 const AUTO_POPUP_DELAY_MS = 4000;
 
 const inputStyleBase = {
-    width: '100%', padding: '9px 12px', border: '1.5px solid #cbd5e1', borderRadius: '8px',
+    width: '100%', padding: '11px 14px 11px 36px', border: '1.5px solid #e2e8f0', borderRadius: '8px',
     fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box',
-    background: '#ffffff', fontFamily: "'Inter', system-ui, sans-serif", transition: 'border 0.2s',
+    background: '#f8fafc', fontFamily: "'Inter', system-ui, sans-serif", transition: 'border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease',
 };
-const labelStyle = { display: 'block', fontSize: '12px', fontWeight: 700, color: '#1e293b', marginBottom: '4px' };
+const labelStyle = { display: 'block', fontSize: '11.5px', fontWeight: 700, color: '#334155', marginBottom: '7px', letterSpacing: '0.01em' };
 const Required = () => <span style={{ color: '#dc2626' }}> *</span>;
 const errorInputStyle = { borderColor: '#dc2626' };
 const fieldErrorStyle = { color: '#dc2626', fontSize: '11px', fontWeight: 500, marginTop: '4px' };
 const FieldError = ({ show }) => show ? <p style={fieldErrorStyle}>Please fill in this field</p> : null;
 
+const WIcon = ({ children }) => (
+    <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none', display: 'flex' }}>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+    </span>
+);
+const IconPerson = <WIcon><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8" /></WIcon>;
+const IconBriefcase = <WIcon><rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16" /></WIcon>;
+const IconPhone = <WIcon><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.362 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0122 16.92z" /></WIcon>;
+const IconMail = <WIcon><path d="M22 6l-10 7L2 6" /><path d="M2 6a2 2 0 012-2h16a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2z" /></WIcon>;
+
 // ── Shared modal chrome (plain white header + heading + close + success view),
-// matching the reference "ENQUIRE FORM" design — compact so the whole form fits
-// without an internal scrollbar (fields are deliberately smaller/tighter than a
-// typical full-page form for this reason). ──
+// matching the reference "ENQUIRE FORM" design. ──
 const ModalShell = ({ open, onClose, bc, title, submitted, successTitle, successMessage, onResetAndClose, children }) => {
     if (!open) return null;
     return (
@@ -32,39 +40,39 @@ const ModalShell = ({ open, onClose, bc, title, submitted, successTitle, success
                 position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 6000,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
             }}>
-            <div onClick={e => e.stopPropagation()}
+            <div onClick={e => e.stopPropagation()} className="enq-modal-scroll"
                 style={{
-                    background: bc.card, borderRadius: '14px', width: '100%', maxWidth: '480px',
-                    maxHeight: '96vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-                    animation: 'enqModalIn 0.25s cubic-bezier(0.16,1,0.3,1)', fontFamily: "'Inter', system-ui, sans-serif",
+                    background: bc.card, borderRadius: '14px', width: '100%', maxWidth: '460px',
+                    maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 70px rgba(0,0,0,0.32)',
+                    animation: 'enqModalIn 0.28s cubic-bezier(0.16,1,0.3,1)', fontFamily: "'Inter', system-ui, sans-serif",
                     position: 'relative',
                 }}>
                 <button onClick={onClose} className="enq-widget-close"
-                    style={{ position: 'absolute', top: '14px', right: '16px', border: 'none', background: 'transparent', color: '#0f172a', fontSize: '20px', lineHeight: 1, cursor: 'pointer', padding: '4px' }}>
+                    style={{ position: 'absolute', top: '14px', right: '16px', width: '28px', height: '28px', border: 'none', background: '#f1f5f9', borderRadius: '8px', color: '#475569', fontSize: '18px', lineHeight: 1, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s ease' }}>
                     ×
                 </button>
 
-                <div style={{ padding: '22px 24px 20px' }}>
-                    <h2 style={{ fontSize: '21px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.01em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '16px' }}>
+                <div style={{ padding: '24px 26px 22px' }}>
+                    <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', letterSpacing: '0.01em', textTransform: 'uppercase', textAlign: 'center', marginBottom: '16px' }}>
                         {title}
                     </h2>
 
                     {submitted ? (
-                        <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                            <div style={{ position: 'relative', width: '64px', height: '64px', margin: '0 auto 1rem' }}>
+                        <div style={{ textAlign: 'center', padding: '1.5rem 0' }}>
+                            <div style={{ position: 'relative', width: '72px', height: '72px', margin: '0 auto 1.25rem' }}>
                                 <div className="enq-success-ring" style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '3px solid #22c55e' }}></div>
-                                <div className="enq-success-badge" style={{ position: 'relative', width: '64px', height: '64px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                                <div className="enq-success-badge" style={{ position: 'relative', width: '72px', height: '72px', borderRadius: '50%', background: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 10px 26px rgba(34,197,94,0.35)' }}>
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                                         <path className="enq-success-check" d="M4 12.5l5 5L20 6.5" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
                                 </div>
                             </div>
-                            <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>{successTitle}</h3>
-                            <p style={{ fontSize: '13px', color: '#64748b', lineHeight: 1.6, marginBottom: '1.25rem' }}>
+                            <h3 style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>{successTitle}</h3>
+                            <p style={{ fontSize: '13.5px', color: '#64748b', lineHeight: 1.7, marginBottom: '1.5rem' }}>
                                 {successMessage}
                             </p>
-                            <button onClick={onResetAndClose}
-                                style={{ padding: '9px 20px', background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '999px', color: '#1e293b', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                            <button onClick={onResetAndClose} className="enq-success-close"
+                                style={{ padding: '10px 22px', background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '8px', color: '#1e293b', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
                                 Close
                             </button>
                         </div>
@@ -82,8 +90,13 @@ const ModalShell = ({ open, onClose, bc, title, submitted, successTitle, success
 // that page already embeds this exact form inline, so popping this modal on top
 // of it would just be a redundant duplicate of what's already on the page.
 // Renders the same shared <AdmissionEnquiryForm/> used on that page, so the
-// fields are always identical no matter where a visitor fills the form. ──
-const AdmissionEnquiryModal = ({ school, tc, bc, suppressAutoPopup = false }) => {
+// fields are always identical no matter where a visitor fills the form.
+//
+// The auto-popup also queues behind the home page's Welcome Banner popup (a
+// separate component, SchoolWebsite.jsx) instead of racing it — if a banner is
+// about to show, this waits for its 'welcome-banner-closed' event rather than
+// firing on its own fixed delay, so the two never stack on top of each other. ──
+const AdmissionEnquiryModal = ({ school, tc, bc, suppressAutoPopup = false, isHomePage = false }) => {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -97,12 +110,22 @@ const AdmissionEnquiryModal = ({ school, tc, bc, suppressAutoPopup = false }) =>
         if (!school || !isModuleEnabled(school, 'admission')) return;
         const key = `enquiryModalShown_${school.id}`;
         if (sessionStorage.getItem(key)) return;
-        const t = setTimeout(() => {
+
+        const trigger = () => {
             setOpen(true);
             sessionStorage.setItem(key, '1');
-        }, AUTO_POPUP_DELAY_MS);
+        };
+
+        const bannerKey = `welcomeBannerShown_${school.id}`;
+        const willShowWelcomeBanner = isHomePage && school.welcome_banner_enabled && school.welcome_banner_url && !sessionStorage.getItem(bannerKey);
+        if (willShowWelcomeBanner) {
+            window.addEventListener('welcome-banner-closed', trigger, { once: true });
+            return () => window.removeEventListener('welcome-banner-closed', trigger);
+        }
+
+        const t = setTimeout(trigger, AUTO_POPUP_DELAY_MS);
         return () => clearTimeout(t);
-    }, [school, suppressAutoPopup]);
+    }, [school, suppressAutoPopup, isHomePage]);
 
     if (!isModuleEnabled(school, 'admission')) return null;
 
@@ -188,47 +211,77 @@ const CareerEnquiryModal = ({ school, tc, bc }) => {
             submitted={submitted} successTitle="Application Submitted!"
             successMessage="Thank you for your interest. Our team will review your application and get in touch if there's a fit."
             onResetAndClose={resetAndClose}>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div className="enq-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div className="enq-2col enq-field" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', animationDelay: '0s' }}>
                     <div>
                         <label style={labelStyle}>Full Name<Required /></label>
-                        <input className="enq-widget-input" type="text" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Enter your full name" style={{ ...inputStyleBase, ...(errors.name ? errorInputStyle : {}) }} required />
+                        <div style={{ position: 'relative' }}>
+                            {IconPerson}
+                            <input className="enq-widget-input" type="text" value={form.name} onChange={e => update('name', e.target.value)} placeholder="Enter your full name" style={{ ...inputStyleBase, ...(errors.name ? errorInputStyle : {}) }} required />
+                        </div>
                         <FieldError show={errors.name} />
                     </div>
                     <div>
                         <label style={labelStyle}>Position Applied For</label>
-                        <input className="enq-widget-input" type="text" value={form.position} onChange={e => update('position', e.target.value)} placeholder="e.g. Primary Teacher" style={inputStyleBase} />
+                        <div style={{ position: 'relative' }}>
+                            {IconBriefcase}
+                            <input className="enq-widget-input" type="text" value={form.position} onChange={e => update('position', e.target.value)} placeholder="e.g. Primary Teacher" style={inputStyleBase} />
+                        </div>
                     </div>
                 </div>
 
-                <div className="enq-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div className="enq-2col enq-field" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', animationDelay: '0.05s' }}>
                     <div>
                         <label style={labelStyle}>Phone Number<Required /></label>
-                        <input className="enq-widget-input" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="Enter phone number" style={{ ...inputStyleBase, ...(errors.phone ? errorInputStyle : {}) }} required />
+                        <div style={{ position: 'relative' }}>
+                            {IconPhone}
+                            <input className="enq-widget-input" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="Enter phone number" style={{ ...inputStyleBase, ...(errors.phone ? errorInputStyle : {}) }} required />
+                        </div>
                         <FieldError show={errors.phone} />
                     </div>
                     <div>
                         <label style={labelStyle}>Email Address</label>
-                        <input className="enq-widget-input" type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="Enter email address" style={inputStyleBase} />
+                        <div style={{ position: 'relative' }}>
+                            {IconMail}
+                            <input className="enq-widget-input" type="email" value={form.email} onChange={e => update('email', e.target.value)} placeholder="Enter email address" style={inputStyleBase} />
+                        </div>
                     </div>
                 </div>
 
-                <div>
+                <div className="enq-field" style={{ animationDelay: '0.1s' }}>
                     <label style={labelStyle}>Resume (PDF, optional)</label>
-                    <label style={{ display: 'block', padding: '9px 12px', border: '1.5px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontSize: '12.5px', color: resumeUrl ? '#15803d' : '#64748b', background: resumeUrl ? '#f0fdf4' : '#ffffff', textAlign: 'center' }}>
-                        {uploadingResume ? 'Uploading...' : resumeUrl ? '✓ Resume uploaded — click to change' : '📎 Click to upload your resume'}
+                    <label className="enq-resume-drop" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '11px', border: `1.5px dashed ${resumeUrl ? '#86efac' : '#cbd5e1'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 600, color: resumeUrl ? '#15803d' : '#64748b', background: resumeUrl ? '#f0fdf4' : '#f8fafc', textAlign: 'center', transition: 'border-color 0.2s ease, background 0.2s ease' }}>
+                        {uploadingResume ? (
+                            <svg className="enq-spin" width="15" height="15" viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.3 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3.5" /><path d="M22 12a10 10 0 00-10-10" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" /></svg>
+                        ) : (
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" /></svg>
+                        )}
+                        {uploadingResume ? 'Uploading...' : resumeUrl ? 'Resume uploaded — click to change' : 'Click to upload your resume'}
                         <input type="file" accept="application/pdf" style={{ display: 'none' }}
                             onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleResumeUpload(f); }} />
                     </label>
                 </div>
 
-                <div>
+                <div className="enq-field" style={{ animationDelay: '0.15s' }}>
                     <label style={labelStyle}>Message</label>
-                    <textarea className="enq-widget-input" value={form.message} onChange={e => update('message', e.target.value)} placeholder="Tell us a bit about your experience..." rows={2} style={{ ...inputStyleBase, resize: 'vertical', fontFamily: 'inherit' }} />
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '14px', color: '#94a3b8', pointerEvents: 'none', display: 'flex' }}>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" /></svg>
+                        </span>
+                        <textarea className="enq-widget-input" value={form.message} onChange={e => update('message', e.target.value)} placeholder="Tell us a bit about your experience..." rows={2} style={{ ...inputStyleBase, resize: 'vertical', fontFamily: 'inherit', paddingTop: '11px' }} />
+                    </div>
                 </div>
 
-                <button type="submit" disabled={submitting} className="enq-widget-submit"
-                    style={{ marginTop: '4px', alignSelf: 'flex-start', padding: '11px 28px', background: tc.primary, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer', transition: 'filter 0.2s ease' }}>
+                <button type="submit" disabled={submitting} className="enq-widget-submit enq-field"
+                    style={{
+                        marginTop: '2px', padding: '12px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff',
+                        border: 'none', borderRadius: '8px', fontSize: '14.5px', fontWeight: 700, cursor: submitting ? 'wait' : 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                        boxShadow: `0 8px 22px ${tc.primary}38`, animationDelay: '0.2s',
+                    }}>
+                    {submitting && (
+                        <svg className="enq-spin" width="15" height="15" viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.3 }} cx="12" cy="12" r="10" stroke="#fff" strokeWidth="3.5" /><path d="M22 12a10 10 0 00-10-10" stroke="#fff" strokeWidth="3.5" strokeLinecap="round" /></svg>
+                    )}
                     {submitting ? 'Submitting...' : 'Send Message'}
                 </button>
             </form>
@@ -264,20 +317,33 @@ const EnquiryWidget = () => {
     const admissionOn = isModuleEnabled(school, 'admission');
     const careerOn = isModuleEnabled(school, 'career');
     const onAdmissionProcedurePage = location.pathname.endsWith('/admission-procedure');
+    const isHomePage = location.pathname === `/school/${slug}`;
 
     return (
         <>
             <style>{`
-                .enq-widget-tab:hover { filter: brightness(1.08); }
-                .enq-widget-input:focus { border-color: ${tc.primary} !important; }
-                .enq-widget-submit:hover { filter: brightness(1.06); }
+                .enq-widget-tab:hover { filter: brightness(1.08); transform: translateY(-50%) translateX(-2px); }
+                .enq-widget-close:hover { background: #e2e8f0 !important; }
+                .enq-widget-input:focus { border-color: ${tc.primary} !important; background: #ffffff !important; box-shadow: 0 0 0 3.5px ${tc.primary}1a; }
+                .enq-widget-submit { transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease; }
+                .enq-widget-submit:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.06); box-shadow: 0 12px 28px ${tc.primary}45; }
+                .enq-widget-submit:active:not(:disabled) { transform: translateY(0); }
+                .enq-resume-drop:hover { border-color: ${tc.primary} !important; }
+                .enq-success-close { transition: transform 0.18s ease, border-color 0.18s ease; }
+                .enq-success-close:hover { transform: translateY(-1px); border-color: ${tc.primary}; }
+                .enq-modal-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+                .enq-modal-scroll::-webkit-scrollbar { display: none; width: 0; height: 0; }
                 @keyframes enqModalIn { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
-                .enq-success-badge { animation: enqCheckPop 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
-                .enq-success-ring { animation: enqRingPulse 0.9s ease-out 0.1s both; }
-                .enq-success-check { stroke-dasharray: 28; stroke-dashoffset: 28; animation: enqCheckDraw 0.3s ease-out 0.35s forwards; }
+                @keyframes enqFieldIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                .enq-field { animation: enqFieldIn 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+                .enq-success-badge { animation: enqCheckPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+                .enq-success-ring { animation: enqRingPulse 1s ease-out 0.1s both; }
+                .enq-success-check { stroke-dasharray: 28; stroke-dashoffset: 28; animation: enqCheckDraw 0.35s ease-out 0.4s forwards; }
                 @keyframes enqCheckPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-                @keyframes enqRingPulse { 0% { transform: scale(0.7); opacity: 0.7; } 100% { transform: scale(2); opacity: 0; } }
+                @keyframes enqRingPulse { 0% { transform: scale(0.75); opacity: 0.8; } 100% { transform: scale(1.7); opacity: 0; } }
                 @keyframes enqCheckDraw { to { stroke-dashoffset: 0; } }
+                @keyframes enqSpin { to { transform: rotate(360deg); } }
+                .enq-spin { animation: enqSpin 0.7s linear infinite; }
                 @media (max-width: 420px) {
                     .enq-2col { grid-template-columns: 1fr !important; }
                 }
@@ -312,7 +378,7 @@ const EnquiryWidget = () => {
                 </button>
             )}
 
-            <AdmissionEnquiryModal school={school} tc={tc} bc={bc} suppressAutoPopup={onAdmissionProcedurePage} />
+            <AdmissionEnquiryModal school={school} tc={tc} bc={bc} suppressAutoPopup={onAdmissionProcedurePage} isHomePage={isHomePage} />
             <CareerEnquiryModal school={school} tc={tc} bc={bc} />
         </>
     );

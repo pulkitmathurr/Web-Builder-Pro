@@ -7,6 +7,23 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { cloudinaryAttachmentUrl } from "../../utils/cloudinaryUrl";
+
+const BookIcon = ({ color }) => (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+    </svg>
+);
+const DownloadIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 3v12m0 0l-4-4m4 4l4-4" /><path d="M4 19h16" />
+    </svg>
+);
+const ExternalIcon = () => (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14 5h5v5" /><path d="M19 5l-8 8" /><path d="M19 13v4a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2h4" />
+    </svg>
+);
 
 const BookListPublic = () => {
     const { slug } = useParams();
@@ -71,12 +88,17 @@ const BookListPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.85em; }
                 .rte-content .ql-size-large { font-size: 1.2em; }
                 .rte-content .ql-size-huge { font-size: 1.5em; }
-                .bl-view-link { transition: opacity 0.15s ease; }
-                .bl-view-link:hover { opacity: 0.7; }
-                .bl-table-row:hover { background: #f8fafc; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                @keyframes blRowIn { from { opacity: 0; transform: translateX(-8px); } to { opacity: 1; transform: translateX(0); } }
+                .bl-row { animation: blRowIn 0.4s ease both; transition: background 0.2s ease; }
+                .bl-row:hover { background: ${tc.primary}08; }
+                .bl-row:hover .bl-row-icon { transform: scale(1.1) rotate(-4deg); background: ${tc.primary} !important; }
+                .bl-row:hover .bl-row-icon svg { stroke: #ffffff !important; }
+                .bl-row-icon { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.25s ease; }
+                .bl-view-btn { transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
+                .bl-view-btn:hover { transform: translateY(-1px); filter: brightness(1.06); box-shadow: 0 8px 18px ${tc.primary}45; }
             `}</style>
 
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
@@ -101,41 +123,54 @@ const BookListPublic = () => {
                 {/* ── Card — title + description + table ── */}
                 <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 7rem' }}>
                     <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-                        <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 8px 28px rgba(15,23,42,0.06)', overflow: 'hidden' }}>
-                            <div style={{ padding: '1.75rem 2rem' }}>
-                                {content.cardTitle && (
-                                    <h2 style={{ fontSize: '18px', fontWeight: 700, color: tc.primary, marginBottom: '14px' }}>{content.cardTitle}</h2>
-                                )}
-                                {content.description && (
-                                    <div className="rte-content" style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85 }}
-                                        dangerouslySetInnerHTML={{ __html: content.description }} />
-                                )}
-                            </div>
+                        <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #eef1f5', boxShadow: '0 10px 34px rgba(15,23,42,0.07)', overflow: 'hidden' }}>
+                            {(content.cardTitle || content.description) && (
+                                <div style={{ padding: '1.85rem 2.25rem' }}>
+                                    {content.cardTitle && (
+                                        <h2 style={{ fontSize: '18px', fontWeight: 700, color: tc.primary, marginBottom: '12px' }}>{content.cardTitle}</h2>
+                                    )}
+                                    {content.description && (
+                                        <div className="rte-content" style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85 }}
+                                            dangerouslySetInnerHTML={{ __html: content.description }} />
+                                    )}
+                                </div>
+                            )}
 
                             {rows.length > 0 ? (
                                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr style={{ background: tc.primary }}>
-                                            <th style={{ textAlign: 'left', padding: '12px 2rem', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>Class</th>
-                                            <th style={{ textAlign: 'left', padding: '12px 2rem', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>View</th>
+                                        <tr style={{ background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
+                                            <th style={{ textAlign: 'left', padding: '13px 2.25rem', fontSize: '11.5px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Class</th>
+                                            <th style={{ textAlign: 'right', padding: '13px 2.25rem', fontSize: '11.5px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Book List</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {rows.map(row => (
-                                            <tr key={row.id} className="bl-table-row" style={{ borderTop: '1px solid #f1f5f9', transition: 'background 0.15s ease' }}>
-                                                <td style={{ padding: '13px 2rem', fontSize: '14px', color: '#0f172a' }}>{row.className}</td>
-                                                <td style={{ padding: '13px 2rem' }}>
-                                                    <a href={row.pdfUrl || row.linkUrl} target="_blank" rel="noopener noreferrer" className="bl-view-link"
-                                                        style={{ fontSize: '13.5px', fontWeight: 600, color: tc.primary, textDecoration: 'underline' }}>
-                                                        View
-                                                    </a>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {rows.map((row, i) => {
+                                            const isPdf = !!row.pdfUrl;
+                                            return (
+                                                <tr key={row.id} className="bl-row" style={{ borderTop: '1px solid #f1f5f9', animationDelay: `${i * 0.04}s` }}>
+                                                    <td style={{ padding: '11px 2.25rem' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '13px' }}>
+                                                            <div className="bl-row-icon" style={{ width: '36px', height: '36px', borderRadius: '9px', background: `${tc.primary}12`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                                <BookIcon color={tc.primary} />
+                                                            </div>
+                                                            <span style={{ fontSize: '14.5px', fontWeight: 600, color: '#0f172a' }}>{row.className}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td style={{ padding: '11px 2.25rem', textAlign: 'right' }}>
+                                                        <a href={isPdf ? cloudinaryAttachmentUrl(row.pdfUrl, `${row.className}-book-list`) : row.linkUrl} target="_blank" rel="noopener noreferrer" className="bl-view-btn"
+                                                            style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '8px 15px', borderRadius: '8px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#ffffff', fontSize: '12px', fontWeight: 600, textDecoration: 'none', boxShadow: `0 4px 12px ${tc.primary}35` }}>
+                                                            {isPdf ? <DownloadIcon /> : <ExternalIcon />}
+                                                            {isPdf ? 'Download' : 'View'}
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             ) : (
-                                <p style={{ padding: '0 2rem 1.75rem', fontSize: '13.5px', color: '#94a3b8' }}>No book lists published yet — check back soon.</p>
+                                <p style={{ padding: '0 2.25rem 1.85rem', fontSize: '13.5px', color: '#94a3b8' }}>No book lists published yet — check back soon.</p>
                             )}
                         </div>
                     </div>

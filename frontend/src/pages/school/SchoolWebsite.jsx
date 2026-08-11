@@ -4,10 +4,57 @@ import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
 import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
-import { getThemeColors, isModuleEnabled } from "../../constants/publicNav";
+import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { SHIELD_PATH_D, SHIELD_ASPECT } from "../../constants/shieldShape";
 import { parseDate, shortDate } from "../../utils/dateTimeFormat";
 import { getMusicTrack } from "../../constants/musicTracks";
+
+// ── Scroll-triggered fade+slide-up, same pattern used on every other public page ──
+const useScrollReveal = () => {
+    const ref = useRef(null);
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) setVisible(true); },
+            { threshold: 0.15 }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    return [ref, visible];
+};
+
+const Reveal = ({ children, delay = 0, style = {}, className }) => {
+    const [ref, visible] = useScrollReveal();
+    return (
+        <div ref={ref} className={className} style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(40px)',
+            transition: `opacity 0.8s ease ${delay}s, transform 0.8s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+            ...style
+        }}>
+            {children}
+        </div>
+    );
+};
+
+// ── Two overlapping shield/crest-shaped photos for the Homepage Highlight section.
+// The clip path is defined once in objectBoundingBox units so it scales with each
+// image element's own size rather than needing fixed pixel coordinates. ──
+const ShieldClipDefs = () => (
+    <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
+        <defs>
+            <clipPath id="homeShieldClip" clipPathUnits="objectBoundingBox">
+                <path d={SHIELD_PATH_D} />
+            </clipPath>
+        </defs>
+    </svg>
+);
 
 // ── Thin autoscrolling strip, fixed above the navbar, surfacing the
 // latest announcements — admin-toggleable from the Home Page settings ──
@@ -258,6 +305,13 @@ const SchoolWebsite = () => {
         setShowWelcomeBanner(true);
     }, [school, introVisible]);
 
+    // Notifies EnquiryWidget's admission auto-popup (a separate component mounted in
+    // App.jsx) that it's safe to open now, so the two popups queue instead of stacking.
+    const closeWelcomeBanner = () => {
+        setShowWelcomeBanner(false);
+        window.dispatchEvent(new Event('welcome-banner-closed'));
+    };
+
     const fetchSchool = async () => {
         try {
             const res = await getPublicSchoolApi(slug);
@@ -306,6 +360,10 @@ const SchoolWebsite = () => {
     if (!school) return null;
 
     const tc = getThemeColors(school.theme);
+    const bc = getBaseColors(school.base_theme);
+
+    const hasIntroSection = !!(homeContent?.introHeading || homeContent?.introDescription || homeContent?.introImage1 || homeContent?.introImage2);
+    const campusImages = homeContent?.campusImages || [];
 
     const tickerItems = homeContent?.showAnnouncementTicker !== false && isModuleEnabled(school, 'announcements')
         ? [...(announcementsContent?.announcements || [])]
@@ -362,12 +420,15 @@ const SchoolWebsite = () => {
                 </div>
             )}
 
-            {/* ── Welcome Banner Popup — optional admissions/promo poster set from Settings ── */}
+            {/* ── Welcome Banner Popup — optional admissions/promo poster set from Settings.
+                 Closing it (backdrop click or ×) fires 'welcome-banner-closed' so EnquiryWidget's
+                 admission auto-popup (mounted separately in App.jsx) waits its turn instead of
+                 opening on top of this banner — see closeWelcomeBanner. ── */}
             {showWelcomeBanner && school.welcome_banner_url && (
-                <div onClick={() => setShowWelcomeBanner(false)}
+                <div onClick={closeWelcomeBanner}
                     style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(2,6,23,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.3s ease' }}>
                     <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '440px', width: '100%' }}>
-                        <button onClick={() => setShowWelcomeBanner(false)} aria-label="Close"
+                        <button onClick={closeWelcomeBanner} aria-label="Close"
                             style={{ position: 'absolute', top: '-14px', right: '-14px', width: '32px', height: '32px', borderRadius: '50%', background: '#ffffff', border: 'none', color: '#0f172a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2, fontSize: '18px', lineHeight: 1, boxShadow: '0 4px 14px rgba(0,0,0,0.35)' }}>
                             ×
                         </button>
@@ -412,6 +473,17 @@ const SchoolWebsite = () => {
                     .hero-buttons-row { flex-wrap: nowrap !important; gap: 6px !important; }
                     .hero-water-btn { padding: 9px 8px !important; font-size: 9px !important; letter-spacing: 0.02em !important; white-space: nowrap !important; flex: 1 1 0 !important; text-align: center !important; }
                 }
+                @media (max-width: 800px) {
+                    .home-intro-grid { grid-template-columns: 1fr !important; }
+                }
+                .cg-tile img { transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+                .cg-tile-overlay, .cg-tile-ring { transition: opacity 0.4s ease; }
+                .cg-tile { transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease; }
+                .cg-tile:hover { transform: translateY(-8px); box-shadow: 0 22px 46px rgba(15,23,42,0.24) !important; }
+                .cg-tile:hover img { transform: scale(1.1); }
+                .cg-tile:hover .cg-tile-overlay, .cg-tile:hover .cg-tile-ring { opacity: 1 !important; }
+                @keyframes cgOrbDrift { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-22px,18px) scale(1.08); } }
+                .cg-orb { animation: cgOrbDrift 11s ease-in-out infinite; }
             `}</style>
 
             <div style={{ width: '100%', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: '#020617', position: 'relative', overflowX: 'hidden' }}>
@@ -426,11 +498,8 @@ const SchoolWebsite = () => {
                 {/* ── Shared Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" topOffset={tickerVisible ? 34 : 0} />
 
-                {/* ── Hero — video / banner slideshow background — taller than one viewport (fixed
-                     px buffer on top of 100vh, not a vh percentage, so it stays taller than the
-                     screen even on shorter laptop viewports) so the footer isn't already visible
-                     without scrolling ── */}
-                <div style={{ width: '100%', height: 'calc(100vh + 220px)', position: 'relative', overflow: 'hidden' }}>
+                {/* ── Hero — video / banner slideshow background ── */}
+                <div style={{ width: '100%', height: '100vh', minHeight: '600px', position: 'relative', overflow: 'hidden' }}>
                     {heroBanners.length > 0 ? (
                         heroBanners.map((b, i) => (
                             <div key={b.id || b.url} aria-hidden={i !== bannerIndex}
@@ -446,9 +515,7 @@ const SchoolWebsite = () => {
                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(2,6,23,0.55)', zIndex: 1 }}></div>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '60px 60px', zIndex: 1 }}></div>
 
-                    {/* Pinned to the real viewport height (not the taller buffered container above)
-                         so the heading/buttons always land above the fold, no scrolling needed. */}
-                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100vh', zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.25rem,7vw,4.5rem) clamp(1.25rem,6vw,5rem) clamp(3rem,10vw,4.5rem)', boxSizing: 'border-box' }}>
+                    <div style={{ position: 'absolute', inset: 0, zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.25rem,6vw,3.5rem) clamp(1.25rem,6vw,5rem) clamp(2rem,6vw,3rem)', boxSizing: 'border-box' }}>
                         <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '16px' }}>
                             {school.city || 'Excellence in Education'}
                         </p>
@@ -476,6 +543,100 @@ const SchoolWebsite = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* ── Homepage Highlight — optional two-shield-photo + heading/description
+                     block, admin-managed from Home Page settings. Hidden entirely until the
+                     admin fills in at least one field. ── */}
+                {hasIntroSection && (
+                    <section style={{ background: bc.surfaceAlt, padding: 'clamp(3rem,8vw,6rem) clamp(1.25rem,6vw,5rem)', position: 'relative' }}>
+                        <ShieldClipDefs />
+                        <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(260px,400px) 1fr', gap: 'clamp(2rem,6vw,4.5rem)', alignItems: 'center' }}>
+                            <Reveal>
+                                <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5' }}>
+                                    {/* Each shield photo is built from nested same-shape layers (gradient
+                                         frame → thin hairline → photo) rather than a CSS border/outline,
+                                         since those get cut oddly by the clip-path shape. ── */}
+                                    {homeContent.introImage1 && (
+                                        <div style={{ position: 'absolute', left: 0, top: 0, width: '68%', aspectRatio: `${SHIELD_ASPECT}`, clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '7px', background: `linear-gradient(150deg,${tc.secondary},${tc.primary})`, boxShadow: '0 20px 45px rgba(0,0,0,0.2)', zIndex: 1 }}>
+                                            <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '2.5px', background: '#ffffff' }}>
+                                                <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', overflow: 'hidden' }}>
+                                                    <img src={homeContent.introImage1} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {homeContent.introImage2 && (
+                                        <div style={{ position: 'absolute', right: 0, bottom: 0, width: '54%', aspectRatio: `${SHIELD_ASPECT}`, clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '6px', background: bc.surfaceAlt, boxShadow: '0 20px 45px rgba(0,0,0,0.25)', zIndex: 2 }}>
+                                            <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '7px', background: `linear-gradient(150deg,${tc.secondary},${tc.primary})` }}>
+                                                <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '2.5px', background: '#ffffff' }}>
+                                                    <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', overflow: 'hidden' }}>
+                                                        <img src={homeContent.introImage2} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </Reveal>
+                            <Reveal delay={0.1}>
+                                <div>
+                                    {homeContent.introHeading && (
+                                        <h2 style={{
+                                            fontFamily: homeContent.introHeadingFont ? getFontFamily(homeContent.introHeadingFont) : "'Playfair Display', Georgia, serif",
+                                            fontStyle: homeContent.introHeadingFont ? 'normal' : 'italic',
+                                            fontWeight: 700, fontSize: 'clamp(22px,3vw,32px)', color: homeContent.introHeadingColor || tc.primary, lineHeight: 1.4, marginBottom: '1.25rem',
+                                        }}>
+                                            {homeContent.introHeading}
+                                        </h2>
+                                    )}
+                                    {homeContent.introDescription && (
+                                        <div className="rte-content" style={{ fontSize: '15px', color: '#334155', lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: homeContent.introDescription }} />
+                                    )}
+                                </div>
+                            </Reveal>
+                        </div>
+                    </section>
+                )}
+
+                {/* ── Campus Glimpses — optional photo grid, admin-managed from Home Page
+                     settings. Hidden entirely until the admin uploads at least one photo. ── */}
+                {campusImages.length > 0 && (
+                    <section style={{ background: `linear-gradient(180deg, ${bc.surface}, ${bc.card})`, padding: 'clamp(3.5rem,9vw,7rem) clamp(1.25rem,6vw,5rem)', position: 'relative', overflow: 'hidden' }}>
+                        <div className="cg-orb" style={{ position: 'absolute', width: '420px', height: '420px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.primary}26 0%, transparent 70%)`, top: '-160px', left: '-120px', pointerEvents: 'none' }} />
+                        <div className="cg-orb" style={{ position: 'absolute', width: '360px', height: '360px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}22 0%, transparent 70%)`, bottom: '-140px', right: '-100px', pointerEvents: 'none', animationDelay: '-4s' }} />
+
+                        <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+                            <Reveal style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                                <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: tc.secondary, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                                    School Life
+                                </span>
+                                <h2 style={{
+                                    fontFamily: homeContent.campusHeadingFont ? getFontFamily(homeContent.campusHeadingFont) : undefined,
+                                    fontSize: 'clamp(26px,3.8vw,40px)', fontWeight: 800, color: homeContent.campusHeadingColor || tc.primary, marginBottom: '16px', letterSpacing: '-0.4px',
+                                }}>
+                                    {homeContent.campusHeading || 'Campus Glimpses'}
+                                </h2>
+                                <div style={{ width: '64px', height: '4px', borderRadius: '99px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, margin: '0 auto 18px' }} />
+                                {homeContent.campusSubtext && (
+                                    <p style={{ fontSize: '14.5px', color: '#64748b', lineHeight: 1.8, maxWidth: '620px', margin: '0 auto' }}>
+                                        {homeContent.campusSubtext}
+                                    </p>
+                                )}
+                            </Reveal>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: '24px' }}>
+                                {campusImages.map((img, i) => (
+                                    <Reveal key={img.id || img.url} delay={i * 0.06}>
+                                        <div className="cg-tile" style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', aspectRatio: '3 / 4', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                            <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                            <div className="cg-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
+                                            <div className="cg-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
+                                        </div>
+                                    </Reveal>
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

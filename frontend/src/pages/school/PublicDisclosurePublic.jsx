@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { cloudinaryAttachmentUrl } from "../../utils/cloudinaryUrl";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -90,7 +91,7 @@ const CategoryTable = ({ category, tc, bc }) => {
                         ) : (
                             <span style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                                 {row.pdfUrl && (
-                                    <a href={row.pdfUrl} target="_blank" rel="noopener noreferrer"
+                                    <a href={cloudinaryAttachmentUrl(row.pdfUrl, row.label)} target="_blank" rel="noopener noreferrer"
                                         style={{ fontSize: '12.5px', color: '#2563eb', textDecoration: 'underline', lineHeight: 1.6 }}>
                                         View Document
                                     </a>
@@ -263,7 +264,7 @@ const PublicDisclosurePublic = () => {
                             <h2 style={{ fontSize: 'clamp(20px,2.4vw,26px)', fontWeight: 800, color: PD_HEADING, marginBottom: '1.5rem' }}>
                                 {(content.disclosurePdf.label || 'Mandatory Public Disclosure').toUpperCase()}
                             </h2>
-                            <a href={content.disclosurePdf.pdfUrl} target="_blank" rel="noopener noreferrer" className="pd-cta-btn"
+                            <a href={cloudinaryAttachmentUrl(content.disclosurePdf.pdfUrl, content.disclosurePdf.label || 'mandatory-public-disclosure')} target="_blank" rel="noopener noreferrer" className="pd-cta-btn"
                                 style={{
                                     display: 'inline-flex', alignItems: 'center', gap: '10px',
                                     padding: '14px 32px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
