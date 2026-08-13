@@ -133,6 +133,12 @@ const AboutUs = () => {
     updated[index] = { ...updated[index], [field]: value };
     setContent((prev) => ({ ...prev, values: updated }));
   };
+  const addValue = () => {
+    setContent((prev) => ({ ...prev, values: [...prev.values, { title: "", description: "" }] }));
+  };
+  const removeValue = (index) => {
+    setContent((prev) => ({ ...prev, values: prev.values.filter((_, i) => i !== index) }));
+  };
 
   // ── Vision & Mission items ──
   const addVisionItem = () => {
@@ -209,7 +215,7 @@ const AboutUs = () => {
   // ── History gallery images (horizontal strip below the history text) ──
   // Each file is cropped one at a time (freeform, no locked aspect) before upload;
   // once confirmed, the next queued file automatically opens in the crop modal.
-  const HISTORY_GALLERY_MAX = 3;
+  const HISTORY_GALLERY_MAX = 10;
 
   const startGalleryUpload = (files) => {
     if (files.length === 0) return;
@@ -371,7 +377,7 @@ const AboutUs = () => {
   const sections = [
     {
       key: "vision",
-      label: "Vision & Mission",
+      label: "What Drives Us",
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -417,7 +423,7 @@ const AboutUs = () => {
     },
     {
       key: "affiliations",
-      label: "Affiliation & Certification",
+      label: "Affiliations & Certifications",
       icon: (
         <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.031 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -635,7 +641,7 @@ const AboutUs = () => {
           ))}
         </div>
 
-        {/* ── Vision & Mission Tab ── */}
+        {/* ── What Drives Us Tab ── */}
         {activeSection === "vision" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div style={cardStyle}>
@@ -648,7 +654,7 @@ const AboutUs = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Vision & Mission</p>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>What Drives Us</p>
                     <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Add as many statements as you like — you choose the heading for each. These scroll as an animated ticker on your website.</p>
                   </div>
                 </div>
@@ -794,7 +800,7 @@ const AboutUs = () => {
               <div>
                 <label style={labelStyle}>History Gallery Images (Horizontal)</label>
                 <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
-                  Shown as a horizontal strip below the history text — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each. Max {HISTORY_GALLERY_MAX} images ({(content.historyGalleryImages || []).length}/{HISTORY_GALLERY_MAX} used).
+                  Shown as a horizontal strip below the history text — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each. Max {HISTORY_GALLERY_MAX} images ({(content.historyGalleryImages || []).length}/{HISTORY_GALLERY_MAX} used). More than 3 images auto-rolls with 3 visible at a time; click any image on the site to view it larger.
                 </p>
                 <div className="au-gallery-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "1.25rem" }}>
                   {(content.historyGalleryImages || []).map((img, i) => (
@@ -964,6 +970,26 @@ const AboutUs = () => {
 
         {/* ── Core Values Tab ── */}
         {activeSection === "values" && (
+          <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+            <div style={cardStyle}>
+              <div className="au-card-header-main" style={cardHeaderStyle}>
+                <div className="au-card-header-icon-row" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div className="au-card-header-icon" style={{ width: "38px", height: "38px", background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                    <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Core Values</p>
+                    <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Add as many values as you like — remove any you don't need.</p>
+                  </div>
+                </div>
+                <button className="au-add-btn" onClick={addValue} style={addButtonStyle}>+ Add Value</button>
+              </div>
+            </div>
+            {content.values.length === 0 && (
+              <p style={{ fontSize: "13px", color: "#94a3b8" }}>No core values yet — click "+ Add Value" above to create your first one.</p>
+            )}
           <div className="au-section au-values-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
             {content.values.map((v, i) => (
               <div key={i} style={cardStyle}>
@@ -974,6 +1000,7 @@ const AboutUs = () => {
                     </div>
                     <p style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>Core Value {i + 1}</p>
                   </div>
+                  <button onClick={() => removeValue(i)} style={removeButtonStyle}>Remove</button>
                 </div>
                 <div style={{ padding: "1.5rem 1.75rem", display: "flex", flexDirection: "column", gap: "14px" }}>
                   <div>
@@ -1000,9 +1027,10 @@ const AboutUs = () => {
               </div>
             ))}
           </div>
+          </div>
         )}
 
-        {/* ── Affiliation & Certification Tab ── */}
+        {/* ── Affiliations & Certifications Tab ── */}
         {/* ── Awards & Recognition Tab ── */}
         {activeSection === "awards" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -1115,7 +1143,7 @@ const AboutUs = () => {
           </div>
         )}
 
-        {/* ── Affiliation & Certification Tab ── */}
+        {/* ── Affiliations & Certifications Tab ── */}
         {activeSection === "affiliations" && (
           <div className="au-section" style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
             <div style={cardStyle}>
@@ -1127,7 +1155,7 @@ const AboutUs = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Affiliation & Certification</p>
+                    <p className="au-card-header-title" style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a", marginBottom: "1px" }}>Affiliations & Certifications</p>
                     <p className="au-card-header-desc" style={{ fontSize: "11px", color: "#94a3b8" }}>Board affiliations, certifications, memberships — e.g. CBSE Affiliation, NCC. Add as many as you like.</p>
                   </div>
                 </div>
@@ -1146,7 +1174,7 @@ const AboutUs = () => {
                   />
                   <ItalicToggle active={!!content.affiliationsHeadingItalic} onToggle={() => handleChange("affiliationsHeadingItalic", !content.affiliationsHeadingItalic)} />
                 </div>
-                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "6px" }}>Leave blank to keep the default "Affiliation & Certification" heading.</p>
+                <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "6px" }}>Leave blank to keep the default "Affiliations & Certifications" heading.</p>
                 <HeadingStyleField
                   color={content.affiliationsHeadingColor} onColorChange={(val) => handleChange("affiliationsHeadingColor", val)}
                   font={content.affiliationsHeadingFont} onFontChange={(val) => handleChange("affiliationsHeadingFont", val)}
@@ -1206,7 +1234,7 @@ const AboutUs = () => {
                       placeholder="Enter Link URL"
                       style={inputStyle}
                     />
-                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>e.g. the certifying board's website — makes the card clickable on your site.</p>
+                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>Paste a Google Drive (or any) link to the affiliation letter/certificate — shown via the "View" button on your site.</p>
                   </div>
                 </div>
               </div>

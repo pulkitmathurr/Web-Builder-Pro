@@ -9,6 +9,7 @@ import { FONT_OPTIONS, getFontFamily } from '../../../constants/fonts';
 import { SHIELD_PATH_D, SHIELD_ASPECT } from '../../../constants/shieldShape';
 
 const CAMPUS_IMAGES_MAX = 10;
+const HERO_BANNERS_MAX = 5;
 
 const VideoIcon = ({ size = 28, color = '#94a3b8' }) => (
     <svg width={size} height={size} fill="none" stroke={color} strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
@@ -235,6 +236,13 @@ const HomePage = () => {
             if (remaining === 0) { toast.error(`You can upload up to ${CAMPUS_IMAGES_MAX} photos in Campus Glimpses`); return; }
             if (files.length > remaining) {
                 toast.error(`Only ${remaining} more photo${remaining === 1 ? '' : 's'} can be added (max ${CAMPUS_IMAGES_MAX})`);
+                files = files.slice(0, remaining);
+            }
+        } else if (target === 'banner') {
+            const remaining = Math.max(0, HERO_BANNERS_MAX - content.heroBanners.length);
+            if (remaining === 0) { toast.error(`You can upload up to ${HERO_BANNERS_MAX} banner images`); return; }
+            if (files.length > remaining) {
+                toast.error(`Only ${remaining} more banner${remaining === 1 ? '' : 's'} can be added (max ${HERO_BANNERS_MAX})`);
                 files = files.slice(0, remaining);
             }
         }
@@ -551,9 +559,12 @@ const HomePage = () => {
                         </div>
                     ) : (
                         <div style={{ padding: '1.75rem 2rem 2rem' }}>
-                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '14px' }}>
-                                Upload multiple images — they'll auto-rotate with a fade every 8 seconds behind the hero text. Wide images (16:9 or wider) work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.
-                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                    Upload up to {HERO_BANNERS_MAX} images — they'll auto-rotate with a fade every 3 seconds behind the hero text. Wide images (16:9 or wider) work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.
+                                </p>
+                                <span style={{ fontSize: '11px', color: content.heroBanners.length >= HERO_BANNERS_MAX ? '#dc2626' : '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>{content.heroBanners.length} / {HERO_BANNERS_MAX}</span>
+                            </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px' }}>
                                 {content.heroBanners.map((b, i) => (
                                     <div key={b.id} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', border: '0.5px solid #e2e8f0', height: '90px' }}>
@@ -565,17 +576,19 @@ const HomePage = () => {
                                         <div style={{ position: 'absolute', bottom: '5px', left: '6px', fontSize: '10px', color: '#fff', background: 'rgba(0,0,0,0.5)', padding: '1px 6px', borderRadius: '4px' }}>#{i + 1}</div>
                                     </div>
                                 ))}
-                                <div onClick={() => document.getElementById('heroBannerInput').click()}
-                                    style={{ height: '90px', border: '1.5px dashed #e2e8f0', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: (uploadingImage && cropTarget === 'banner') ? 'not-allowed' : 'pointer', background: '#fafafa' }}>
-                                    {(uploadingImage && cropTarget === 'banner') ? (
-                                        <svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke={tc.primary} strokeWidth="4"/><path style={{ opacity: 0.75 }} fill={tc.primary} d="M4 12a8 8 0 018-8v8z"/></svg>
-                                    ) : (
-                                        <>
-                                            <BannerIcon size={20} />
-                                            <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500 }}>Add Banner(s)</p>
-                                        </>
-                                    )}
-                                </div>
+                                {content.heroBanners.length < HERO_BANNERS_MAX && (
+                                    <div onClick={() => document.getElementById('heroBannerInput').click()}
+                                        style={{ height: '90px', border: '1.5px dashed #e2e8f0', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: (uploadingImage && cropTarget === 'banner') ? 'not-allowed' : 'pointer', background: '#fafafa' }}>
+                                        {(uploadingImage && cropTarget === 'banner') ? (
+                                            <svg style={{ animation: 'spin 1s linear infinite', width: '18px', height: '18px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke={tc.primary} strokeWidth="4"/><path style={{ opacity: 0.75 }} fill={tc.primary} d="M4 12a8 8 0 018-8v8z"/></svg>
+                                        ) : (
+                                            <>
+                                                <BannerIcon size={20} />
+                                                <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 500 }}>Add Banner(s)</p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <input id="heroBannerInput" type="file" accept="image/jpeg,image/jpg,image/png,image/webp" multiple onChange={e => openImageCrop(e, 'banner')} style={{ display: 'none' }} />
                             {content.heroBanners.length === 0 && (

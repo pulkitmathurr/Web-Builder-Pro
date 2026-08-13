@@ -117,8 +117,9 @@ const SimpleDivider = ({ color }) => (
     </div>
 );
 
-// ── Affiliation & Certification — logo + name table, name links out when the admin has set a
-// Link URL. Row order follows the admin's reorder (up/down) controls, same as every other list ──
+// ── Affiliations & Certifications — logo + name table; a "View" button opens the admin's
+// Link URL (e.g. a Drive link) when set. Row order follows the admin's reorder (up/down)
+// controls, same as every other list ──
 const affilTdStyle = { fontFamily: "'Inter', system-ui, sans-serif", padding: '13px 20px', fontSize: '14.5px', color: '#334155', verticalAlign: 'middle', letterSpacing: '-0.1px' };
 
 const AffiliationsSection = ({ items, heading, headingColor, headingFont, headingItalic, tc, bc }) => {
@@ -128,7 +129,7 @@ const AffiliationsSection = ({ items, heading, headingColor, headingFont, headin
                 <Reveal>
                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
                         <h2 style={{ fontFamily: getFontFamily(headingFont), fontStyle: headingItalic ? 'italic' : 'normal', fontSize: '28px', fontWeight: 700, color: headingColor || '#334155', letterSpacing: '-0.5px' }}>
-                            {heading || 'Affiliation & Certification'}
+                            {heading || 'Affiliations & Certifications'}
                         </h2>
                         <SimpleDivider color={tc.primary} />
                     </div>
@@ -151,12 +152,17 @@ const AffiliationsSection = ({ items, heading, headingColor, headingFont, headin
                                                 )}
                                             </td>
                                             <td style={{ ...affilTdStyle, textAlign: 'center' }}>
+                                                <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.heading}</span>
+                                            </td>
+                                            <td style={{ ...affilTdStyle, textAlign: 'center' }}>
                                                 {item.link ? (
-                                                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="affil-link" style={{ color: tc.primary, fontWeight: 700, textDecoration: 'none' }}>
-                                                        {item.heading}
+                                                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="affil-view-btn"
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 16px', borderRadius: '20px', background: tc.light, color: tc.primary, fontWeight: 700, fontSize: '12.5px', textDecoration: 'none', border: `1px solid ${tc.primary}30` }}>
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                                        View
                                                     </a>
                                                 ) : (
-                                                    <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.heading}</span>
+                                                    <span style={{ color: '#cbd5e1', fontSize: '12.5px' }}>—</span>
                                                 )}
                                             </td>
                                         </tr>
@@ -250,6 +256,12 @@ const AboutUsPublic = () => {
                     animation: tickerScroll 40s linear infinite;
                 }
                 .ticker-track:hover { animation-play-state: paused; }
+                .history-ticker-track {
+                    display: flex;
+                    width: max-content;
+                    animation: tickerScroll ${Math.max(18, historyGallery.length * 6)}s linear infinite;
+                }
+                .history-ticker-track:hover { animation-play-state: paused; }
                 @keyframes historyFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
                 .history-frame { position: relative; padding: 14px; animation: historyFloat 5s ease-in-out infinite; }
                 .history-frame::before {
@@ -260,6 +272,8 @@ const AboutUsPublic = () => {
                 .history-frame-inner { position: relative; border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.14); }
                 .history-frame-inner img { width: 100%; height: 373px; object-fit: cover; display: block; transition: transform 0.7s cubic-bezier(0.16,1,0.3,1); }
                 .history-frame:hover .history-frame-inner img { transform: scale(1.07); }
+                .history-gallery-thumb { transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease; }
+                .history-gallery-thumb:hover { transform: translateY(-5px); }
                 .history-gallery-thumb:hover img { transform: scale(1.08); }
                 .history-frame-inner::after {
                     content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none;
@@ -299,10 +313,11 @@ const AboutUsPublic = () => {
                 }
                 .award-card-body { padding: 1.35rem 1.5rem 1.6rem; border-top: 1px solid rgba(15,23,42,0.06); }
 
-                /* ── Affiliation & Certification — logo + name table; name links out when a Link URL is set ── */
+                /* ── Affiliations & Certifications — logo + name table; "View" button opens the Link URL (e.g. a Drive link to the letter/certificate) ── */
                 .affil-row { transition: background 0.15s ease; }
                 .affil-row:hover { background: ${tc.light} !important; }
-                .affil-link:hover { text-decoration: underline; }
+                .affil-view-btn { transition: background 0.2s ease, transform 0.2s ease; }
+                .affil-view-btn:hover { background: ${tc.primary} !important; color: #ffffff !important; transform: translateY(-1px); }
 
                 .leader-frame { position: relative; padding: 10px; background: ${bc.card}; border-radius: 16px; box-shadow: 0 18px 42px rgba(0,0,0,0.12); transition: transform 0.4s cubic-bezier(0.16,1,0.3,1), box-shadow 0.4s ease; }
                 .leader-frame::before { content: ''; position: absolute; inset: 6px; border: 1.5px solid ${tc.primary}50; border-radius: 11px; pointer-events: none; z-index: 2; }
@@ -426,17 +441,35 @@ const AboutUsPublic = () => {
                             </div>
 
                             {historyGallery.length > 0 && (
-                                <div style={{ marginTop: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.25rem' }}>
-                                    {historyGallery.map((img, i) => (
-                                        <Reveal key={i} delay={i * 0.08}>
-                                            <div onClick={() => setLightbox({ index: i })}
-                                                style={{ borderRadius: '14px', overflow: 'hidden', boxShadow: '0 12px 30px rgba(0,0,0,0.1)', aspectRatio: '16/9', cursor: 'pointer' }}
-                                                className="history-gallery-thumb">
-                                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} />
+                                historyGallery.length > 3 ? (
+                                    <div style={{ marginTop: '2.5rem', position: 'relative' }}>
+                                        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '80px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                        <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '80px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                        <div style={{ overflow: 'hidden' }}>
+                                            <div className="history-ticker-track">
+                                                {[...historyGallery, ...historyGallery].map((img, i) => (
+                                                    <div key={i} onClick={() => setLightbox({ index: i % historyGallery.length })}
+                                                        style={{ flexShrink: 0, width: '400px', margin: '0 12px', borderRadius: '16px', overflow: 'hidden', border: '4px solid #ffffff', boxShadow: `0 0 0 2px ${tc.primary}45, 0 14px 34px rgba(0,0,0,0.16)`, aspectRatio: '16/9', cursor: 'pointer' }}
+                                                        className="history-gallery-thumb">
+                                                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} />
+                                                    </div>
+                                                ))}
                                             </div>
-                                        </Reveal>
-                                    ))}
-                                </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div style={{ marginTop: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                        {historyGallery.map((img, i) => (
+                                            <Reveal key={i} delay={i * 0.08}>
+                                                <div onClick={() => setLightbox({ index: i })}
+                                                    style={{ borderRadius: '16px', overflow: 'hidden', border: '4px solid #ffffff', boxShadow: `0 0 0 2px ${tc.primary}45, 0 14px 34px rgba(0,0,0,0.16)`, aspectRatio: '16/9', cursor: 'pointer' }}
+                                                    className="history-gallery-thumb">
+                                                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} />
+                                                </div>
+                                            </Reveal>
+                                        ))}
+                                    </div>
+                                )
                             )}
                         </div>
                     </div>
@@ -598,7 +631,7 @@ const AboutUsPublic = () => {
                     </div>
                 )}
 
-                {/* ── Affiliation & Certification — plain bordered-box row, auto-slides below Awards ── */}
+                {/* ── Affiliations & Certifications — plain bordered-box row, auto-slides below Awards ── */}
                 {affiliations.length > 0 && (
                     <AffiliationsSection
                         items={affiliations}

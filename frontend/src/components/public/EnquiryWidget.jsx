@@ -7,8 +7,6 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import AdmissionEnquiryForm from "./AdmissionEnquiryForm";
 import toast from "react-hot-toast";
 
-const AUTO_POPUP_DELAY_MS = 4000;
-
 const inputStyleBase = {
     width: '100%', padding: '11px 14px 11px 36px', border: '1.5px solid #e2e8f0', borderRadius: '8px',
     fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box',
@@ -83,20 +81,14 @@ const ModalShell = ({ open, onClose, bc, title, submitted, successTitle, success
     );
 };
 
-// ── Admission Enquiry modal — opens on floating tab click, on the "Admission
-// Enquiry" CTA elsewhere on the site (via the 'open-admission-enquiry' window
-// event, see SchoolWebsite.jsx), and once automatically per browser session.
-// The auto-popup is skipped on the Admission Procedure page (suppressAutoPopup) —
-// that page already embeds this exact form inline, so popping this modal on top
-// of it would just be a redundant duplicate of what's already on the page.
-// Renders the same shared <AdmissionEnquiryForm/> used on that page, so the
-// fields are always identical no matter where a visitor fills the form.
-//
-// The auto-popup also queues behind the home page's Welcome Banner popup (a
-// separate component, SchoolWebsite.jsx) instead of racing it — if a banner is
-// about to show, this waits for its 'welcome-banner-closed' event rather than
-// firing on its own fixed delay, so the two never stack on top of each other. ──
-const AdmissionEnquiryModal = ({ school, tc, bc, suppressAutoPopup = false, isHomePage = false }) => {
+// ── Admission Enquiry modal — opens only on floating tab click or the
+// "Admission Enquiry" CTA elsewhere on the site (via the 'open-admission-enquiry'
+// window event, see SchoolWebsite.jsx). No auto-popup on load — the site should
+// only ever show the form when the visitor explicitly asks for it.
+// Renders the same shared <AdmissionEnquiryForm/> used on the Admission
+// Procedure page, so the fields are always identical no matter where a visitor
+// fills the form. ──
+const AdmissionEnquiryModal = ({ school, tc, bc }) => {
     const [open, setOpen] = useState(false);
 
     useEffect(() => {
@@ -104,28 +96,6 @@ const AdmissionEnquiryModal = ({ school, tc, bc, suppressAutoPopup = false, isHo
         window.addEventListener('open-admission-enquiry', handler);
         return () => window.removeEventListener('open-admission-enquiry', handler);
     }, []);
-
-    useEffect(() => {
-        if (suppressAutoPopup) return;
-        if (!school || !isModuleEnabled(school, 'admission')) return;
-        const key = `enquiryModalShown_${school.id}`;
-        if (sessionStorage.getItem(key)) return;
-
-        const trigger = () => {
-            setOpen(true);
-            sessionStorage.setItem(key, '1');
-        };
-
-        const bannerKey = `welcomeBannerShown_${school.id}`;
-        const willShowWelcomeBanner = isHomePage && school.welcome_banner_enabled && school.welcome_banner_url && !sessionStorage.getItem(bannerKey);
-        if (willShowWelcomeBanner) {
-            window.addEventListener('welcome-banner-closed', trigger, { once: true });
-            return () => window.removeEventListener('welcome-banner-closed', trigger);
-        }
-
-        const t = setTimeout(trigger, AUTO_POPUP_DELAY_MS);
-        return () => clearTimeout(t);
-    }, [school, suppressAutoPopup, isHomePage]);
 
     if (!isModuleEnabled(school, 'admission')) return null;
 
@@ -316,8 +286,6 @@ const EnquiryWidget = () => {
     const bc = getBaseColors(school.base_theme);
     const admissionOn = isModuleEnabled(school, 'admission');
     const careerOn = isModuleEnabled(school, 'career');
-    const onAdmissionProcedurePage = location.pathname.endsWith('/admission-procedure');
-    const isHomePage = location.pathname === `/school/${slug}`;
 
     return (
         <>
@@ -378,7 +346,7 @@ const EnquiryWidget = () => {
                 </button>
             )}
 
-            <AdmissionEnquiryModal school={school} tc={tc} bc={bc} suppressAutoPopup={onAdmissionProcedurePage} isHomePage={isHomePage} />
+            <AdmissionEnquiryModal school={school} tc={tc} bc={bc} />
             <CareerEnquiryModal school={school} tc={tc} bc={bc} />
         </>
     );

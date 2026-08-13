@@ -134,64 +134,29 @@ const BackgroundMusicPlayer = ({ track, tc }) => {
 
 // ── Premium "water fill" hover button — fills up like water on hover,
 // drains back down with a few trailing drips when the pointer leaves ──
-const WaterButton = ({ children, variant = 'solid', tc, onClick }) => {
+const HeroButton = ({ children, variant = 'solid', tc, onClick }) => {
     const [hover, setHover] = useState(false);
-    const [drips, setDrips] = useState([]);
-
-    const handleLeave = () => {
-        setHover(false);
-        const newDrips = Array.from({ length: 3 }).map((_, i) => ({ id: `${Date.now()}-${i}`, left: 18 + Math.random() * 64, delay: i * 0.06 }));
-        setDrips(newDrips);
-        setTimeout(() => setDrips([]), 750);
-    };
-
     const solid = variant === 'solid';
 
     return (
         <button
             onClick={onClick}
             onMouseEnter={() => setHover(true)}
-            onMouseLeave={handleLeave}
+            onMouseLeave={() => setHover(false)}
             className="hero-water-btn"
             style={{
-                position: 'relative', overflow: 'hidden', isolation: 'isolate',
-                padding: '14px 32px', borderRadius: '6px', cursor: 'pointer',
+                padding: '14px 32px', borderRadius: '6px', cursor: 'pointer', border: 'none',
                 fontSize: '13px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                border: solid ? 'none' : '1px solid rgba(255,255,255,0.4)',
-                background: solid ? `linear-gradient(135deg,${tc.primary},${tc.secondary})` : 'transparent',
-                color: '#ffffff',
-                boxShadow: solid ? (hover ? `0 12px 36px ${tc.primary}70` : `0 8px 32px ${tc.primary}50`) : 'none',
+                background: solid ? `linear-gradient(135deg,${tc.primary},${tc.secondary})` : '#ffffff',
+                color: solid ? '#ffffff' : '#0f172a',
+                boxShadow: solid
+                    ? (hover ? `0 12px 36px ${tc.primary}70` : `0 8px 32px ${tc.primary}50`)
+                    : (hover ? '0 12px 36px rgba(0,0,0,0.28)' : '0 8px 32px rgba(0,0,0,0.18)'),
                 transform: hover ? 'translateY(-2px)' : 'translateY(0)',
                 transition: 'transform 0.25s ease, box-shadow 0.25s ease',
             }}
         >
-            {/* water fill layer */}
-            <span aria-hidden style={{
-                position: 'absolute', left: 0, right: 0, bottom: hover ? '0%' : '-100%',
-                height: '160%', zIndex: 0,
-                transition: 'bottom 0.55s cubic-bezier(0.65,0,0.35,1)',
-                background: solid ? 'rgba(255,255,255,0.22)' : `linear-gradient(180deg, ${tc.secondary}, ${tc.primary})`,
-            }}>
-                {/* animated wavy top edge */}
-                <span aria-hidden style={{
-                    position: 'absolute', top: '-1px', left: 0, width: '200%', height: '14px',
-                    background: `repeating-radial-gradient(circle at 10px -4px, transparent 0, transparent 6px, ${solid ? 'rgba(255,255,255,0.22)' : tc.secondary} 7px, ${solid ? 'rgba(255,255,255,0.22)' : tc.secondary} 9px)`,
-                    backgroundSize: '20px 14px',
-                    animation: hover ? 'waterWave 1.1s linear infinite' : 'none',
-                }} />
-            </span>
-
-            {/* drip dots that fall when the water drains */}
-            {drips.map(d => (
-                <span key={d.id} aria-hidden style={{
-                    position: 'absolute', bottom: '2px', left: `${d.left}%`, zIndex: 1,
-                    width: '4px', height: '9px', borderRadius: '0 0 50% 50% / 0 0 65% 65%',
-                    background: solid ? 'rgba(255,255,255,0.55)' : tc.secondary,
-                    animation: `waterDrip 0.7s ease-in ${d.delay}s forwards`,
-                }} />
-            ))}
-
-            <span style={{ position: 'relative', zIndex: 2 }}>{children}</span>
+            {children}
         </button>
     );
 };
@@ -273,7 +238,7 @@ const SchoolWebsite = () => {
         if (heroBanners.length < 2) return;
         const timer = setInterval(() => {
             setBannerIndex(i => (i + 1) % heroBanners.length);
-        }, 8000);
+        }, 3000);
         return () => clearInterval(timer);
     }, [heroBanners.length]);
 
@@ -305,12 +270,7 @@ const SchoolWebsite = () => {
         setShowWelcomeBanner(true);
     }, [school, introVisible]);
 
-    // Notifies EnquiryWidget's admission auto-popup (a separate component mounted in
-    // App.jsx) that it's safe to open now, so the two popups queue instead of stacking.
-    const closeWelcomeBanner = () => {
-        setShowWelcomeBanner(false);
-        window.dispatchEvent(new Event('welcome-banner-closed'));
-    };
+    const closeWelcomeBanner = () => setShowWelcomeBanner(false);
 
     const fetchSchool = async () => {
         try {
@@ -421,9 +381,9 @@ const SchoolWebsite = () => {
             )}
 
             {/* ── Welcome Banner Popup — optional admissions/promo poster set from Settings.
-                 Closing it (backdrop click or ×) fires 'welcome-banner-closed' so EnquiryWidget's
-                 admission auto-popup (mounted separately in App.jsx) waits its turn instead of
-                 opening on top of this banner — see closeWelcomeBanner. ── */}
+                 The only thing that opens automatically on page load; the Admission/Career
+                 Enquiry forms (EnquiryWidget, mounted separately in App.jsx) only ever open
+                 from an explicit click. ── */}
             {showWelcomeBanner && school.welcome_banner_url && (
                 <div onClick={closeWelcomeBanner}
                     style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(2,6,23,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.3s ease' }}>
@@ -450,8 +410,6 @@ const SchoolWebsite = () => {
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
-                @keyframes waterWave { from { transform: translateX(0); } to { transform: translateX(-20px); } }
-                @keyframes waterDrip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(26px); opacity: 0; } }
                 @keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
                 .announcement-ticker:hover .announcement-ticker-track { animation-play-state: paused; }
 .rte-content p { margin-bottom: 0.8em; }
@@ -484,6 +442,8 @@ const SchoolWebsite = () => {
                 .cg-tile:hover .cg-tile-overlay, .cg-tile:hover .cg-tile-ring { opacity: 1 !important; }
                 @keyframes cgOrbDrift { 0%, 100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-22px,18px) scale(1.08); } }
                 .cg-orb { animation: cgOrbDrift 11s ease-in-out infinite; }
+                .cg-ticker-track { display: flex; width: max-content; animation: tickerScroll ${Math.max(20, campusImages.length * 6)}s linear infinite; }
+                .cg-ticker-track:hover { animation-play-state: paused; }
             `}</style>
 
             <div style={{ width: '100%', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: '#020617', position: 'relative', overflowX: 'hidden' }}>
@@ -498,8 +458,10 @@ const SchoolWebsite = () => {
                 {/* ── Shared Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" topOffset={tickerVisible ? 34 : 0} />
 
-                {/* ── Hero — video / banner slideshow background ── */}
-                <div style={{ width: '100%', height: '100vh', minHeight: '600px', position: 'relative', overflow: 'hidden' }}>
+                {/* ── Hero — video / banner slideshow background.
+                     marginTop pushes it below the fixed Navbar (92px, plus the ticker's 34px
+                     when visible) instead of the image starting behind/under the navbar. ── */}
+                <div style={{ width: '100%', marginTop: `${(tickerVisible ? 34 : 0) + 92}px`, height: `calc(100vh - ${(tickerVisible ? 34 : 0) + 92}px)`, minHeight: '500px', position: 'relative', overflow: 'hidden' }}>
                     {heroBanners.length > 0 ? (
                         heroBanners.map((b, i) => (
                             <div key={b.id || b.url} aria-hidden={i !== bannerIndex}
@@ -538,8 +500,8 @@ const SchoolWebsite = () => {
                                 dangerouslySetInnerHTML={{ __html: homeContent.subText }} />
                         )}
                         <div className="hero-buttons-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
-                            <WaterButton variant="solid" tc={tc} onClick={() => navigate(`/school/${slug}/about`)}>Explore School</WaterButton>
-                            <WaterButton variant="outline" tc={tc} onClick={() => window.dispatchEvent(new Event('open-admission-enquiry'))}>Admission Enquiry</WaterButton>
+                            <HeroButton variant="solid" tc={tc} onClick={() => navigate(`/school/${slug}/about`)}>Explore School</HeroButton>
+                            <HeroButton variant="outline" tc={tc} onClick={() => window.dispatchEvent(new Event('open-admission-enquiry'))}>Admission Enquiry</HeroButton>
                         </div>
                     </div>
                 </div>
@@ -548,9 +510,9 @@ const SchoolWebsite = () => {
                      block, admin-managed from Home Page settings. Hidden entirely until the
                      admin fills in at least one field. ── */}
                 {hasIntroSection && (
-                    <section style={{ background: bc.surfaceAlt, padding: 'clamp(3rem,8vw,6rem) clamp(1.25rem,6vw,5rem)', position: 'relative' }}>
+                    <section style={{ background: bc.surfaceAlt, padding: 'clamp(2rem,5vw,3.5rem) clamp(1.25rem,6vw,5rem)', position: 'relative' }}>
                         <ShieldClipDefs />
-                        <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(260px,400px) 1fr', gap: 'clamp(2rem,6vw,4.5rem)', alignItems: 'center' }}>
+                        <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(260px,400px) 1fr', gap: 'clamp(1.5rem,4vw,3rem)', alignItems: 'center' }}>
                             <Reveal>
                                 <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5' }}>
                                     {/* Each shield photo is built from nested same-shape layers (gradient
@@ -601,12 +563,12 @@ const SchoolWebsite = () => {
                 {/* ── Campus Glimpses — optional photo grid, admin-managed from Home Page
                      settings. Hidden entirely until the admin uploads at least one photo. ── */}
                 {campusImages.length > 0 && (
-                    <section style={{ background: `linear-gradient(180deg, ${bc.surface}, ${bc.card})`, padding: 'clamp(3.5rem,9vw,7rem) clamp(1.25rem,6vw,5rem)', position: 'relative', overflow: 'hidden' }}>
+                    <section style={{ background: `linear-gradient(180deg, ${bc.surface}, ${bc.card})`, padding: 'clamp(2.5rem,6vw,4rem) clamp(1.25rem,6vw,5rem)', position: 'relative', overflow: 'hidden' }}>
                         <div className="cg-orb" style={{ position: 'absolute', width: '420px', height: '420px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.primary}26 0%, transparent 70%)`, top: '-160px', left: '-120px', pointerEvents: 'none' }} />
                         <div className="cg-orb" style={{ position: 'absolute', width: '360px', height: '360px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}22 0%, transparent 70%)`, bottom: '-140px', right: '-100px', pointerEvents: 'none', animationDelay: '-4s' }} />
 
                         <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-                            <Reveal style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                            <Reveal style={{ textAlign: 'center', marginBottom: '2rem' }}>
                                 <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: tc.secondary, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: '12px' }}>
                                     School Life
                                 </span>
@@ -623,16 +585,20 @@ const SchoolWebsite = () => {
                                     </p>
                                 )}
                             </Reveal>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: '24px' }}>
-                                {campusImages.map((img, i) => (
-                                    <Reveal key={img.id || img.url} delay={i * 0.06}>
-                                        <div className="cg-tile" style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', aspectRatio: '3 / 4', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
-                                            <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                                            <div className="cg-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
-                                            <div className="cg-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
-                                        </div>
-                                    </Reveal>
-                                ))}
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.card},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.card},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div className="cg-ticker-track">
+                                        {[...campusImages, ...campusImages].map((img, i) => (
+                                            <div key={`${img.id || img.url}-${i}`} className="cg-tile" style={{ position: 'relative', flexShrink: 0, width: '260px', margin: '0 12px', borderRadius: '18px', overflow: 'hidden', aspectRatio: '3 / 4', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                                <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                <div className="cg-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
+                                                <div className="cg-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </section>

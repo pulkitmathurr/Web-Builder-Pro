@@ -41,7 +41,9 @@ const ChevronDownSm = ({ color, open }) => (
 // open a nested flyout to the right on hover, instead of listing everything inline. ──
 const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, topOffset = 0 }) => {
     const navigate = useNavigate();
-    const navbarSolid = forceSolid || scrollY > 60;
+    // Navbar background is always solid white now (no transparent-over-hero state),
+    // so this is always true — kept as a variable since text/border colors below key off it.
+    const navbarSolid = true;
     const navFont = getFontFamily(school.nav_font);
     const [openTop, setOpenTop] = useState(null);
     const [openSub, setOpenSub] = useState(null);
@@ -174,9 +176,10 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                 position: 'fixed', top: `${topOffset}px`, left: 0, right: 0, zIndex: 1000,
                 height: '92px', padding: '0 3rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                background: (navbarSolid || mobileOpen) ? 'rgba(255,255,255,0.95)' : 'transparent',
-                backdropFilter: (navbarSolid || mobileOpen) ? 'blur(16px)' : 'none',
-                borderBottom: (navbarSolid || mobileOpen) ? '1px solid #f1f5f9' : 'none',
+                background: 'rgba(255,255,255,0.95)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                borderBottom: '1px solid #f1f5f9',
                 transition: 'all 0.3s ease',
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', minWidth: 0, flexShrink: 1 }} onClick={() => go(`/school/${slug}`)}>

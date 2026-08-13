@@ -98,6 +98,7 @@ export const NAVBAR_ITEMS = [
             { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure`, dynamicSubItems: 'infrastructure' },
             { key: 'alumni',         label: 'Our Proud Alumni',         path: (slug) => `/school/${slug}/alumni` },
             { key: 'testimonials',   label: 'Testimonials',   path: (slug) => `/school/${slug}/testimonials` },
+            { key: 'disclosure',     label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {
@@ -109,7 +110,6 @@ export const NAVBAR_ITEMS = [
             { key: 'achievements',       label: 'Achievements',         path: (slug) => `/school/${slug}/achievements` },
             { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
             { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
-            { key: 'disclosure',         label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },
     {

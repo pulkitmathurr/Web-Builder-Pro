@@ -73,7 +73,7 @@ const LevelSection = ({ levelKey, members, tc, bc }) => {
     const shouldScroll = members.length > (isMobile ? 3 : 5);
     const track = shouldScroll ? [...members, ...members] : members;
     return (
-        <div style={{ padding: '3.5rem 0', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ padding: '2rem 0', background: bc.surface, borderTop: '1px solid #f1f5f9' }}>
             <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,5rem)' }}>
                 <Reveal>
                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.75rem' }}>{LEVEL_LABELS[levelKey]}</p>
