@@ -42,9 +42,17 @@ const StarRow = ({ rating, color }) => (
     </div>
 );
 
+const TYPE_LABELS = { parent: 'Parent', alumni: 'Alumni', visitor: 'Visitor' };
+const TYPE_BADGE_COLORS = {
+    visitor: { bg: '#eff6ff', text: '#2563eb' },
+    alumni: { bg: '#fdf4ff', text: '#a21caf' },
+};
+
 // ── Single testimonial card — quote mark, avatar (photo or initials), name/role, type badge, rating ──
 const TestimonialCard = ({ t, index, tc }) => {
     const initials = t.name ? t.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() : '?';
+    const typeLabel = TYPE_LABELS[t.type] || 'Parent';
+    const badgeColor = TYPE_BADGE_COLORS[t.type] || { bg: `${tc.primary}12`, text: tc.primary };
 
     return (
         <Reveal delay={Math.min(index, 6) * 0.06} style={{ height: '100%' }}>
@@ -73,17 +81,17 @@ const TestimonialCard = ({ t, index, tc }) => {
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>{t.name}</p>
                         <p style={{ fontSize: '11.5px', color: '#94a3b8' }}>
-                            {t.role || (t.type === 'visitor' ? 'Visitor' : 'Parent')}
+                            {t.role || typeLabel}
                         </p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', flexShrink: 0 }}>
                         <span style={{
                             fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
                             padding: '3px 8px', borderRadius: '999px',
-                            background: t.type === 'visitor' ? '#eff6ff' : `${tc.primary}12`,
-                            color: t.type === 'visitor' ? '#2563eb' : tc.primary,
+                            background: badgeColor.bg,
+                            color: badgeColor.text,
                         }}>
-                            {t.type === 'visitor' ? 'Visitor' : 'Parent'}
+                            {typeLabel}
                         </span>
                         {!!t.rating && <StarRow rating={t.rating} color="#f59e0b" />}
                     </div>
@@ -169,7 +177,7 @@ const TestimonialsPublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="testimonials" />
 
                 {/* ── Header — no banner photo, clean gradient header (matches About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>

@@ -7,16 +7,10 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
-import { cloudinaryAttachmentUrl } from "../../utils/cloudinaryUrl";
 
 const BookIcon = ({ color }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-    </svg>
-);
-const DownloadIcon = () => (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 3v12m0 0l-4-4m4 4l4-4" /><path d="M4 19h16" />
     </svg>
 );
 const ExternalIcon = () => (
@@ -107,7 +101,7 @@ const BookListPublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="bookList" />
 
                 {/* ── Header — no banner photo, clean gradient header (matches About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -158,10 +152,10 @@ const BookListPublic = () => {
                                                         </div>
                                                     </td>
                                                     <td style={{ padding: '11px 2.25rem', textAlign: 'right' }}>
-                                                        <a href={isPdf ? cloudinaryAttachmentUrl(row.pdfUrl, `${row.className}-book-list`) : row.linkUrl} target="_blank" rel="noopener noreferrer" className="bl-view-btn"
+                                                        <a href={isPdf ? row.pdfUrl : row.linkUrl} target="_blank" rel="noopener noreferrer" className="bl-view-btn"
                                                             style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '8px 15px', borderRadius: '8px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#ffffff', fontSize: '12px', fontWeight: 600, textDecoration: 'none', boxShadow: `0 4px 12px ${tc.primary}35` }}>
-                                                            {isPdf ? <DownloadIcon /> : <ExternalIcon />}
-                                                            {isPdf ? 'Download' : 'View'}
+                                                            <ExternalIcon />
+                                                            View
                                                         </a>
                                                     </td>
                                                 </tr>

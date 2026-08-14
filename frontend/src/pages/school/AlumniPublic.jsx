@@ -33,7 +33,7 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
 // ── Ornamental divider — arrow-tipped line with a decorative knot in the center,
 // matching the reference site's separator between alumni entries ──
 const OrnamentalDivider = ({ color }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', margin: '3.5rem 0' }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', margin: '2.25rem 0' }}>
         <svg width="100%" height="20" viewBox="0 0 600 20" preserveAspectRatio="none" style={{ maxWidth: '560px' }}>
             <line x1="6" y1="10" x2="265" y2="10" stroke={color} strokeWidth="1.2" />
             <line x1="335" y1="10" x2="594" y2="10" stroke={color} strokeWidth="1.2" />
@@ -137,7 +137,7 @@ const LegacyScroll = ({ description, tc }) => {
                 <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: '8px',
                     border: `1px solid ${tc.primary}35`, borderRadius: '999px',
-                    padding: '8px 20px', marginBottom: '30px'
+                    padding: '8px 20px', marginBottom: '20px'
                 }}>
                     <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: tc.primary }}></span>
                     <span style={{ fontSize: '11px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700 }}>
@@ -225,7 +225,7 @@ const LegacyScroll = ({ description, tc }) => {
                             boxShadow: pulled
                                 ? 'inset 0 0 0 1px rgba(201,162,39,0.55), inset 0 0 0 6px rgba(255,253,246,0.9), inset 0 0 0 7px rgba(201,162,39,0.4), inset 0 0 70px rgba(120,90,50,0.1), 0 26px 55px rgba(0,0,0,0.16)'
                                 : 'none',
-                            padding: pulled ? 'clamp(1.75rem,6vw,3.5rem) clamp(1.25rem,6vw,3.5rem) clamp(1.5rem,5vw,3rem)' : '0 clamp(1.25rem,6vw,3.5rem)',
+                            padding: pulled ? 'clamp(1.5rem,5vw,2.5rem) clamp(1.25rem,6vw,3.5rem) clamp(1.25rem,4vw,2.25rem)' : '0 clamp(1.25rem,6vw,3.5rem)',
                             overflow: 'hidden',
                         }}>
                             <CornerFlourish color={`${tc.primary}80`} style={{ top: '10px', left: '10px' }} />
@@ -314,7 +314,7 @@ const AlumnusEntry = ({ alumnus, index, tc, bc }) => {
     );
 
     return (
-        <div style={{ display: 'flex', gap: '3.5rem', alignItems: 'flex-start', flexDirection: imageOnRight ? 'row-reverse' : 'row', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'flex-start', flexDirection: imageOnRight ? 'row-reverse' : 'row', flexWrap: 'wrap' }}>
             {photoBlock}
             {textBlock}
         </div>
@@ -411,7 +411,7 @@ const AlumniPublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="alumni" />
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.6rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -426,13 +426,13 @@ const AlumniPublic = () => {
 
                 {/* ── Description — sealed under a draggable pin, unrolls like a scroll ── */}
                 {content.description && (
-                    <div style={{ padding: '6.5rem clamp(1.25rem,6vw,3rem) 2rem', background: bc.surface }}>
+                    <div style={{ padding: '2.75rem clamp(1.25rem,6vw,3rem) 1rem', background: bc.surface }}>
                         <LegacyScroll description={content.description} tc={tc} />
                     </div>
                 )}
 
                 {/* ── Alumni list — vertical list, alternating photo position, ornamental dividers ── */}
-                <div style={{ padding: content.description ? '3rem clamp(1.25rem,6vw,3rem) 7rem' : '7rem clamp(1.25rem,6vw,3rem)' }}>
+                <div style={{ padding: content.description ? '2rem clamp(1.25rem,6vw,3rem) 4rem' : '4rem clamp(1.25rem,6vw,3rem)' }}>
                     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
                         {alumni.map((al, i) => (
                             <div key={al.id}>

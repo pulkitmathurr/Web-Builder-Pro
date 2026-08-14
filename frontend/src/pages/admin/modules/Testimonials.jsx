@@ -284,7 +284,7 @@ const TestimonialCard = ({ testimonial, index, length, onMove, onUpdate, onRemov
 
                 {/* Fields */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.7fr', gap: '12px' }}>
                         <div>
                             <label style={labelStyle}>Name</label>
                             <input className="test-input" type="text" value={testimonial.name} onChange={e => onUpdate('name', e.target.value)} placeholder="Enter Full Name" style={inputStyle} />
@@ -292,10 +292,10 @@ const TestimonialCard = ({ testimonial, index, length, onMove, onUpdate, onRemov
                         <div>
                             <label style={labelStyle}>Type</label>
                             <div style={{ display: 'flex', gap: '6px' }}>
-                                {['parent', 'visitor'].map(type => (
+                                {['parent', 'alumni', 'visitor'].map(type => (
                                     <button key={type} type="button" onClick={() => onUpdate('type', type)}
                                         style={{
-                                            flex: 1, padding: '10px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
+                                            flex: 1, padding: '10px 6px', borderRadius: '10px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
                                             border: `1px solid ${testimonial.type === type ? tc.primary : '#e5e9f0'}`,
                                             background: testimonial.type === type ? hexToRgba(tc.primary, 0.08) : '#f8fafc',
                                             color: testimonial.type === type ? tc.primary : '#64748b',

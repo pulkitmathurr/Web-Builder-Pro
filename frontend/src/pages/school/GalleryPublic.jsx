@@ -183,7 +183,7 @@ const GalleryPublic = () => {
                 body { background: ${bc.surface}; }
                 @keyframes folderPop { from { opacity: 0; transform: translateY(22px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
                 .folder-tile {
-                    position: relative; border-radius: 26px; cursor: pointer; padding: 12px;
+                    position: relative; border-radius: 26px; cursor: pointer; padding: 12px 12px 3px;
                     background: linear-gradient(160deg, ${tc.light}, #ffffff);
                     border: 1px solid rgba(15,23,42,0.06);
                     box-shadow: 0 2px 10px rgba(15,23,42,0.05);
@@ -243,9 +243,9 @@ const GalleryPublic = () => {
                     .folder-count-badge { padding: 3px 8px !important; top: 8px !important; right: 8px !important; gap: 3px !important; }
                     .folder-count-badge span { font-size: 9.5px !important; }
                     .folder-count-badge svg { width: 9px !important; height: 9px !important; }
-                    .folder-caption-wrap { padding-top: 22px !important; }
-                    .folder-caption-text { padding-left: 46px !important; min-height: 38px !important; }
-                    .folder-caption-text p:first-child { font-size: 13.5px !important; }
+                    .folder-caption-wrap { padding-top: 20px !important; }
+                    .folder-caption-text { padding-left: 46px !important; min-height: 0px !important; padding-bottom: 2px !important; }
+                    .folder-caption-text p:first-child { font-size: 14.5px !important; }
                     .folder-caption-text p:last-child { font-size: 10px !important; }
 
                     /* ── Video tiles — the row layout (thumb-left, title-right) only works at
@@ -264,7 +264,7 @@ const GalleryPublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="gallery" />
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -339,7 +339,7 @@ const GalleryPublic = () => {
                                         </div>
 
                                         {/* Caption — a literal folder "tab" badge straddles the seam between cover and text, like a wax seal */}
-                                        <div className="folder-caption-wrap" style={{ position: 'relative', paddingTop: '30px' }}>
+                                        <div className="folder-caption-wrap" style={{ position: 'relative', paddingTop: '26px' }}>
                                             <div className="folder-badge-overlap" style={{
                                                 position: 'absolute', top: '-26px', left: '14px', width: '50px', height: '50px', borderRadius: '15px',
                                                 background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`,
@@ -349,11 +349,11 @@ const GalleryPublic = () => {
                                             }}>
                                                 <IconFolder size={22} color="#ffffff" />
                                             </div>
-                                            <div className="folder-caption-text" style={{ paddingLeft: '64px', minHeight: '50px', paddingBottom: '6px' }}>
+                                            <div className="folder-caption-text" style={{ paddingLeft: '64px', minHeight: '0px', paddingBottom: '0px' }}>
                                                 <p style={{
-                                                    fontFamily: "'Playfair Display', Georgia, serif", fontSize: '17px', fontWeight: 700,
-                                                    color: '#0f172a', letterSpacing: '-0.1px', marginBottom: '4px',
-                                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                                    fontFamily: "'Playfair Display', Georgia, serif", fontSize: '18.5px', fontWeight: 700,
+                                                    color: '#0f172a', letterSpacing: '-0.1px', marginBottom: '2px', lineHeight: 1.25,
+                                                    whiteSpace: 'normal', overflowWrap: 'break-word', wordBreak: 'break-word',
                                                 }}>{f.name}</p>
                                                 {f.createdAt && (
                                                     <p style={{ fontSize: '11.5px', color: tc.primary, fontWeight: 600, display: 'flex', alignItems: 'center', gap: '5px', opacity: 0.75 }}>

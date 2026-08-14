@@ -109,39 +109,51 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
     const affiliationBadges = Array.isArray(school.affiliation_badges) ? school.affiliation_badges.filter(b => b?.url) : [];
 
     const dropdownPanelStyle = (isOpen) => ({
-        position: 'absolute', top: 'calc(100% + 18px)', left: '50%',
+        position: 'absolute', top: 'calc(100% + 10px)', left: '50%',
         transform: isOpen ? 'translate(-50%,0) scale(1)' : 'translate(-50%,-6px) scale(0.98)',
         transformOrigin: 'top center',
-        minWidth: '230px', background: '#ffffff', borderRadius: '14px',
-        border: `1px solid ${tc.primary}20`,
-        boxShadow: '0 26px 60px rgba(0,0,0,0.18), 0 2px 10px rgba(0,0,0,0.06)',
-        padding: '10px', opacity: isOpen ? 1 : 0, visibility: isOpen ? 'visible' : 'hidden',
-        transition: 'opacity 0.22s ease, transform 0.22s cubic-bezier(0.16,1,0.3,1)',
+        minWidth: '208px', background: '#ffffff', borderRadius: 0,
+        border: `1.5px solid ${tc.primary}35`,
+        boxShadow: '0 18px 40px rgba(15,23,42,0.16)',
+        padding: '5px', opacity: isOpen ? 1 : 0, visibility: isOpen ? 'visible' : 'hidden',
+        transition: 'opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1)',
         pointerEvents: isOpen ? 'auto' : 'none', zIndex: 10,
     });
 
     const flyoutPanelStyle = (isOpen) => ({
-        position: 'absolute', top: '-10px', left: 'calc(100% + 10px)',
-        minWidth: '210px', background: '#ffffff', borderRadius: '12px',
-        border: `1px solid ${tc.primary}20`,
-        boxShadow: '0 22px 50px rgba(0,0,0,0.18)',
-        padding: '8px', opacity: isOpen ? 1 : 0, visibility: isOpen ? 'visible' : 'hidden',
+        position: 'absolute', top: '-6px', left: 'calc(100% + 6px)',
+        minWidth: '192px', background: '#ffffff', borderRadius: 0,
+        border: `1.5px solid ${tc.primary}35`,
+        boxShadow: '0 16px 36px rgba(15,23,42,0.18)',
+        padding: '5px', opacity: isOpen ? 1 : 0, visibility: isOpen ? 'visible' : 'hidden',
         transform: isOpen ? 'translateX(0)' : 'translateX(-6px)',
-        transition: 'opacity 0.2s ease, transform 0.2s ease',
+        transition: 'opacity 0.18s ease, transform 0.18s ease',
         pointerEvents: isOpen ? 'auto' : 'none', zIndex: 11,
     });
 
     const rowStyle = (isActive) => ({
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '9px 12px', borderRadius: '9px', cursor: 'pointer',
-        fontSize: '13.5px', fontWeight: 600, color: isActive ? tc.primary : '#0f172a',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px',
+        padding: '7px 10px', borderRadius: 0, cursor: 'pointer',
+        fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? tc.primary : '#1e293b',
         background: isActive ? tc.light : 'transparent',
-        borderLeft: isActive ? `3px solid ${tc.primary}` : '3px solid transparent',
-        transition: 'background 0.15s, border-color 0.15s',
+        borderLeft: isActive ? `2.5px solid ${tc.primary}` : '2.5px solid transparent',
+        transition: 'background 0.15s ease, border-color 0.15s ease',
     });
 
+    // ── Row content — small accent dot + label (+ optional chevron for a nested flyout).
+    // Shared across the group dropdown, the single-flyout (Sports) rows, and nested flyouts. ──
+    const RowLabel = ({ label, isActive, hasSub }) => (
+        <>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '9px', minWidth: 0 }}>
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: isActive ? tc.secondary : `${tc.primary}40`, flexShrink: 0 }} />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
+            </span>
+            {hasSub && <ChevronRight color={isActive ? tc.primary : '#94a3b8'} />}
+        </>
+    );
+
     const Pointer = () => (
-        <span style={{ position: 'absolute', top: '-6px', left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: '12px', height: '12px', background: '#fff', borderLeft: `1px solid ${tc.primary}20`, borderTop: `1px solid ${tc.primary}20`, borderRadius: '2px' }} />
+        <span style={{ position: 'absolute', top: '-6px', left: '50%', transform: 'translateX(-50%) rotate(45deg)', width: '12px', height: '12px', background: '#fff', borderLeft: `1.5px solid ${tc.primary}35`, borderTop: `1.5px solid ${tc.primary}35` }} />
     );
 
     return (
@@ -154,7 +166,8 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                     .navbar-hamburger { display: flex !important; }
                 }
                 @media (max-width: 1280px) {
-                    .navbar-badges img { height: 46px !important; }
+                    .navbar-badges img { height: 34px !important; }
+                    .navbar-badges span { display: none !important; }
                     .navbar-right { gap: 1rem !important; }
                 }
                 @media (max-width: 480px) {
@@ -164,6 +177,9 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                 }
                 .mobile-drawer-row { transition: background 0.18s ease, transform 0.15s ease; }
                 .mobile-drawer-row:active { transform: scale(0.98); }
+                .nav-drop-row + .nav-drop-row { border-top: 1px solid ${tc.primary}14; }
+                .nav-drop-panel { position: relative; }
+                .nav-drop-panel::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, ${tc.primary}, ${tc.secondary}); }
                 @keyframes mobileDrawerIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes mobileRowIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
                 .mobile-drawer-row-wrap { animation: mobileRowIn 0.4s cubic-bezier(0.16,1,0.3,1) both; }
@@ -225,13 +241,13 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                                         {item.label}
                                         <ChevronDown />
                                     </span>
-                                    <div style={dropdownPanelStyle(isOpen)} onMouseEnter={keepOpen} onMouseLeave={scheduleTopClose}>
+                                    <div className="nav-drop-panel" style={dropdownPanelStyle(isOpen)} onMouseEnter={keepOpen} onMouseLeave={scheduleTopClose}>
                                         <Pointer />
                                         {item.subItems.map(sub => (
-                                            <div key={sub.label} onClick={() => go(sub.path(slug))} style={rowStyle(false)}
-                                                onMouseEnter={e => e.currentTarget.style.background = tc.light}
+                                            <div key={sub.label} className="nav-drop-row" onClick={() => go(sub.path(slug))} style={rowStyle(false)}
+                                                onMouseEnter={e => e.currentTarget.style.background = `linear-gradient(90deg, ${tc.light}, transparent)`}
                                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                                {sub.label}
+                                                <RowLabel label={sub.label} isActive={false} />
                                             </div>
                                         ))}
                                     </div>
@@ -249,7 +265,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                                     <ChevronDown />
                                 </span>
 
-                                <div style={dropdownPanelStyle(isOpen)} onMouseEnter={keepOpen} onMouseLeave={scheduleTopClose}>
+                                <div className="nav-drop-panel" style={dropdownPanelStyle(isOpen)} onMouseEnter={keepOpen} onMouseLeave={scheduleTopClose}>
                                     <Pointer />
                                     {item.links.map(link => {
                                         const isCourses = link.key === 'courses';
@@ -258,23 +274,22 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                                         const isSubOpen = openSub === link.key;
                                         const isActive = activeKey === link.key;
                                         return (
-                                            <div key={link.key} style={{ position: 'relative' }}
+                                            <div key={link.key} className="nav-drop-row" style={{ position: 'relative' }}
                                                 onMouseEnter={() => hasSub && openSubMenu(link.key)}
                                                 onMouseLeave={scheduleSubClose}>
                                                 <div onClick={() => { if (!isCourses) go(link.path(slug)); }}
                                                     style={{ ...rowStyle(isActive), cursor: isCourses ? 'default' : 'pointer' }}
-                                                    onMouseEnter={e => e.currentTarget.style.background = tc.light}
+                                                    onMouseEnter={e => e.currentTarget.style.background = `linear-gradient(90deg, ${tc.light}, transparent)`}
                                                     onMouseLeave={e => e.currentTarget.style.background = isActive ? tc.light : 'transparent'}>
-                                                    {link.label}
-                                                    {hasSub && <ChevronRight color={isActive ? tc.primary : '#94a3b8'} />}
+                                                    <RowLabel label={link.label} isActive={isActive} hasSub={hasSub} />
                                                 </div>
                                                 {hasSub && (
-                                                    <div style={flyoutPanelStyle(isSubOpen)} onMouseEnter={keepOpen} onMouseLeave={scheduleSubClose}>
+                                                    <div className="nav-drop-panel" style={flyoutPanelStyle(isSubOpen)} onMouseEnter={keepOpen} onMouseLeave={scheduleSubClose}>
                                                         {subItems.map(sub => (
-                                                            <div key={sub.label} onClick={() => go(sub.path(slug))} style={rowStyle(false)}
-                                                                onMouseEnter={e => e.currentTarget.style.background = tc.light}
+                                                            <div key={sub.label} className="nav-drop-row" onClick={() => go(sub.path(slug))} style={rowStyle(false)}
+                                                                onMouseEnter={e => e.currentTarget.style.background = `linear-gradient(90deg, ${tc.light}, transparent)`}
                                                                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                                                {sub.label}
+                                                                <RowLabel label={sub.label} isActive={false} />
                                                             </div>
                                                         ))}
                                                     </div>
@@ -289,10 +304,17 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                 </div>
 
                 {affiliationBadges.length > 0 && (
-                    <div className="navbar-badges" style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '1.4rem', borderLeft: `1px solid ${navbarSolid ? '#e2e8f0' : 'rgba(255,255,255,0.25)'}`, flexShrink: 0, transition: 'border-color 0.3s' }}>
+                    <div className="navbar-badges" style={{ display: 'flex', alignItems: 'center', gap: '14px', paddingLeft: '1.4rem', borderLeft: `1px solid ${navbarSolid ? '#e2e8f0' : 'rgba(255,255,255,0.25)'}`, flexShrink: 0, transition: 'border-color 0.3s' }}>
                         {affiliationBadges.map(badge => (
-                            <img key={badge.id || badge.url} src={badge.url} alt={badge.label || ''} title={badge.label || ''}
-                                style={{ height: '60px', width: 'auto', maxWidth: '84px', objectFit: 'contain', flexShrink: 0 }} />
+                            <div key={badge.id || badge.url} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                                <img src={badge.url} alt={badge.label || ''} title={badge.label || ''}
+                                    style={{ height: '42px', width: 'auto', maxWidth: '68px', objectFit: 'contain' }} />
+                                {badge.label && (
+                                    <span style={{ fontSize: '8.5px', fontWeight: 700, color: textColor, textAlign: 'center', letterSpacing: '0.01em', whiteSpace: 'nowrap', maxWidth: '76px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {badge.label}
+                                    </span>
+                                )}
+                            </div>
                         ))}
                     </div>
                 )}

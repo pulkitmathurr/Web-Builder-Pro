@@ -349,6 +349,8 @@ const Sports = () => {
                     .sports-award-row { grid-template-columns: 1fr !important; }
                 }
                 .sports-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .sports-add-btn { transition: all 0.2s ease; }
+                .sports-add-btn:hover { border-color: ${tc.primary} !important; background: ${tc.light} !important; transform: translateY(-1px); }
                 .sports-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .sports-hero-orb { animation: drift1 9s ease-in-out infinite; }
                 @media (max-width: 640px) {
@@ -475,8 +477,8 @@ const Sports = () => {
                             </div>
                         </div>
 
-                        <button onClick={() => updateField('offeredSports', [{ id: `sport-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.offeredSports || [])])}
-                            style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                        <button type="button" className="sports-add-btn" onClick={() => updateField('offeredSports', [{ id: `sport-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.offeredSports || [])])}
+                            style={{ padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
                             + Add Sport
                         </button>
 
@@ -526,8 +528,8 @@ const Sports = () => {
                             </div>
                         </div>
 
-                        <button onClick={() => updateField('events', [{ id: `ev-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.events || [])])}
-                            style={{ padding: '14px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer' }}>
+                        <button type="button" className="sports-add-btn" onClick={() => updateField('events', [{ id: `ev-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.events || [])])}
+                            style={{ padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
                             + Add Sporting Event
                         </button>
 
@@ -582,8 +584,8 @@ const Sports = () => {
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Certifications</p>
                             <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB each.</p>
-                            <button onClick={() => updateField('certifications', [{ id: `cert-${Date.now()}`, image: '', title: '', info: '' }, ...(pageData.certifications || [])])}
-                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <button type="button" className="sports-add-btn" onClick={() => updateField('certifications', [{ id: `cert-${Date.now()}`, image: '', title: '', info: '' }, ...(pageData.certifications || [])])}
+                                style={{ width: '100%', padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Certification
                             </button>
                             <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
@@ -607,8 +609,8 @@ const Sports = () => {
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Making Us Proud</p>
                             <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Student photos with achievement details. Square photo works best · JPG, PNG, WEBP · Max 5MB each.</p>
-                            <button onClick={() => updateField('proud', [{ id: `proud-${Date.now()}`, photo: '', name: '', achievement: '' }, ...(pageData.proud || [])])}
-                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <button type="button" className="sports-add-btn" onClick={() => updateField('proud', [{ id: `proud-${Date.now()}`, photo: '', name: '', achievement: '' }, ...(pageData.proud || [])])}
+                                style={{ width: '100%', padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Student
                             </button>
                             <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px' }}>
@@ -641,8 +643,8 @@ const Sports = () => {
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Yearly Award PDFs</p>
                             <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Add a year and upload the award winners PDF — shown in sidebar, opens PDF on click</p>
-                            <button onClick={() => updateField('yearlyAwards', [...(pageData.yearlyAwards || []), { id: `yr-${Date.now()}`, year: '', pdfUrl: '' }])}
-                                style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e2e8f0', borderRadius: '10px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
+                            <button type="button" className="sports-add-btn" onClick={() => updateField('yearlyAwards', [...(pageData.yearlyAwards || []), { id: `yr-${Date.now()}`, year: '', pdfUrl: '' }])}
+                                style={{ width: '100%', padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Year
                             </button>
                             {(pageData.yearlyAwards || []).map((yr, i) => (
@@ -712,9 +714,9 @@ const EventCard = ({ event, index, length, onMove, onUpdate, onRemove, onAddImag
                             </div>
                         ))}
                     </div>
-                    <div onClick={() => document.getElementById(`ev-img-${event.id}`).click()}
-                        style={{ border: '1.5px dashed #e2e8f0', borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-                        {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '12px', color: '#64748b' }}>+ Add images</p>}
+                    <div className="sports-add-btn" onClick={() => document.getElementById(`ev-img-${event.id}`).click()}
+                        style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
+                        {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
                     </div>
                     <input id={`ev-img-${event.id}`} type="file" accept="image/*" multiple
                         onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) onAddImages(files); }}
@@ -761,9 +763,9 @@ const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAdd
                             </div>
                         ))}
                     </div>
-                    <div onClick={() => document.getElementById(`sport-img-${sport.id}`).click()}
-                        style={{ border: '1.5px dashed #e2e8f0', borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-                        {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '12px', color: '#64748b' }}>+ Add images</p>}
+                    <div className="sports-add-btn" onClick={() => document.getElementById(`sport-img-${sport.id}`).click()}
+                        style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
+                        {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
                     </div>
                     <input id={`sport-img-${sport.id}`} type="file" accept="image/*" multiple
                         onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) onAddImages(files); }}

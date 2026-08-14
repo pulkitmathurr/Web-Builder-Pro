@@ -66,35 +66,35 @@ const FeeTableCard = ({ table, tc, bc }) => {
     const hasItemRows = table.rows.some(r => r.type === 'item');
     return (
         <div style={{ background: bc.card, border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.05)' }}>
-            <div style={{ padding: '16px 24px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
+            <div style={{ padding: '12px 20px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
                 <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#fff' }}>{table.title}</h4>
             </div>
             <div>
                 {hasItemRows && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', background: bc.cardAlt, borderBottom: '1px solid #e2e8f0' }}>
-                        <span style={{ padding: '10px 24px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', borderRight: '1px solid #e2e8f0' }}>{table.itemLabel || 'Item'}</span>
-                        <span style={{ padding: '10px 24px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>{table.amountLabel || 'Amount'}</span>
+                        <span style={{ padding: '8px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', borderRight: '1px solid #e2e8f0' }}>{table.itemLabel || 'Item'}</span>
+                        <span style={{ padding: '8px 20px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', textAlign: 'right' }}>{table.amountLabel || 'Amount'}</span>
                     </div>
                 )}
                 {table.rows.map(row => {
                     if (row.type === 'subheading') {
                         return (
-                            <p key={row.id} style={{ fontSize: '12.5px', fontWeight: 700, color: tc.primary, margin: 0, padding: '10px 24px', textTransform: 'uppercase', letterSpacing: '0.05em', background: tc.light, borderBottom: '1px solid #e2e8f0' }}>
+                            <p key={row.id} style={{ fontSize: '12px', fontWeight: 600, color: `${tc.primary}b0`, margin: 0, padding: '8px 20px', textTransform: 'uppercase', letterSpacing: '0.05em', background: tc.light, borderBottom: '1px solid #e2e8f0' }}>
                                 {row.text}
                             </p>
                         );
                     }
                     if (row.type === 'note') {
                         return (
-                            <p key={row.id} style={{ fontSize: '12.5px', color: '#94a3b8', lineHeight: 1.6, margin: 0, padding: '10px 24px', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9' }}>
+                            <p key={row.id} style={{ fontSize: '12.5px', color: '#94a3b8', lineHeight: 1.6, margin: 0, padding: '8px 20px', fontStyle: 'italic', borderBottom: '1px solid #f1f5f9' }}>
                                 {row.text}
                             </p>
                         );
                     }
                     return (
                         <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', borderBottom: '1px solid #f1f5f9' }}>
-                            <span style={{ padding: '10px 24px', fontSize: '14px', color: '#334155', borderRight: '1px solid #f1f5f9' }}>{row.label}</span>
-                            <span style={{ padding: '10px 24px', fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textAlign: 'right' }}>{row.value}</span>
+                            <span style={{ padding: '8px 20px', fontSize: '16px', fontWeight: 700, color: '#0f172a', borderRight: '1px solid #f1f5f9' }}>{row.label}</span>
+                            <span style={{ padding: '8px 20px', fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textAlign: 'right' }}>{row.value}</span>
                         </div>
                     );
                 })}
@@ -189,7 +189,7 @@ const FeeStructurePublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="fee" />
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.6rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -204,10 +204,10 @@ const FeeStructurePublic = () => {
 
                 {/* ── Combined Academic Fee Table — all classes side by side ── */}
                 {sortedClasses.length > 0 && (
-                    <div style={{ padding: '4rem clamp(1.25rem,6vw,5rem) 5rem', background: bc.surface }}>
+                    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 2.5rem', background: bc.surface }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '2rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1.25rem', marginBottom: '1.25rem' }}>
                                     <div>
                                         <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Academic Fee Structure</p>
                                         <h2 style={{ fontSize: 'clamp(26px,4vw,38px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-1.5px' }}>Class-wise Fee Breakdown</h2>
@@ -230,27 +230,27 @@ const FeeStructurePublic = () => {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${560 + allFeeTypes.length * 160}px` }}>
                                         <thead>
                                             <tr style={{ background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
-                                                <th style={{ position: 'sticky', left: 0, zIndex: 2, background: tc.primary, padding: '16px 24px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Class</th>
+                                                <th style={{ position: 'sticky', left: 0, zIndex: 2, background: tc.primary, padding: '12px 20px', textAlign: 'left', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.15)' }}>Class</th>
                                                 {allFeeTypes.map(t => (
-                                                    <th key={t} style={{ padding: '16px 20px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.15)' }}>{t}</th>
+                                                    <th key={t} style={{ padding: '12px 16px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', borderRight: '1px solid rgba(255,255,255,0.15)' }}>{t}</th>
                                                 ))}
-                                                <th style={{ padding: '16px 24px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>Total</th>
+                                                <th style={{ padding: '12px 20px', textAlign: 'right', fontSize: '11px', fontWeight: 700, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.1em', whiteSpace: 'nowrap' }}>Total</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {sortedClasses.map((cls, i) => (
                                                 <tr key={cls.name} className="fee-row" style={{ background: i % 2 === 0 ? bc.card : bc.cardAlt }}>
-                                                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? bc.card : bc.cardAlt, padding: '14px 24px', fontSize: '14px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{cls.name}</td>
+                                                    <td style={{ position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? bc.card : bc.cardAlt, padding: '10px 20px', fontSize: '14px', fontWeight: 700, color: '#0f172a', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>{cls.name}</td>
                                                     {allFeeTypes.map(t => {
                                                         const fee = cls.fees.find(f => f.type === t);
                                                         const amt = getAmount(fee, selectedPeriod);
                                                         return (
-                                                            <td key={t} style={{ padding: '14px 20px', textAlign: 'right', fontSize: '13.5px', color: amt ? '#334155' : '#cbd5e1', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                                            <td key={t} style={{ padding: '10px 16px', textAlign: 'right', fontSize: '13.5px', color: amt ? '#334155' : '#cbd5e1', borderBottom: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                                                                 {amt ? `₹${parseFloat(amt).toLocaleString('en-IN')}` : '—'}
                                                             </td>
                                                         );
                                                     })}
-                                                    <td style={{ padding: '14px 24px', textAlign: 'right', fontSize: '14.5px', fontWeight: 800, color: tc.primary, borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+                                                    <td style={{ padding: '10px 20px', textAlign: 'right', fontSize: '14.5px', fontWeight: 800, color: tc.primary, borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                                                         ₹{getTotal(cls.fees).toLocaleString('en-IN')}
                                                     </td>
                                                 </tr>
@@ -261,7 +261,7 @@ const FeeStructurePublic = () => {
                                 )}
 
                                 {/* Note */}
-                                <div style={{ marginTop: '1.5rem', padding: '16px 24px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fde68a', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                                <div style={{ marginTop: '1rem', padding: '14px 20px', background: '#fffbeb', borderRadius: '12px', border: '1px solid #fde68a', display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
                                     <svg width="18" height="18" fill="none" stroke="#d97706" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: '1px' }}><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                     <p style={{ fontSize: '13px', color: '#92400e', lineHeight: 1.6 }}>
                                         All amounts are indicative and subject to change. Please contact the school office for the latest fee schedule and payment details.
@@ -274,14 +274,14 @@ const FeeStructurePublic = () => {
 
                 {/* ── Other Optional Subjects ── */}
                 {optionalFeeTables.length > 0 && (
-                    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 5rem', background: bc.surface }}>
+                    <div style={{ padding: '1.25rem clamp(1.25rem,6vw,5rem) 2.5rem', background: bc.surface }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-                                <div style={{ marginBottom: '2rem' }}>
+                                <div style={{ marginBottom: '1.25rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Optional Add-ons</p>
                                     <h2 style={{ fontFamily: content.optionalSubjectsHeadingFont ? getFontFamily(content.optionalSubjectsHeadingFont) : undefined, fontStyle: content.optionalSubjectsHeadingItalic ? 'italic' : 'normal', fontSize: 'clamp(22px,3.5vw,32px)', fontWeight: 900, color: content.optionalSubjectsHeadingColor || '#0f172a', letterSpacing: '-1px' }}>{content.optionalSubjectsHeading || 'Other optional subjects are also offered'}</h2>
                                 </div>
-                                <div className="fee-2col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                                <div className="fee-2col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
                                     {optionalFeeTables.map((table, i) => (
                                         <Reveal key={table.id} delay={i * 0.08}>
                                             <FeeTableCard table={table} tc={tc} bc={bc} />
@@ -295,14 +295,14 @@ const FeeStructurePublic = () => {
 
                 {/* ── School Transport ── */}
                 {transportTables.length > 0 && (
-                    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 5rem', background: bc.surface }}>
+                    <div style={{ padding: '1.25rem clamp(1.25rem,6vw,5rem) 2.5rem', background: bc.surface }}>
                         <Reveal>
                             <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
-                                <div style={{ marginBottom: '2rem' }}>
+                                <div style={{ marginBottom: '1.25rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '10px' }}>Getting to School</p>
                                     <h2 style={{ fontSize: 'clamp(22px,3.5vw,32px)', fontWeight: 900, color: '#0f172a', letterSpacing: '-1px' }}>School Transport </h2>
                                 </div>
-                                <div className="fee-2col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '2rem' }}>
+                                <div className="fee-2col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
                                     {transportTables.map((table, i) => (
                                         <Reveal key={table.id} delay={i * 0.08}>
                                             <FeeTableCard table={table} tc={tc} bc={bc} />

@@ -49,10 +49,10 @@ const CategoryTable = ({ category, tc, bc }) => {
     if (rows.length === 0) return null;
 
     return (
-        <Reveal style={{ marginBottom: '3.5rem' }}>
+        <Reveal style={{ marginBottom: '2.25rem' }}>
             <h2 style={{
-                fontSize: 'clamp(22px,2.6vw,28px)', fontWeight: 800, color: PD_HEADING,
-                letterSpacing: '-0.3px', marginBottom: '1.25rem'
+                fontSize: 'clamp(18px,2.2vw,24px)', fontWeight: 800, color: PD_HEADING,
+                letterSpacing: '-0.3px', marginBottom: '0.85rem'
             }}>
                 {(category.name || 'Untitled').toUpperCase()}
             </h2>
@@ -65,11 +65,11 @@ const CategoryTable = ({ category, tc, bc }) => {
                     gridTemplateColumns: category.type === 'info' ? '70px 1.6fr 1.6fr' : '70px 2fr 1.4fr',
                     background: tc.primary
                 }}>
-                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.22)' }}>S.No.</span>
-                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.22)' }}>
+                    <span style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.22)' }}>S.No.</span>
+                    <span style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff', borderRight: '1px solid rgba(255,255,255,0.22)' }}>
                         {category.type === 'info' ? 'Information' : 'Documents/ Information'}
                     </span>
-                    <span style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
+                    <span style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
                         {category.type === 'info' ? 'Details' : 'Uploaded Documents'}
                     </span>
                 </div>
@@ -82,22 +82,16 @@ const CategoryTable = ({ category, tc, bc }) => {
                         background: i % 2 === 0 ? tc.light : bc.card,
                         borderTop: '1px solid #cbd5e1'
                     }}>
-                        <span style={{ padding: '16px', fontSize: '13.5px', color: '#0f172a', fontWeight: 600, borderRight: '1px solid #cbd5e1' }}>{i + 1}</span>
-                        <span style={{ padding: '16px', fontSize: '13.5px', color: '#1e293b', fontWeight: 600, lineHeight: 1.6, borderRight: '1px solid #cbd5e1' }}>{row.label}</span>
+                        <span style={{ padding: '12px 16px', fontSize: '13.5px', color: '#0f172a', fontWeight: 600, borderRight: '1px solid #cbd5e1' }}>{i + 1}</span>
+                        <span style={{ padding: '12px 16px', fontSize: '13.5px', color: '#1e293b', fontWeight: 600, lineHeight: 1.6, borderRight: '1px solid #cbd5e1' }}>{row.label}</span>
                         {category.type === 'info' ? (
-                            <span style={{ padding: '16px', fontSize: '13.5px', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
+                            <span style={{ padding: '12px 16px', fontSize: '13.5px', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-line' }}>
                                 {row.details || '—'}
                             </span>
                         ) : (
-                            <span style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                {row.pdfUrl && (
-                                    <a href={cloudinaryAttachmentUrl(row.pdfUrl, row.label)} target="_blank" rel="noopener noreferrer"
-                                        style={{ fontSize: '12.5px', color: '#2563eb', textDecoration: 'underline', lineHeight: 1.6 }}>
-                                        View Document
-                                    </a>
-                                )}
-                                {!row.pdfUrl && row.linkUrl && (
-                                    <a href={row.linkUrl} target="_blank" rel="noopener noreferrer"
+                            <span style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {(row.pdfUrl || row.linkUrl) && (
+                                    <a href={row.pdfUrl ? cloudinaryAttachmentUrl(row.pdfUrl, row.label) : row.linkUrl} target="_blank" rel="noopener noreferrer"
                                         style={{
                                             display: 'inline-flex', alignItems: 'center', gap: '6px', width: 'fit-content',
                                             padding: '6px 14px', background: tc.primary, color: '#ffffff', borderRadius: '20px',
@@ -225,7 +219,7 @@ const PublicDisclosurePublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="disclosure" />
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.6rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -240,7 +234,7 @@ const PublicDisclosurePublic = () => {
 
                 {/* ── Description ── */}
                 {content.description && (
-                    <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 0' }}>
+                    <div style={{ padding: '2rem clamp(1.25rem,6vw,3rem) 0' }}>
                         <Reveal>
                             <div className="rte-content" style={{ maxWidth: '820px', margin: '0 auto', fontSize: '15px', color: '#475569', lineHeight: 1.9, textAlign: 'center' }}
                                 dangerouslySetInnerHTML={{ __html: content.description }} />
@@ -249,7 +243,7 @@ const PublicDisclosurePublic = () => {
                 )}
 
                 {/* ── Category Tables ── */}
-                <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 2rem' }}>
+                <div style={{ padding: '2rem clamp(1.25rem,6vw,3rem) 1rem' }}>
                     <div style={{ maxWidth: '980px', margin: '0 auto' }}>
                         {categories.map((cat) => (
                             <CategoryTable key={cat.id} category={cat} tc={tc} bc={bc} />
@@ -259,20 +253,20 @@ const PublicDisclosurePublic = () => {
 
                 {/* ── Standalone Mandatory Disclosure PDF button ── */}
                 {content.disclosurePdf?.pdfUrl && (
-                    <div style={{ padding: '2rem clamp(1.25rem,6vw,3rem) 6rem', textAlign: 'center' }}>
-                        <Reveal>
-                            <h2 style={{ fontSize: 'clamp(20px,2.4vw,26px)', fontWeight: 800, color: PD_HEADING, marginBottom: '1.5rem' }}>
+                    <div style={{ padding: '1rem clamp(1.25rem,6vw,3rem) 3rem', textAlign: 'center' }}>
+                        <Reveal style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                            <h2 style={{ fontSize: 'clamp(15px,1.7vw,18px)', fontWeight: 800, color: PD_HEADING, letterSpacing: '0.01em' }}>
                                 {(content.disclosurePdf.label || 'Mandatory Public Disclosure').toUpperCase()}
                             </h2>
                             <a href={cloudinaryAttachmentUrl(content.disclosurePdf.pdfUrl, content.disclosurePdf.label || 'mandatory-public-disclosure')} target="_blank" rel="noopener noreferrer" className="pd-cta-btn"
                                 style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: '10px',
-                                    padding: '14px 32px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
-                                    color: '#ffffff', borderRadius: '10px', fontSize: '14px', fontWeight: 700,
+                                    display: 'inline-flex', alignItems: 'center', gap: '9px',
+                                    padding: '10px 22px', background: 'linear-gradient(135deg,#dc2626,#b91c1c)',
+                                    color: '#ffffff', borderRadius: '9px', fontSize: '13px', fontWeight: 700,
                                     textDecoration: 'none', letterSpacing: '0.03em'
                                 }}>
-                                <IconPdf size={17} />
-                                Click Here
+                                <IconPdf size={15} />
+                                Download
                             </a>
                         </Reveal>
                     </div>

@@ -39,7 +39,6 @@ const InfrastructurePublic = () => {
     const [scrollY, setScrollY] = useState(0);
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [activeImgIdx, setActiveImgIdx] = useState(0);
-    const [activeGalleryIdx, setActiveGalleryIdx] = useState(0);
 
     useEffect(() => {
         fetchData();
@@ -49,7 +48,7 @@ const InfrastructurePublic = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, [slug, categorySlug]);
 
-    useEffect(() => { setActiveImgIdx(0); setActiveGalleryIdx(0); }, [categorySlug]);
+    useEffect(() => { setActiveImgIdx(0); }, [categorySlug]);
 
     const fetchData = async () => {
         try {
@@ -104,8 +103,6 @@ const InfrastructurePublic = () => {
     const goNextImg = () => setActiveImgIdx(p => (p + 1) % images.length);
 
     const galleryImages = activeCat.horizontalImages || [];
-    const goPrevGallery = () => setActiveGalleryIdx(p => (p === 0 ? galleryImages.length - 1 : p - 1));
-    const goNextGallery = () => setActiveGalleryIdx(p => (p + 1) % galleryImages.length);
 
     return (
         <>
@@ -156,6 +153,15 @@ const InfrastructurePublic = () => {
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
+                .infra-gallery-tile img { transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+                .infra-gallery-tile-overlay, .infra-gallery-tile-ring { transition: opacity 0.4s ease; }
+                .infra-gallery-tile { transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease; }
+                .infra-gallery-tile:hover { transform: translateY(-8px); box-shadow: 0 22px 46px rgba(15,23,42,0.24) !important; }
+                .infra-gallery-tile:hover img { transform: scale(1.1); }
+                .infra-gallery-tile:hover .infra-gallery-tile-overlay, .infra-gallery-tile:hover .infra-gallery-tile-ring { opacity: 1 !important; }
+                @keyframes infraGalleryScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+                .infra-gallery-ticker-track { display: flex; width: max-content; animation: infraGalleryScroll ${Math.max(20, galleryImages.length * 6)}s linear infinite; }
+                .infra-gallery-ticker-track:hover { animation-play-state: paused; }
                 @media (max-width: 640px) {
                     .infra-float-img { float: none !important; width: 100% !important; max-width: 320px; margin: 0 auto 1.5rem !important; }
                 }
@@ -167,13 +173,13 @@ const InfrastructurePublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="infrastructure" />
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.6rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
 
                     <div style={{ position: 'relative', zIndex: 1 }}>
-                        <h1 style={{ fontFamily: activeCat.headingFont ? getFontFamily(activeCat.headingFont) : "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: activeCat.headingColor || '#ffffff', letterSpacing: '-1px', marginBottom: '10px', fontStyle: activeCat.headingItalic ? 'italic' : 'normal' }}>
+                        <h1 style={{ fontFamily: activeCat.headingFont ? getFontFamily(activeCat.headingFont) : "'Playfair Display', Georgia, serif", fontSize: 'clamp(26px, 3.4vw, 38px)', fontWeight: 800, color: activeCat.headingColor || '#ffffff', letterSpacing: '-1px', marginBottom: '8px', fontStyle: activeCat.headingItalic ? 'italic' : 'normal' }}>
                             {activeCat.heading || activeCat.name}
                         </h1>
                         <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
@@ -182,13 +188,13 @@ const InfrastructurePublic = () => {
 
                 {/* ── Category Tabs ── */}
                 {categories.length > 1 && (
-                    <div style={{ padding: '2.5rem clamp(1.25rem,6vw,5rem) 0', background: bc.surface }}>
+                    <div style={{ padding: '1.5rem clamp(1.25rem,6vw,5rem) 0', background: bc.surface }}>
                         <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             {categories.map(cat => (
                                 <button key={cat.id} className="infra-cat-tab"
                                     onClick={() => navigate(`/school/${slug}/infrastructure/${cat.slug}`)}
                                     style={{
-                                        padding: '10px 22px', borderRadius: '30px', cursor: 'pointer',
+                                        padding: '8px 18px', borderRadius: '30px', cursor: 'pointer',
                                         border: cat.slug === activeCat.slug ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0',
                                         background: cat.slug === activeCat.slug ? tc.light : bc.card,
                                         color: cat.slug === activeCat.slug ? tc.primary : '#64748b',
@@ -202,12 +208,12 @@ const InfrastructurePublic = () => {
                 )}
 
                 {/* ── Body — image floats beside the description, exactly like the About page's History section ── */}
-                <div style={{ padding: '4rem clamp(1.25rem,6vw,5rem) 7rem', background: bc.surface }}>
+                <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 3rem', background: bc.surface }}>
                     <div style={{ maxWidth: '1300px', margin: '0 auto', position: 'relative' }}>
 
                         {/* Image slider — one image at a time, framed like the About page's History section */}
                         {images.length > 0 && (
-                            <Reveal className="infra-float-img" delay={0.15} style={{ float: 'right', width: '300px', marginLeft: '3rem', marginBottom: '1rem', position: 'relative', zIndex: 2 }}>
+                            <Reveal className="infra-float-img" delay={0.15} style={{ float: 'right', width: '260px', marginLeft: '2rem', marginBottom: '1rem', position: 'relative', zIndex: 2 }}>
                                 <div className="infra-frame">
                                     <span className="infra-frame-corner infra-corner-tl"></span>
                                     <span className="infra-frame-corner infra-corner-tr"></span>
@@ -262,54 +268,26 @@ const InfrastructurePublic = () => {
                     </div>
                 </div>
 
-                {/* ── Horizontal Gallery — sliding carousel, one wide photo at a time ── */}
+                {/* ── Horizontal Gallery — auto-scrolling ticker, styled like the Home page's Campus Glimpses ── */}
                 {galleryImages.length > 0 && (
-                    <div style={{ padding: '0 clamp(1.25rem,6vw,5rem) 6rem', background: bc.surface }}>
+                    <div style={{ padding: '0 clamp(1.25rem,6vw,5rem) 3rem', background: bc.surface }}>
                         <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                             <Reveal>
-                                <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem', textAlign: 'center' }}>Photo Gallery</p>
+                                <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1rem', textAlign: 'center' }}>Photo Gallery</p>
                             </Reveal>
-                            <Reveal delay={0.1}>
-                                <div style={{ maxWidth: '860px', margin: '0 auto' }}>
-                                    <div className="infra-frame">
-                                        <span className="infra-frame-corner infra-corner-tl"></span>
-                                        <span className="infra-frame-corner infra-corner-tr"></span>
-                                        <span className="infra-frame-corner infra-corner-bl"></span>
-                                        <span className="infra-frame-corner infra-corner-br"></span>
-                                        <div className="infra-frame-inner" style={{ aspectRatio: '16/9' }}>
-                                            <img key={activeGalleryIdx} className="infra-slide-img" src={galleryImages[activeGalleryIdx]} alt=""
-                                                style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', animation: 'fadeIn 0.3s ease' }} />
-
-                                            {galleryImages.length > 1 && (
-                                                <>
-                                                    <button className="infra-slide-btn" onClick={goPrevGallery}
-                                                        onMouseEnter={e => { e.currentTarget.style.background = tc.primary; e.currentTarget.style.color = '#fff'; }}
-                                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.92)'; e.currentTarget.style.color = '#0f172a'; }}
-                                                        style={{ position: 'absolute', left: '14px', top: '50%', marginTop: '-22px', width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', backdropFilter: 'blur(10px)', boxShadow: '0 8px 20px rgba(0,0,0,0.18)' }}>
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                                                    </button>
-                                                    <button className="infra-slide-btn" onClick={goNextGallery}
-                                                        onMouseEnter={e => { e.currentTarget.style.background = tc.primary; e.currentTarget.style.color = '#fff'; }}
-                                                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.92)'; e.currentTarget.style.color = '#0f172a'; }}
-                                                        style={{ position: 'absolute', right: '14px', top: '50%', marginTop: '-22px', width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', backdropFilter: 'blur(10px)', boxShadow: '0 8px 20px rgba(0,0,0,0.18)' }}>
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                                    </button>
-                                                    <div style={{ position: 'absolute', bottom: '14px', right: '14px', padding: '6px 14px', borderRadius: '20px', background: 'rgba(0,0,0,0.55)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', fontSize: '12px', fontWeight: 600, letterSpacing: '0.03em', backdropFilter: 'blur(10px)' }}>
-                                                        {activeGalleryIdx + 1} / {galleryImages.length}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
+                            <Reveal delay={0.1} style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div className="infra-gallery-ticker-track">
+                                        {[...galleryImages, ...galleryImages].map((img, i) => (
+                                            <div key={`${img}-${i}`} className="infra-gallery-tile" style={{ position: 'relative', flexShrink: 0, width: '360px', margin: '0 12px', borderRadius: '18px', overflow: 'hidden', aspectRatio: '16 / 9', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                <div className="infra-gallery-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
+                                                <div className="infra-gallery-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
+                                            </div>
+                                        ))}
                                     </div>
-
-                                    {galleryImages.length > 1 && (
-                                        <div style={{ display: 'flex', gap: '8px', marginTop: '16px', justifyContent: 'center' }}>
-                                            {galleryImages.map((_, i) => (
-                                                <div key={i} className="infra-dot" onClick={() => setActiveGalleryIdx(i)}
-                                                    style={{ width: i === activeGalleryIdx ? '26px' : '8px', height: '8px', borderRadius: '4px', background: i === activeGalleryIdx ? tc.primary : '#e2e8f0', boxShadow: i === activeGalleryIdx ? `0 2px 8px ${tc.primary}50` : 'none' }}></div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
                             </Reveal>
                         </div>

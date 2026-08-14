@@ -315,7 +315,7 @@ const TCInformationPublic = () => {
                             <p style={{ fontSize: 13.5, fontWeight: 600, color: '#94a3b8', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 }}>
                                 Step 2 — Enter your details
                             </p>
-                            <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 20 }}>
+                            <p style={{ fontSize: 13, color: '#334155', marginBottom: 20 }}>
                                 Enter either your TC Number or your Student Name — you don't need both.
                             </p>
 
@@ -387,7 +387,7 @@ const TCInformationPublic = () => {
                                                     ].map(([k, v]) => (
                                                         <div key={k} style={{ background: bc.surfaceAlt, border: '1px solid #f1f5f9', borderRadius: 12, padding: '12px 16px' }}>
                                                             <div style={{ fontSize: 11.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>{k}</div>
-                                                            <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a', marginTop: 4 }}>{v || '—'}</div>
+                                                            <div style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginTop: 4 }}>{v || '—'}</div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -408,7 +408,7 @@ const TCInformationPublic = () => {
                                                         textDecoration: 'none',
                                                     }}
                                                 >
-                                                    Download TC (PDF)
+                                                    Download TC in
                                                 </a>
                                             </div>
                                         ))}

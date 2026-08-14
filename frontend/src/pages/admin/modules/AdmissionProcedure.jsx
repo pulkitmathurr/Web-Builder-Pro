@@ -192,53 +192,6 @@ const AdmissionProcedure = () => {
 
                 <div className="ap-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-                    {/* Top section — heading + description */}
-                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                        <div>
-                            <label style={labelStyle}><span className="ap-section-dot"></span>Heading</label>
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                                <input className="ap-input" type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)}
-                                    placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
-                                <ItalicToggle active={!!content.headingItalic} onToggle={() => updateField('headingItalic', !content.headingItalic)} />
-                            </div>
-                            <HeadingStyleField
-                                color={content.headingColor} onColorChange={val => updateField('headingColor', val)}
-                                font={content.headingFont} onFontChange={val => updateField('headingFont', val)}
-                            />
-                        </div>
-                        <div>
-                            <label style={labelStyle}>Description</label>
-                            <RichTextEditor value={content.description} onChange={val => updateField('description', val)}
-                                placeholder="A short intro about how admissions work at your school..." minHeight="120px" fontSize="15px" />
-                        </div>
-                    </div>
-
-                    {/* Admission Form Attachment */}
-                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                        <label style={labelStyle}><span className="ap-section-dot"></span>Admission Form Attachment</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                            <div>
-                                <label style={labelStyle}>PDF (optional)</label>
-                                <label className="ap-pdf" style={{ display: 'block', padding: '11px 14px', border: content.formPdfUrl ? '1.5px solid #bbf7d0' : '1.5px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: content.formPdfUrl ? '#15803d' : '#64748b', background: content.formPdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
-                                    {uploadingForm ? 'Uploading...' : content.formPdfUrl ? '✓ PDF uploaded — click to change' : '📄 Click to upload Admission Form PDF'}
-                                    <input type="file" accept="application/pdf" style={{ display: 'none' }}
-                                        onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleFormUpload(f); }} />
-                                </label>
-                                {content.formPdfUrl && !uploadingForm && (
-                                    <button type="button" onClick={() => updateField('formPdfUrl', '')}
-                                        style={{ marginTop: '6px', fontSize: '11.5px', fontWeight: 600, color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
-                                        Remove PDF
-                                    </button>
-                                )}
-                                <ImageSizeHint>Under 10MB. Parents download this directly to fill and submit.</ImageSizeHint>
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Or Link URL (optional)</label>
-                                <input className="ap-input" type="text" value={content.formLinkUrl || ''} onChange={e => updateField('formLinkUrl', e.target.value)} placeholder="https://..." style={inputStyle} />
-                            </div>
-                        </div>
-                    </div>
-
                     {/* Explain the Admission Procedure — repeatable heading + description blocks */}
                     <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                         <div>
@@ -295,6 +248,53 @@ const AdmissionProcedure = () => {
                             style={{ padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
                             + Add Section
                         </button>
+                    </div>
+
+                    {/* Top section — heading + description */}
+                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div>
+                            <label style={labelStyle}><span className="ap-section-dot"></span>Heading</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input className="ap-input" type="text" value={content.heading} onChange={e => updateField('heading', e.target.value)}
+                                    placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: content.headingItalic ? 'italic' : 'normal' }} />
+                                <ItalicToggle active={!!content.headingItalic} onToggle={() => updateField('headingItalic', !content.headingItalic)} />
+                            </div>
+                            <HeadingStyleField
+                                color={content.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                font={content.headingFont} onFontChange={val => updateField('headingFont', val)}
+                            />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Description</label>
+                            <RichTextEditor value={content.description} onChange={val => updateField('description', val)}
+                                placeholder="A short intro about how admissions work at your school..." minHeight="120px" fontSize="15px" />
+                        </div>
+                    </div>
+
+                    {/* Admission Form Attachment */}
+                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <label style={labelStyle}><span className="ap-section-dot"></span>Admission Form Attachment</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                                <label style={labelStyle}>PDF (optional)</label>
+                                <label className="ap-pdf" style={{ display: 'block', padding: '11px 14px', border: content.formPdfUrl ? '1.5px solid #bbf7d0' : '1.5px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: content.formPdfUrl ? '#15803d' : '#64748b', background: content.formPdfUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
+                                    {uploadingForm ? 'Uploading...' : content.formPdfUrl ? '✓ PDF uploaded — click to change' : '📄 Click to upload Admission Form PDF'}
+                                    <input type="file" accept="application/pdf" style={{ display: 'none' }}
+                                        onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) handleFormUpload(f); }} />
+                                </label>
+                                {content.formPdfUrl && !uploadingForm && (
+                                    <button type="button" onClick={() => updateField('formPdfUrl', '')}
+                                        style={{ marginTop: '6px', fontSize: '11.5px', fontWeight: 600, color: '#dc2626', background: 'transparent', border: 'none', cursor: 'pointer', padding: '2px 0' }}>
+                                        Remove PDF
+                                    </button>
+                                )}
+                                <ImageSizeHint>Under 10MB. Parents download this directly to fill and submit.</ImageSizeHint>
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Or Link URL (optional)</label>
+                                <input className="ap-input" type="text" value={content.formLinkUrl || ''} onChange={e => updateField('formLinkUrl', e.target.value)} placeholder="https://..." style={inputStyle} />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

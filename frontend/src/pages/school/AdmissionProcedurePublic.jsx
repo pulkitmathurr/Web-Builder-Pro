@@ -52,12 +52,18 @@ const DocIcon = ({ color }) => (
 );
 
 // ── One "Explain Your Admission Procedure" block — a large ghost numeral marks each
-// section editorially (Stripe/Linear-style), heading picks up its own color/font/size,
-// description renders through the same RTE pipeline as everywhere else. ──
+// section editorially (Stripe/Linear-style), outlined in the theme color so it stays
+// visible against any base theme background instead of just a faint flat tint.
+// Heading picks up its own color/font/size, description renders through the same
+// RTE pipeline as everywhere else. ──
 const ProcedureBlock = ({ block, idx, isLast, tc }) => (
     <Reveal delay={Math.min(idx * 0.08, 0.4)}>
         <div style={{ position: 'relative', padding: idx === 0 ? '0 0 2.25rem' : '2.25rem 0', borderBottom: isLast ? 'none' : '1px solid #eef1f6' }}>
-            <div style={{ position: 'absolute', top: idx === 0 ? '-8px' : '14px', left: 0, fontSize: 'clamp(46px,6.5vw,78px)', fontWeight: 800, color: tc.light, lineHeight: 1, userSelect: 'none', zIndex: 0 }}>
+            <div style={{
+                position: 'absolute', top: idx === 0 ? '-8px' : '14px', left: 0,
+                fontSize: 'clamp(46px,6.5vw,78px)', fontWeight: 800, lineHeight: 1, userSelect: 'none', zIndex: 0,
+                color: `${tc.primary}14`, WebkitTextStroke: `1.5px ${tc.primary}70`,
+            }}>
                 {String(idx + 1).padStart(2, '0')}
             </div>
             <div style={{ position: 'relative', zIndex: 1, paddingLeft: 'clamp(58px,8.5vw,104px)' }}>
@@ -179,7 +185,7 @@ const AdmissionProcedurePublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="admissionProcedure" />
 
                 {/* ── Header — no banner photo, clean gradient header (matches About Us) ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>

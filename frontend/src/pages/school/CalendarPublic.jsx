@@ -31,10 +31,24 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-const CATEGORY_COLORS = { Holiday: '#059669', Exam: '#dc2626', PTM: '#2563eb', Event: '#7c3aed', Other: '#64748b' };
-const CATEGORY_ICONS = { Holiday: '☀️', Exam: '📝', PTM: '🤝', Event: '🎉', Other: '📌' };
+const CATEGORY_COLORS = { Holiday: '#ec4899', Exam: '#eab308', PTM: '#2563eb', Event: '#7c3aed', Other: '#d97706' };
+const WORKING_DAY_COLOR = '#99edc3';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+// ── Simple line icons for the Calendar Stats panel — a calendar glyph for most
+// categories, a ribbon/medal glyph for holiday-flavored ones. ──
+const IconCalendar = ({ size = 16, color = '#0f172a' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="4" width="18" height="18" rx="3" /><path d="M16 2v4M8 2v4M3 10h18" />
+    </svg>
+);
+const IconRibbon = ({ size = 16, color = '#0f172a' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="8" r="6" /><path d="M9 13.5L7 22l5-3 5 3-2-8.5" />
+    </svg>
+);
+const iconForCategory = (cat) => /holiday/i.test(cat || '') ? IconRibbon : IconCalendar;
 
 const buildMonthGrid = (year, month) => {
     const firstWeekday = new Date(year, month, 1).getDay();
@@ -56,6 +70,7 @@ const CalendarPublic = () => {
     const [viewDate, setViewDate] = useState(() => { const d = new Date(); d.setDate(1); return d; });
     const [activeCategory, setActiveCategory] = useState(null);
     const [selectedDay, setSelectedDay] = useState(null); // dateKey string or null
+    const [showInstructions, setShowInstructions] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -108,6 +123,7 @@ const CalendarPublic = () => {
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
     const grid = buildMonthGrid(year, month);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     const todayKey = toDateKey(new Date());
     const isCurrentMonth = todayKey.slice(0, 7) === `${year}-${String(month + 1).padStart(2, '0')}`;
 
@@ -159,14 +175,14 @@ const CalendarPublic = () => {
 
                 .cal-nav-btn:hover { background: ${tc.primary}16 !important; border-color: ${tc.primary}55 !important; }
                 .cal-today-btn:hover { background: ${tc.primary}16 !important; }
-                .cal-day { position: relative; cursor: default; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; }
+                .cal-day { position: relative; cursor: default; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; box-shadow: 0 1px 4px rgba(15,23,42,0.05); }
                 .cal-day.has-events { cursor: pointer; }
                 .cal-day.has-events:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 20px rgba(15,23,42,0.12); z-index: 3; }
                 .cal-dot { transition: opacity 0.15s ease, transform 0.15s ease; }
                 .cal-chip { transition: opacity 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease; cursor: pointer; }
                 .cal-chip:hover { transform: translateY(-1px); }
-                .cal-side-row { transition: background 0.15s ease, transform 0.15s ease; cursor: pointer; }
-                .cal-side-row:hover { background: #f8fafc; }
+                .cal-side-row { transition: background 0.15s ease, padding-left 0.15s ease; cursor: pointer; }
+                .cal-side-row:hover { background: #f8fafc; padding-left: 1.6rem !important; }
                 @keyframes calGridIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
                 .cal-grid-anim { animation: calGridIn 0.3s ease both; }
                 @keyframes calPulse { 0%,100% { box-shadow: 0 0 0 0 ${tc.primary}55; } 50% { box-shadow: 0 0 0 5px ${tc.primary}00; } }
@@ -192,7 +208,7 @@ const CalendarPublic = () => {
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="calendar" />
 
                 {/* ── Header ── */}
-                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: '4.5rem clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
                     <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}35, transparent 70%)`, top: '-180px', right: '-100px' }}></div>
                     <div style={{ position: 'absolute', width: '280px', height: '280px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}25, transparent 70%)`, bottom: '-160px', left: '-90px' }}></div>
@@ -219,22 +235,27 @@ const CalendarPublic = () => {
                 <div style={{ padding: '3rem clamp(1.25rem,6vw,3rem) 6rem' }}>
                     <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
 
-                        {/* Stat tiles — this month, per category */}
-                        {monthStats.length > 0 && (
+                        {/* Legend — colored pill per category, doubles as the filter control */}
+                        {presentCategories.length > 0 && (
                             <Reveal>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginBottom: '1.5rem' }}>
-                                    {monthStats.map(({ cat, count }) => {
+                                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', padding: '12px 18px', background: bc.card, border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                                    <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginRight: '2px' }}>Legend</span>
+                                    {presentCategories.map(cat => {
                                         const color = CATEGORY_COLORS[cat] || tc.primary;
+                                        const isActive = activeCategory === cat;
+                                        const isDimmed = activeCategory && !isActive;
                                         return (
-                                            <div key={cat} className="cal-stat-tile" style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: '130px', padding: '12px 18px', background: bc.card, border: `1px solid ${color}25`, borderRadius: '14px', boxShadow: '0 4px 14px rgba(15,23,42,0.05)' }}>
-                                                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
-                                                    {CATEGORY_ICONS[cat] || '📌'}
-                                                </div>
-                                                <div>
-                                                    <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{count}</div>
-                                                    <div style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', marginTop: '2px' }}>{cat}{count === 1 ? '' : 's'} this month</div>
-                                                </div>
-                                            </div>
+                                            <button key={cat} onClick={() => toggleCategory(cat)} className="cal-chip"
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '7px',
+                                                    padding: '5px 12px', borderRadius: '999px',
+                                                    border: `1px solid ${isActive ? color : '#e2e8f0'}`,
+                                                    background: isActive ? `${color}14` : '#ffffff',
+                                                    opacity: isDimmed ? 0.45 : 1,
+                                                }}>
+                                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: color, flexShrink: 0 }}></span>
+                                                <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 600 }}>{cat}</span>
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -286,26 +307,33 @@ const CalendarPublic = () => {
                                             const isSelected = selectedDay === key;
                                             const visibleDots = dayItems.slice(0, 4);
                                             const extraCount = dayItems.length - visibleDots.length;
+                                            const soloColor = dayItems.length === 1 ? (CATEGORY_COLORS[dayItems[0].category] || tc.primary) : null;
                                             return (
                                                 <div key={i} className={`cal-day ${hasAll ? 'has-events' : ''} ${isToday ? 'cal-today-ring' : ''}`}
                                                     onClick={() => hasAll && setSelectedDay(isSelected ? null : key)}
                                                     title={dayItems.length ? dayItems.map(it => it.title).join(', ') : undefined}
                                                     style={{
+                                                        position: 'relative',
                                                         minHeight: 'clamp(56px,9vw,92px)', display: 'flex', flexDirection: 'column',
-                                                        alignItems: 'center', padding: '8px 4px 6px', gap: '4px',
+                                                        alignItems: 'flex-start', padding: '8px 8px 6px', gap: '4px',
                                                         borderRadius: '12px',
-                                                        border: isSelected ? `1.5px solid ${tc.primary}` : isToday ? `1.5px solid ${tc.primary}80` : '1px solid #eef1f6',
-                                                        background: isSelected ? `${tc.primary}14` : isToday ? `${tc.primary}0a` : isWeekend ? '#fafbfc' : bc.card,
+                                                        border: isSelected ? `1.5px solid ${tc.primary}` : isToday ? `1.5px solid ${tc.primary}` : soloColor ? `1px solid ${soloColor}60` : isWeekend ? `1px solid ${tc.primary}35` : `1px solid ${WORKING_DAY_COLOR}`,
+                                                        background: `linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%), ${soloColor ? `${soloColor}35` : isSelected ? `${tc.primary}14` : isToday ? `${tc.primary}0a` : isWeekend ? `${tc.primary}14` : `${WORKING_DAY_COLOR}55`}`,
                                                     }}>
+                                                    {soloColor && (
+                                                        <span style={{ position: 'absolute', top: '7px', right: '7px', width: '13px', height: '13px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 1px 3px rgba(15,23,42,0.18)' }}></span>
+                                                    )}
                                                     <span className="cal-day-num" style={{
-                                                        fontSize: '13px', fontWeight: isToday ? 800 : 600,
-                                                        color: isToday ? tc.primary : '#334155',
-                                                        width: '22px', height: '22px', borderRadius: '50%',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        background: isToday ? tc.primary : 'transparent', ...(isToday ? { color: '#fff' } : {}),
+                                                        fontSize: '14px', fontWeight: 800,
+                                                        color: isToday && !soloColor ? tc.primary : (!soloColor && isWeekend) ? `${tc.primary}cc` : '#1e293b',
                                                     }}>{day}</span>
-                                                    {visibleDots.length > 0 && (
-                                                        <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', justifyContent: 'center', maxWidth: '100%' }}>
+                                                    {soloColor ? (
+                                                        <span style={{
+                                                            fontSize: '9px', fontWeight: 800, color: soloColor, textTransform: 'uppercase', letterSpacing: '0.02em',
+                                                            maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                                                        }}>{dayItems[0].category}</span>
+                                                    ) : visibleDots.length > 0 && (
+                                                        <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap', maxWidth: '100%' }}>
                                                             {visibleDots.map((it, di) => (
                                                                 <span key={di} className="cal-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: CATEGORY_COLORS[it.category] || tc.primary, flexShrink: 0 }} />
                                                             ))}
@@ -317,28 +345,59 @@ const CalendarPublic = () => {
                                         })}
                                     </div>
 
-                                    {/* Legend / category filter */}
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '1.5rem', paddingTop: '1.25rem', borderTop: '1px solid #eef1f6' }}>
-                                        {presentCategories.map(cat => {
-                                            const color = CATEGORY_COLORS[cat] || tc.primary;
-                                            const isActive = activeCategory === cat;
-                                            const isDimmed = activeCategory && !isActive;
-                                            return (
-                                                <button key={cat} onClick={() => toggleCategory(cat)} className="cal-chip"
-                                                    style={{
-                                                        display: 'flex', alignItems: 'center', gap: '6px',
-                                                        padding: '5px 12px', borderRadius: '999px', border: `1px solid ${isActive ? color : '#e5e9f0'}`,
-                                                        background: isActive ? `${color}18` : 'transparent',
-                                                        opacity: isDimmed ? 0.45 : 1,
-                                                    }}>
-                                                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: color }}></span>
-                                                    <span style={{ fontSize: '11.5px', color: isActive ? color : '#64748b', fontWeight: isActive ? 700 : 500 }}>{cat}</span>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
                                 </div>
                             </Reveal>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                                {/* ── Calendar Stats ── */}
+                                <Reveal delay={0.05}>
+                                    <div style={{ background: bc.card, borderRadius: '22px', border: '1px solid #e2e8f0', boxShadow: '0 14px 40px rgba(15,23,42,0.09)', overflow: 'hidden' }}>
+                                        <div style={{ padding: '1.2rem 1.4rem 0.6rem' }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#0f172a' }}>Calendar Stats</span>
+                                        </div>
+                                        <div style={{ padding: '0.6rem 1.2rem 1.2rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: '#f8fafc', borderRadius: '12px' }}>
+                                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${tc.primary}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                    <IconCalendar size={16} color={tc.primary} />
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Days</div>
+                                                    <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>{daysInMonth} Days</div>
+                                                </div>
+                                            </div>
+                                            {monthStats.map(({ cat, count }) => {
+                                                const color = CATEGORY_COLORS[cat] || tc.primary;
+                                                const StatIcon = iconForCategory(cat);
+                                                return (
+                                                    <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px', background: `${color}0d`, borderRadius: '12px' }}>
+                                                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                            <StatIcon size={16} color={color} />
+                                                        </div>
+                                                        <div>
+                                                            <div style={{ fontSize: '10px', fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cat}{count === 1 ? '' : 's'}</div>
+                                                            <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>{count} Day{count === 1 ? '' : 's'}</div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {monthStats.length === 0 && (
+                                                <p style={{ fontSize: '12.5px', color: '#94a3b8', textAlign: 'center', padding: '0.5rem 0' }}>No dated entries this month.</p>
+                                            )}
+                                        </div>
+                                        <button onClick={() => setShowInstructions(s => !s)}
+                                            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.9rem 1.2rem', background: 'transparent', border: 'none', borderTop: '1px solid #eef1f6', cursor: 'pointer' }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: '#64748b' }}>ⓘ Instructions</span>
+                                            <span style={{ fontSize: '11px', fontWeight: 700, color: tc.primary }}>{showInstructions ? 'Hide' : 'Show'}</span>
+                                        </button>
+                                        {showInstructions && (
+                                            <div style={{ padding: '0 1.2rem 1.1rem' }}>
+                                                <p style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.7 }}>
+                                                    Click a legend chip to filter the calendar by category. Click a highlighted day to see its full details below.
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </Reveal>
 
                             {/* ── Sidebar: selected day detail, or upcoming/recent feed ── */}
                             <Reveal delay={0.1}>
@@ -363,12 +422,13 @@ const CalendarPublic = () => {
                                             ) : selectedDayItems.map((it, i) => {
                                                 const color = CATEGORY_COLORS[it.category] || tc.primary;
                                                 return (
-                                                    <div key={it.id || i} style={{ padding: '1rem 1.4rem', borderBottom: i < selectedDayItems.length - 1 ? '1px solid #eef1f6' : 'none', borderLeft: `3px solid ${color}` }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                            <span style={{ fontSize: '9.5px', fontWeight: 700, color, background: `${color}14`, padding: '3px 9px', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{it.category}</span>
+                                                    <div key={it.id || i} style={{ padding: '0.9rem 1.4rem', borderBottom: i < selectedDayItems.length - 1 ? '1px solid #eef1f6' : 'none' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+                                                            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: color, flexShrink: 0 }}></span>
+                                                            <span style={{ fontSize: '9.5px', fontWeight: 800, color, background: `${color}16`, padding: '3px 9px', borderRadius: '999px', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{it.category}</span>
                                                         </div>
-                                                        <div style={{ fontSize: '14.5px', fontWeight: 600, color: '#0f172a' }}>{it.title}</div>
-                                                        {it.note && <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '3px' }}>{it.note}</div>}
+                                                        <div style={{ fontSize: '14.5px', fontWeight: 700, color: '#0f172a' }}>{it.title}</div>
+                                                        {it.note && <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '3px', lineHeight: 1.5 }}>{it.note}</div>}
                                                     </div>
                                                 );
                                             })
@@ -381,21 +441,26 @@ const CalendarPublic = () => {
                                             const color = CATEGORY_COLORS[item.category] || tc.primary;
                                             return (
                                                 <div key={item.id || i} className="cal-side-row" onClick={() => jumpToDate(d)}
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1.4rem', borderBottom: i < sidebarFeed.length - 1 ? '1px solid #eef1f6' : 'none', borderLeft: `3px solid ${color}` }}>
-                                                    <div style={{ flexShrink: 0, width: '42px', textAlign: 'center', background: '#f1f5f9', borderRadius: '9px', padding: '5px 0' }}>
+                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.9rem', padding: '0.85rem 1.4rem', borderBottom: i < sidebarFeed.length - 1 ? '1px solid #eef1f6' : 'none' }}>
+                                                    <div style={{ flexShrink: 0, width: '44px', textAlign: 'center', background: `${color}14`, border: `1px solid ${color}30`, borderRadius: '10px', padding: '6px 0' }}>
                                                         <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', lineHeight: 1 }}>{day}</div>
-                                                        <div style={{ fontSize: '8px', fontWeight: 700, color: '#94a3b8', letterSpacing: '0.04em', marginTop: '2px' }}>{mon}</div>
+                                                        <div style={{ fontSize: '8px', fontWeight: 800, color, letterSpacing: '0.04em', marginTop: '3px', textTransform: 'uppercase' }}>{mon}</div>
                                                     </div>
                                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '13.5px', fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
-                                                        <div style={{ fontSize: '10.5px', fontWeight: 700, color, marginTop: '2px' }}>{item.category}</div>
+                                                        <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</div>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                                                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: color, flexShrink: 0 }}></span>
+                                                            <span style={{ fontSize: '10.5px', fontWeight: 700, color }}>{item.category}</span>
+                                                        </div>
                                                     </div>
+                                                    <svg width="14" height="14" fill="none" stroke="#cbd5e1" strokeWidth="2.5" viewBox="0 0 24 24" style={{ flexShrink: 0 }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
                                                 </div>
                                             );
                                         })}
                                     </div>
                                 </div>
                             </Reveal>
+                            </div>
                         </div>
                     </div>
                 </div>
