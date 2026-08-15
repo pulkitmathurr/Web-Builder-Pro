@@ -651,7 +651,7 @@ const Infrastructure = () => {
                 <div>
                   <label style={labelStyle}>Images (Vertical, max {MAX_CATEGORY_IMAGES})</label>
                   <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
-                    Shown as a slider beside the description on the live page. You'll get a crop tool for each image (freely adjustable from every side — keep it tall/vertical) before it's added. JPG, PNG, WEBP · Max 5MB each.
+                    Shown as a slider beside the description on the live page. You'll get a crop tool for each image (freely adjustable from every side — keep it tall/vertical) before it's added. JPG, PNG, WEBP · Max 1MB each.
                   </p>
                   <div
                     className="infra-img-grid"
@@ -752,7 +752,7 @@ const Infrastructure = () => {
                 <div>
                   <label style={labelStyle}>Horizontal Gallery Images (Carousel)</label>
                   <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
-                    Shown as a sliding carousel below the description — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.
+                    Shown as a sliding carousel below the description — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each.
                   </p>
                   <div
                     className="infra-img-grid"

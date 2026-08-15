@@ -378,7 +378,7 @@ const Gallery = () => {
                     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '1.5rem', gap: '12px', flexWrap: 'wrap' }}>
                         <div>
                             <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.2px' }}>Folders <span style={{ color: '#94a3b8', fontWeight: 500 }}>({childFolders.length})</span></p>
-                            <p style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px' }}>Set the # priority on a folder's cover to control its order — 1 shows first on the public gallery. Cover image: landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB.</p>
+                            <p style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '3px' }}>Set the # priority on a folder's cover to control its order — 1 shows first on the public gallery. Cover image: landscape (4:3) works best · JPG, PNG, WEBP · Max 1MB.</p>
                         </div>
                         <button onClick={() => setShowNewFolder(true)} disabled={showNewFolder}
                             style={{ padding: '10px 18px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '12.5px', fontWeight: 600, cursor: showNewFolder ? 'default' : 'pointer', display: 'flex', alignItems: 'center', gap: '7px', opacity: showNewFolder ? 0.5 : 1, boxShadow: `0 6px 16px ${hexToRgba(tc.primary, 0.28)}` }}>
@@ -513,7 +513,7 @@ const Gallery = () => {
                                         <>
                                             <IconUpload size={20} color="#94a3b8" />
                                             <p style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>Click to add photos (multiple allowed)</p>
-                                            <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each photo (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
+                                            <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each photo (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
                                         </>
                                     )}
                                 </div>
@@ -526,7 +526,7 @@ const Gallery = () => {
                         {activeTree === 'video' && (
                             <>
                                 <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Videos in "{currentFolder.name}" <span style={{ color: '#94a3b8', fontWeight: 400 }}>({(currentFolder.videos || []).length})</span></p>
-                                <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Thumbnail: landscape (16:9) works best · JPG, PNG, WEBP · Max 5MB.</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Thumbnail: landscape (16:9) works best · JPG, PNG, WEBP · Max 1MB.</p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '1.25rem' }}>
                                     {(currentFolder.videos || []).map(v => {
                                         const thumbKey = `vidthumb-${v.id}`;

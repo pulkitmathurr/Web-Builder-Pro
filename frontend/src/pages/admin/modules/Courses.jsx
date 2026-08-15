@@ -243,7 +243,7 @@ const Courses = () => {
                     <>
                         <div style={{ color: '#cbd5e1', marginBottom: '8px', display: 'flex', justifyContent: 'center' }}><ImageIcon /></div>
                         <p style={{ fontSize: '13px', color: '#64748b' }}>Click to upload</p>
-                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{hint ? `${hint} · JPG, PNG, WEBP · Max 5MB` : 'JPG, PNG, WEBP · Max 5MB'}</p>
+                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>{hint ? `${hint} · JPG, PNG, WEBP · Max 1MB` : 'JPG, PNG, WEBP · Max 1MB'}</p>
                     </>
                 )}
             </div>
@@ -492,7 +492,7 @@ const Courses = () => {
                                         ) : (
                                             <>
                                                 <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add gallery images (multiple allowed)</p>
-                                                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
+                                                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
                                             </>
                                         )}
                                     </div>

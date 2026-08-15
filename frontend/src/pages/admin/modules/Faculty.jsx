@@ -235,7 +235,7 @@ const Faculty = () => {
                                             <span style={{ fontSize: '13px', color: '#94a3b8' }}>📷 Photo</span>
                                         )}
                                     </div>
-                                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center', lineHeight: 1.4 }}>Square photo · Max 5MB</p>
+                                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center', lineHeight: 1.4 }}>Square photo · Max 1MB</p>
                                 </div>
                                 <input id={`photo-${m.id}`} type="file" accept="image/*"
                                     onChange={e => {

@@ -344,7 +344,7 @@ const Achievements = () => {
                                             <input id={`ach-photo-${a.id}`} type="file" accept="image/*"
                                                 onChange={e => { const f = e.target.files[0]; if (f) onAchievementPhotoSelected(a.id, f); e.target.value = ''; }}
                                                 style={{ display: 'none' }} />
-                                            <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Portrait photo works best · JPG, PNG, WEBP · Max 5MB</p>
+                                            <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Portrait photo works best · JPG, PNG, WEBP · Max 1MB</p>
                                         </div>
 
                                         {/* Fields */}
@@ -393,7 +393,7 @@ const Achievements = () => {
                 {/* Certifications */}
                 <div className="ach-section" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '18px', padding: '1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(15,23,42,0.04)' }}>
                     <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}><span className="ach-section-dot"></span>Certifications</p>
-                    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB each.</p>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 1MB each.</p>
                     <button className="ach-cert-addbtn" onClick={addCertification} style={{ width: '100%', padding: '11px', background: 'transparent', border: '1.5px dashed #e5e7eb', borderRadius: '12px', fontSize: '13px', color: '#64748b', cursor: 'pointer', marginBottom: '1rem' }}>
                         + Add Certification
                     </button>

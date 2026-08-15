@@ -62,12 +62,12 @@ const videoStorage = new CloudinaryStorage({
 
 const upload = multer({
     storage: imageStorage,
-    limits: { fileSize: 2 * 1024 * 1024 },
+    limits: { fileSize: 1 * 1024 * 1024 },
 });
 
 const uploadContentImage = multer({
     storage: contentImageStorage,
-    limits: { fileSize: 5 * 1024 * 1024 },
+    limits: { fileSize: 1 * 1024 * 1024 },
 });
 
 const uploadPdf = multer({

@@ -279,7 +279,7 @@ const TestimonialCard = ({ testimonial, index, length, onMove, onUpdate, onRemov
                             e.target.value = '';
                             if (f) setCropSrc(URL.createObjectURL(f));
                         }} style={{ display: 'none' }} />
-                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Falls back to initials if left blank · Max 5MB</p>
+                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Falls back to initials if left blank · Max 1MB</p>
                 </div>
 
                 {/* Fields */}

@@ -36,7 +36,7 @@ const AdminSettings = () => {
     const [logoPreview, setLogoPreview] = useState(null);
     const [logoCropSrc, setLogoCropSrc] = useState(null);
     const [profileData, setProfileData] = useState({
-        name: '', phone: '', phone2: '', address: '', city: '', state: '', pincode: '', intro_message: ''
+        name: '', phone: '', phone2: '', address: '', city: '', state: '', pincode: '', intro_message: '', intro_message_enabled: true
     });
     const [settingsData, setSettingsData] = useState({
         theme: 'default', base_theme: 'white', logo_url: '', nav_font: 'inter'
@@ -82,6 +82,7 @@ const AdminSettings = () => {
                 state: school.state || '',
                 pincode: school.pincode || '',
                 intro_message: school.intro_message || '',
+                intro_message_enabled: school.intro_message_enabled === undefined ? true : !!school.intro_message_enabled,
             });
             setSettingsData({
                 theme: school.theme || 'default',
@@ -635,6 +636,28 @@ const AdminSettings = () => {
                                 </div>
                             </div>
                             <div style={{ padding: '1.5rem 1.75rem' }}>
+                                {/* Enable/disable */}
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', marginBottom: '16px', background: profileData.intro_message_enabled ? '#f0fdf4' : '#f8fafc', border: `1px solid ${profileData.intro_message_enabled ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '8px' }}>
+                                    <div>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>Show Intro Animation</p>
+                                        <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>White reveal animation plays once when a visitor opens your homepage</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setProfileData(prev => ({ ...prev, intro_message_enabled: !prev.intro_message_enabled }))}
+                                        style={{
+                                            width: '42px', height: '23px', borderRadius: '999px', border: 'none', cursor: 'pointer',
+                                            background: profileData.intro_message_enabled ? tc.primary : '#e2e8f0',
+                                            position: 'relative', transition: 'background 0.2s', flexShrink: 0, padding: 0,
+                                        }}>
+                                        <span style={{
+                                            position: 'absolute', top: '2.5px', left: profileData.intro_message_enabled ? '21px' : '3px',
+                                            width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+                                            transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                                        }} />
+                                    </button>
+                                </div>
+
                                 <div>
                                     <label style={labelStyle}>Intro Message</label>
                                     <input
@@ -643,16 +666,19 @@ const AdminSettings = () => {
                                         name="intro_message"
                                         value={profileData.intro_message}
                                         onChange={handleProfileChange}
+                                        disabled={!profileData.intro_message_enabled}
                                         placeholder="Enter Intro Message"
-                                        style={{ ...inputStyle, fontSize: '16px', fontWeight: 600, letterSpacing: '0.08em' }}
+                                        style={{ ...inputStyle, fontSize: '16px', fontWeight: 600, letterSpacing: '0.08em', ...(!profileData.intro_message_enabled ? { opacity: 0.5, cursor: 'not-allowed', background: '#f1f5f9' } : {}) }}
                                     />
                                     <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                        <InfoIcon /> Keep it short and impactful — 2 to 5 words work best. E.g. "WE BELIEVE" or "EXCELLENCE IN EDUCATION"
+                                        <InfoIcon /> {profileData.intro_message_enabled
+                                            ? 'Keep it short and impactful — 2 to 5 words work best. E.g. "WE BELIEVE" or "EXCELLENCE IN EDUCATION"'
+                                            : 'Turn on the toggle above to write an intro message'}
                                     </p>
                                 </div>
 
                                 {/* Preview */}
-                                {profileData.intro_message && (
+                                {profileData.intro_message_enabled && profileData.intro_message && (
                                     <div style={{ marginTop: '1rem', borderRadius: '16px', overflow: 'hidden', border: '1px solid #e2e8f0', position: 'relative', height: '120px', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, opacity: 0.15 }}></div>
                                         <p style={{ fontSize: '28px', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', position: 'relative', zIndex: 1 }}>
@@ -704,14 +730,14 @@ const AdminSettings = () => {
                                         <>
                                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}><BuildingIcon /></div>
                                             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Click to upload school logo</p>
-                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>PNG, JPG, WEBP · Max 2MB · Transparent PNG recommended</p>
+                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>PNG, JPG, WEBP · Max 1MB · Transparent PNG recommended</p>
                                         </>
                                     )}
                                 </div>
                                 <input id="schoolLogoInput" type="file" accept="image/png,image/jpg,image/jpeg,image/webp" onChange={handleLogoChange} style={{ display: 'none' }} />
                                 <div style={{ padding: '12px 14px', background: 'linear-gradient(135deg,#fdf0f5,#fff5f8)', borderRadius: '8px', border: '1px solid #f9c4d4' }}>
                                     <p style={{ fontSize: '12px', fontWeight: 600, color: tc.primary, marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '5px' }}><InfoIcon /> Best practices</p>
-                                    {['Use PNG with transparent background', 'Square format works best (1:1 ratio)', 'Minimum 200×200px resolution', 'Max file size: 2MB'].map((tip, i) => (
+                                    {['Use PNG with transparent background', 'Square format works best (1:1 ratio)', 'Minimum 200×200px resolution', 'Max file size: 1MB'].map((tip, i) => (
                                         <p key={i} style={{ fontSize: '11px', color: '#9f1239', marginBottom: '3px' }}>• {tip}</p>
                                     ))}
                                 </div>
@@ -946,7 +972,7 @@ const AdminSettings = () => {
                                             <>
                                                 <div style={{ fontSize: '28px', marginBottom: '8px' }}>🖼️</div>
                                                 <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Click to upload your banner poster</p>
-                                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>JPG, PNG, WEBP · Max 5MB · Full poster image (logo, text, photos all baked in)</p>
+                                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>JPG, PNG, WEBP · Max 1MB · Full poster image (logo, text, photos all baked in)</p>
                                             </>
                                         )}
                                     </div>
@@ -1046,7 +1072,7 @@ const AdminSettings = () => {
                                         <>
                                             <div style={{ fontSize: '28px', marginBottom: '8px' }}>🏫</div>
                                             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Click to upload a footer background image</p>
-                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>JPG, PNG, WEBP · Max 5MB · Wide/landscape photos work best</p>
+                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>JPG, PNG, WEBP · Max 1MB · Wide/landscape photos work best</p>
                                         </>
                                     )}
                                 </div>

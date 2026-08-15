@@ -1,5 +1,6 @@
 import axiosInstance from '../config/axios';
 import { noBreakHyphensDeep } from '../utils/textFormat';
+import { assertImageSizeOk } from '../utils/fileValidation';
 
 export const getModuleContentApi = async (moduleKey) => {
     const response = await axiosInstance.get(`/content/${moduleKey}`);
@@ -27,6 +28,7 @@ export const getPublishedModulesApi = async (schoolId) => {
 };
 
 export const uploadContentImageApi = async (file) => {
+    assertImageSizeOk(file);
     const formData = new FormData();
     formData.append('image', file);
     const response = await axiosInstance.post('/content/upload-image', formData, {

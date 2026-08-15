@@ -561,7 +561,7 @@ const HomePage = () => {
                         <div style={{ padding: '1.75rem 2rem 2rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px' }}>
                                 <p style={{ fontSize: '11px', color: '#94a3b8' }}>
-                                    Upload up to {HERO_BANNERS_MAX} images — they'll auto-rotate with a fade every 3 seconds behind the hero text. Wide images (16:9 or wider) work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.
+                                    Upload up to {HERO_BANNERS_MAX} images — they'll auto-rotate with a fade every 3 seconds behind the hero text. Wide images (16:9 or wider) work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each.
                                 </p>
                                 <span style={{ fontSize: '11px', color: content.heroBanners.length >= HERO_BANNERS_MAX ? '#dc2626' : '#94a3b8', fontWeight: 600, whiteSpace: 'nowrap' }}>{content.heroBanners.length} / {HERO_BANNERS_MAX}</span>
                             </div>

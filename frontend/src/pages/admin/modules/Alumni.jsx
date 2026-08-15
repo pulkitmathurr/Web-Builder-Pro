@@ -283,7 +283,7 @@ const AlumnusCard = ({ alumnus, index, length, onMove, onUpdate, onRemove, onUpl
                             e.target.value = '';
                             if (f) setCropSrc(URL.createObjectURL(f));
                         }} style={{ display: 'none' }} />
-                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Portrait photo works best · JPG, PNG, WEBP · Max 5MB</p>
+                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Portrait photo works best · JPG, PNG, WEBP · Max 1MB</p>
                 </div>
 
                 {/* Fields */}

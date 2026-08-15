@@ -164,6 +164,14 @@ const InfrastructurePublic = () => {
                 .infra-gallery-ticker-track:hover { animation-play-state: paused; }
                 @media (max-width: 640px) {
                     .infra-float-img { float: none !important; width: 100% !important; max-width: 320px; margin: 0 auto 1.5rem !important; }
+                    /* ── Category tabs — horizontal swipeable strip instead of wrapping to multiple lines ── */
+                    .infra-cat-tabs { flex-wrap: nowrap !important; overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; padding-bottom: 2px !important; }
+                    .infra-cat-tabs::-webkit-scrollbar { display: none !important; }
+                    .infra-cat-tab { flex-shrink: 0 !important; padding: 7px 14px !important; font-size: 12.5px !important; white-space: nowrap !important; }
+                    .infra-gallery-tile { width: 210px !important; margin: 0 8px !important; border-radius: 13px !important; }
+                }
+                @media (max-width: 400px) {
+                    .infra-gallery-tile { width: 180px !important; margin: 0 6px !important; }
                 }
             `}</style>
 
@@ -189,7 +197,7 @@ const InfrastructurePublic = () => {
                 {/* ── Category Tabs ── */}
                 {categories.length > 1 && (
                     <div style={{ padding: '1.5rem clamp(1.25rem,6vw,5rem) 0', background: bc.surface }}>
-                        <div style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        <div className="infra-cat-tabs" style={{ maxWidth: '1300px', margin: '0 auto', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             {categories.map(cat => (
                                 <button key={cat.id} className="infra-cat-tab"
                                     onClick={() => navigate(`/school/${slug}/infrastructure/${cat.slug}`)}

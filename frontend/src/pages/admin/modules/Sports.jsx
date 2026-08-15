@@ -6,6 +6,7 @@ import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import ReorderButtons from '../../../components/common/ReorderButtons';
+import ImageSizeHint from '../../../components/admin/ImageSizeHint';
 import useSchoolStore from '../../../store/schoolStore';
 import { moveItem } from '../../../utils/reorder';
 import toast from 'react-hot-toast';
@@ -220,7 +221,7 @@ const Sports = () => {
                 {uploading[field] ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : (
                     <>
                         <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add images (multiple allowed)</p>
-                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each.</p>
+                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each.</p>
                     </>
                 )}
             </div>
@@ -250,7 +251,7 @@ const Sports = () => {
             <div>
                 <label style={labelStyle}>Collage Layout</label>
                 <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '10px' }}>
-                    Pick how many photos make up the collage, then click a slot to upload the photo for that exact spot — its shape tells you whether to keep it vertical or horizontal. You'll get a crop tool that's freely adjustable from every side (same as Infrastructure's photos). JPG, PNG, WEBP · Max 5MB each.
+                    Pick how many photos make up the collage, then click a slot to upload the photo for that exact spot. Every slot below is sized exactly like it renders on the live Sports page, so what you see here is what visitors will see — no surprise re-cropping. JPG, PNG, WEBP.
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
                     {Object.keys(COLLAGE_LAYOUTS).map(n => (
@@ -261,14 +262,17 @@ const Sports = () => {
                     ))}
                 </div>
 
-                <div className="sports-collage-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows},110px)` }), gap: '10px', marginBottom: '1.25rem' }}>
+                {/* maxWidth matches the public Sports page's collage container (1140px) so each
+                    slot's column width — and therefore its rendered aspect ratio — lines up with
+                    how it will actually look live, not just its row-height in isolation. */}
+                <div className="sports-collage-grid" style={{ maxWidth: '1140px', display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows},${layoutDef.rowHeight}px)` }), gap: '14px', marginBottom: '1.25rem' }}>
                     {slots.map((slot, i) => {
                         const url = images[i];
                         const uploadKey = `collage-${i}`;
                         return (
                             <div key={i}
                                 onClick={() => document.getElementById(`collage-slot-${i}`).click()}
-                                style={{ ...(layoutDef.square ? { aspectRatio: '1' } : { gridColumn: slot.gridColumn, gridRow: slot.gridRow }), position: 'relative', borderRadius: '10px', overflow: 'hidden', border: url ? '1px solid #e2e8f0' : '1.5px dashed #cbd5e1', background: url ? 'transparent' : '#fafafa', cursor: 'pointer' }}>
+                                style={{ ...(layoutDef.square ? { aspectRatio: '1' } : { gridColumn: slot.gridColumn, gridRow: slot.gridRow }), position: 'relative', borderRadius: '18px', overflow: 'hidden', border: url ? '1px solid #e2e8f0' : '1.5px dashed #cbd5e1', background: url ? 'transparent' : '#fafafa', cursor: 'pointer' }}>
                                 {uploading[uploadKey] ? (
                                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
@@ -298,12 +302,20 @@ const Sports = () => {
                     })}
                 </div>
 
+                <ImageSizeHint>
+                    You'll get a crop tool for each photo (freely adjustable from every side) before it's added.
+                    {layout === '4' && ' All 4 slots are square (1:1) — use a centered subject.'}
+                    {layout === '5' && ' Tall slots ≈ 2:3 portrait, the wide slot ≈ 8:3 landscape, landscape slots ≈ 4:3.'}
+                    {layout === '7' && ' The extra-tall slot ≈ 9:20 portrait, tall slots ≈ 2:3 portrait, the wide slot ≈ 8:3 landscape, landscape slots ≈ 4:3.'}
+                    {' '}Upload photos with enough resolution to fill their slot without stretching (roughly 1000px+ on the longer side).
+                </ImageSizeHint>
+
                 {/* Extra/overflow photos only apply to the full 7-photo layout — the 4 and 5
                     layouts are meant to stay a clean, fixed-size collage with nothing extra. */}
                 {layout === '7' && (
                     <>
                         <label style={labelStyle}>Extra Photos (optional)</label>
-                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '10px' }}>Shown in a plain row below the collage — freely cropped, no fixed shape. JPG, PNG, WEBP · Max 5MB each.</p>
+                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '10px' }}>Shown in a plain row below the collage — freely cropped, no fixed shape. JPG, PNG, WEBP · Max 1MB each.</p>
                         <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
                             {extraImages.map((img, i) => (
                                 <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -583,7 +595,7 @@ const Sports = () => {
                         {/* Certifications */}
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Certifications</p>
-                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 5MB each.</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Upload certificate images with basic info — shown in a grid. Landscape (4:3) works best · JPG, PNG, WEBP · Max 1MB each.</p>
                             <button type="button" className="sports-add-btn" onClick={() => updateField('certifications', [{ id: `cert-${Date.now()}`, image: '', title: '', info: '' }, ...(pageData.certifications || [])])}
                                 style={{ width: '100%', padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Certification
@@ -608,7 +620,7 @@ const Sports = () => {
                         {/* Making Us Proud */}
                         <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Making Us Proud</p>
-                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Student photos with achievement details. Square photo works best · JPG, PNG, WEBP · Max 5MB each.</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '1.25rem' }}>Student photos with achievement details. Square photo works best · JPG, PNG, WEBP · Max 1MB each.</p>
                             <button type="button" className="sports-add-btn" onClick={() => updateField('proud', [{ id: `proud-${Date.now()}`, photo: '', name: '', achievement: '' }, ...(pageData.proud || [])])}
                                 style={{ width: '100%', padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer', marginBottom: '1rem' }}>
                                 + Add Student
@@ -705,7 +717,7 @@ const EventCard = ({ event, index, length, onMove, onUpdate, onRemove, onAddImag
                 </div>
                 <div>
                     <label style={labelStyle}>Event Images (carousel)</label>
-                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
                     <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(event.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -754,7 +766,7 @@ const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAdd
                 </div>
                 <div>
                     <label style={labelStyle}>Sport Images (carousel)</label>
-                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 5MB each.</p>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
                     <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(sport.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>

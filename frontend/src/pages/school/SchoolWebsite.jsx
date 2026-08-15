@@ -250,7 +250,7 @@ const SchoolWebsite = () => {
 
     useEffect(() => {
         if (!school) return;
-        if (!school.intro_message) { setIntroVisible(false); return; }
+        if (!school.intro_message || school.intro_message_enabled === false || school.intro_message_enabled === 0) { setIntroVisible(false); return; }
 
         const t1 = setTimeout(() => setIntroPhase('hold'), 800);
         const t2 = setTimeout(() => setIntroPhase('exit'), 2500);
@@ -444,6 +444,12 @@ const SchoolWebsite = () => {
                 .cg-orb { animation: cgOrbDrift 11s ease-in-out infinite; }
                 .cg-ticker-track { display: flex; width: max-content; animation: tickerScroll ${Math.max(20, campusImages.length * 6)}s linear infinite; }
                 .cg-ticker-track:hover { animation-play-state: paused; }
+                @media (max-width: 640px) {
+                    .cg-tile { width: 150px !important; margin: 0 7px !important; border-radius: 13px !important; }
+                }
+                @media (max-width: 400px) {
+                    .cg-tile { width: 125px !important; margin: 0 6px !important; }
+                }
             `}</style>
 
             <div style={{ width: '100%', minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", background: '#020617', position: 'relative', overflowX: 'hidden' }}>

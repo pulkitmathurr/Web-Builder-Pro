@@ -89,13 +89,11 @@ const ModuleSelector = () => {
             shadow: 'rgba(37,99,235,0.2)', dot: '#2563eb',
             icon: <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         },
-        {
-            key: 'settings', label: 'Configuration',
-            desc: 'Settings and contact information',
-            gradient: 'linear-gradient(135deg, #0a1f0f 0%, #1a3d20 100%)',
-            shadow: 'rgba(5,150,105,0.2)', dot: '#059669',
-            icon: <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        },
+        // Note: there used to be a third "Configuration" category here (Contact Us +
+        // General Settings) — removed because those two are always-on admin features
+        // (see AdminLayout.jsx's sidebar and App.jsx's routes), auto-available to every
+        // school from account creation, not gated behind isModuleEnabled like the modules
+        // below. Listing them as "selectable" here was misleading.
     ];
 
     if (fetchingExisting) {
@@ -123,6 +121,12 @@ const ModuleSelector = () => {
                 .cat-card:nth-child(3) { animation-delay: 0.19s; }
                 .mod-item { transition: all 0.2s ease; }
                 .mod-item:hover { transform: translateY(-2px); }
+                @media (max-width: 720px) {
+                    .mod-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                }
+                @media (max-width: 480px) {
+                    .mod-grid { grid-template-columns: 1fr !important; }
+                }
             `}</style>
 
             <div style={{
@@ -226,7 +230,7 @@ const ModuleSelector = () => {
                                 </div>
 
                                 {/* Module Grid */}
-                                <div style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                                <div className="mod-grid" style={{ padding: '16px 20px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                                     {modules.map(module => {
                                         const isSelected = selected.includes(module.key);
                                         const isHovered = hoveredModule === module.key;

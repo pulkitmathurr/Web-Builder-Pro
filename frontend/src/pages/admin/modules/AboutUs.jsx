@@ -484,7 +484,7 @@ const AboutUs = () => {
             <>
               <div style={{ fontSize: "28px", marginBottom: "8px" }}>🖼️</div>
               <p style={{ fontSize: "13px", color: "#64748b", marginBottom: "4px" }}>Click to upload — crop tool will open</p>
-              <p style={{ fontSize: "11px", color: "#94a3b8" }}>{aspectHint ? `${aspectHint} · JPG, PNG, WEBP · Max 5MB` : "JPG, PNG, WEBP · Max 5MB"}</p>
+              <p style={{ fontSize: "11px", color: "#94a3b8" }}>{aspectHint ? `${aspectHint} · JPG, PNG, WEBP · Max 1MB` : "JPG, PNG, WEBP · Max 1MB"}</p>
             </>
           )}
         </div>
@@ -800,7 +800,7 @@ const AboutUs = () => {
               <div>
                 <label style={labelStyle}>History Gallery Images (Horizontal)</label>
                 <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
-                  Shown as a horizontal strip below the history text — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 5MB each. Max {HISTORY_GALLERY_MAX} images ({(content.historyGalleryImages || []).length}/{HISTORY_GALLERY_MAX} used). More than 3 images auto-rolls with 3 visible at a time; click any image on the site to view it larger.
+                  Shown as a horizontal strip below the history text — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each. Max {HISTORY_GALLERY_MAX} images ({(content.historyGalleryImages || []).length}/{HISTORY_GALLERY_MAX} used). More than 3 images auto-rolls with 3 visible at a time; click any image on the site to view it larger.
                 </p>
                 <div className="au-gallery-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "14px", marginBottom: "1.25rem" }}>
                   {(content.historyGalleryImages || []).map((img, i) => (

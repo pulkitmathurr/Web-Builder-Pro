@@ -52,13 +52,11 @@ const SchoolLevelPublic = () => {
     const [allLevels, setAllLevels] = useState(null);
     const [loading, setLoading] = useState(true);
     const [scrollY, setScrollY] = useState(0);
-    const [galleryIndex, setGalleryIndex] = useState(0);
 
     const levelInfo = LEVEL_MAP[levelSlug];
 
     useEffect(() => {
         fetchData();
-        setGalleryIndex(0);
         const handleScroll = () => setScrollY(window.scrollY);
         window.addEventListener('scroll', handleScroll);
         window.scrollTo(0, 0);
@@ -112,8 +110,15 @@ const SchoolLevelPublic = () => {
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes shimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
                 body { background: ${bc.surface}; }
-                .gallery-arrow { transition: all 0.2s; }
-                .gallery-arrow:hover { background: ${tc.primary} !important; color: #fff !important; transform: scale(1.1); }
+                @keyframes lvlGalleryScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+                .lvl-gallery-ticker-track { display: flex; width: max-content; animation: lvlGalleryScroll ${Math.max(20, gallery.length * 6)}s linear infinite; }
+                .lvl-gallery-ticker-track:hover { animation-play-state: paused; }
+                .lvl-gallery-tile { transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease; }
+                .lvl-gallery-tile img { transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
+                .lvl-gallery-tile:hover { transform: translateY(-8px); box-shadow: 0 22px 46px rgba(15,23,42,0.24) !important; }
+                .lvl-gallery-tile:hover img { transform: scale(1.1); }
+                .lvl-gallery-tile-overlay, .lvl-gallery-tile-ring { transition: opacity 0.4s ease; }
+                .lvl-gallery-tile:hover .lvl-gallery-tile-overlay, .lvl-gallery-tile:hover .lvl-gallery-tile-ring { opacity: 1 !important; }
                 .lvl-frame { position: relative; padding: 12px; }
                 .lvl-frame::before {
                     content: ''; position: absolute; inset: 0; border: 1.5px solid ${tc.primary}55;
@@ -170,6 +175,12 @@ const SchoolLevelPublic = () => {
 
                     /* ── Left accent border beside the description — desktop-only flourish, drop it on mobile ── */
                     .lvl-accent-block { border-left: none !important; padding-left: 0 !important; margin-left: 0 !important; }
+
+                    /* ── Gallery ticker — same rolling animation as desktop, just smaller tiles ── */
+                    .lvl-gallery-tile { width: 210px !important; margin: 0 8px !important; border-radius: 13px !important; }
+                }
+                @media (max-width: 400px) {
+                    .lvl-gallery-tile { width: 180px !important; margin: 0 6px !important; }
                 }
             `}</style>
 
@@ -271,44 +282,29 @@ const SchoolLevelPublic = () => {
                     </div>
                 )}
 
-                {/* ── Gallery ── */}
+                {/* ── Gallery — horizontal auto-scrolling ticker, styled like the Home page's Campus Glimpses ── */}
                 {gallery.length > 0 && (
-                    <div style={{ padding: 'clamp(2rem,8vw,4rem) clamp(1.25rem,6vw,5rem)', background: bc.surface, position: 'relative' }}>
+                    <div style={{ padding: 'clamp(2rem,8vw,4rem) 0', background: bc.surface, position: 'relative', overflow: 'hidden' }}>
                         <Reveal>
-                            <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
+                            <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,5rem)' }}>
                                 <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '14px' }}>Campus Life</p>
                                     <h2 className="lvl-gallery-heading" style={{ fontSize: '38px', fontWeight: 800, color: '#0f172a', letterSpacing: '-1.5px' }}>{levelInfo.label} Gallery</h2>
                                 </div>
+                            </div>
 
-                                <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                                    <div className="lvl-frame">
-                                        <span className="lvl-frame-corner lvl-corner-tl"></span>
-                                        <span className="lvl-frame-corner lvl-corner-tr"></span>
-                                        <span className="lvl-frame-corner lvl-corner-bl"></span>
-                                        <span className="lvl-frame-corner lvl-corner-br"></span>
-                                        <div className="lvl-frame-inner" style={{ aspectRatio: '16/9' }}>
-                                            <img src={gallery[galleryIndex]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'opacity 0.3s' }} />
-                                            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '90px', background: 'linear-gradient(180deg, rgba(0,0,0,0), rgba(0,0,0,0.35))', pointerEvents: 'none' }}></div>
-
-                                            {gallery.length > 1 && (
-                                                <>
-                                                    <button className="gallery-arrow" onClick={() => setGalleryIndex(p => p === 0 ? gallery.length - 1 : p - 1)}
-                                                        style={{ position: 'absolute', left: '14px', top: '50%', marginTop: '-22px', width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', backdropFilter: 'blur(10px)', boxShadow: '0 8px 20px rgba(0,0,0,0.18)' }}>
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                                                    </button>
-                                                    <button className="gallery-arrow" onClick={() => setGalleryIndex(p => p === gallery.length - 1 ? 0 : p + 1)}
-                                                        style={{ position: 'absolute', right: '14px', top: '50%', marginTop: '-22px', width: '44px', height: '44px', borderRadius: '50%', background: 'rgba(255,255,255,0.92)', border: '1px solid rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a', backdropFilter: 'blur(10px)', boxShadow: '0 8px 20px rgba(0,0,0,0.18)' }}>
-                                                        <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
-                                                    </button>
-                                                    <div style={{ position: 'absolute', bottom: '14px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '8px' }}>
-                                                        {gallery.map((_, i) => (
-                                                            <div key={i} onClick={() => setGalleryIndex(i)} style={{ width: i === galleryIndex ? '24px' : '8px', height: '8px', borderRadius: '4px', background: i === galleryIndex ? '#ffffff' : 'rgba(255,255,255,0.5)', cursor: 'pointer', transition: 'all 0.3s' }}></div>
-                                                        ))}
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ overflow: 'hidden' }}>
+                                    <div className="lvl-gallery-ticker-track">
+                                        {[...gallery, ...gallery].map((img, i) => (
+                                            <div key={`${img}-${i}`} className="lvl-gallery-tile" style={{ position: 'relative', flexShrink: 0, width: '360px', margin: '0 12px', borderRadius: '18px', overflow: 'hidden', aspectRatio: '16 / 9', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                <div className="lvl-gallery-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
+                                                <div className="lvl-gallery-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>

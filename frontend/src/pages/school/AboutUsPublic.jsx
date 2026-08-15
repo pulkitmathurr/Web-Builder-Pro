@@ -137,28 +137,33 @@ const AffiliationsSection = ({ items, heading, headingColor, headingFont, headin
                 <Reveal delay={0.1}>
                     <div style={{ background: bc.card, borderRadius: '4px', overflow: 'hidden', boxShadow: '0 12px 40px rgba(15,23,42,0.08)', border: '1.5px solid #94a3b8' }}>
                         <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                                <colgroup>
+                                    <col style={{ width: '34px' }} />
+                                    <col />
+                                    <col style={{ width: '84px' }} />
+                                </colgroup>
                                 <tbody>
                                     {items.map((item, i) => (
                                         <tr key={item.id || i} className="affil-row" style={{ background: i % 2 === 0 ? bc.cardAlt : bc.card, borderTop: i > 0 ? '1px solid #e2e8f0' : 'none' }}>
-                                            <td style={{ ...affilTdStyle, textAlign: 'center', color: '#94a3b8', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</td>
-                                            <td style={affilTdStyle}>
-                                                {item.image ? (
-                                                    <img src={item.image} alt={item.heading} style={{ width: '42px', height: '42px', objectFit: 'contain', borderRadius: '4px', display: 'block' }} />
-                                                ) : (
-                                                    <div style={{ width: '42px', height: '42px', borderRadius: '4px', background: tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <svg width="18" height="18" fill="none" stroke={tc.primary} strokeWidth="1.8" viewBox="0 0 24 24" style={{ opacity: 0.5 }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-                                                    </div>
-                                                )}
+                                            <td style={{ ...affilTdStyle, padding: '10px 4px', textAlign: 'center', color: '#94a3b8', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{i + 1}</td>
+                                            <td style={{ ...affilTdStyle, padding: '10px 10px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    {item.image ? (
+                                                        <img src={item.image} alt={item.heading} style={{ width: '38px', height: '38px', minWidth: '38px', objectFit: 'contain', borderRadius: '4px', display: 'block' }} />
+                                                    ) : (
+                                                        <div style={{ width: '38px', height: '38px', minWidth: '38px', borderRadius: '4px', background: tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <svg width="16" height="16" fill="none" stroke={tc.primary} strokeWidth="1.8" viewBox="0 0 24 24" style={{ opacity: 0.5 }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                                                        </div>
+                                                    )}
+                                                    <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 'clamp(12.5px,3vw,14.5px)', lineHeight: 1.3 }}>{item.heading}</span>
+                                                </div>
                                             </td>
-                                            <td style={{ ...affilTdStyle, textAlign: 'center' }}>
-                                                <span style={{ fontWeight: 700, color: '#0f172a' }}>{item.heading}</span>
-                                            </td>
-                                            <td style={{ ...affilTdStyle, textAlign: 'center' }}>
+                                            <td style={{ ...affilTdStyle, padding: '10px 6px', textAlign: 'center' }}>
                                                 {item.link ? (
                                                     <a href={item.link} target="_blank" rel="noopener noreferrer" className="affil-view-btn"
-                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 16px', borderRadius: '20px', background: tc.light, color: tc.primary, fontWeight: 700, fontSize: '12.5px', textDecoration: 'none', border: `1px solid ${tc.primary}30` }}>
-                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '20px', background: tc.light, color: tc.primary, fontWeight: 700, fontSize: '11.5px', textDecoration: 'none', border: `1px solid ${tc.primary}30`, whiteSpace: 'nowrap' }}>
+                                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                                         View
                                                     </a>
                                                 ) : (
@@ -311,7 +316,7 @@ const AboutUsPublic = () => {
                     display: flex; align-items: center; justify-content: center;
                     box-shadow: 0 6px 16px rgba(15,23,42,0.28);
                 }
-                .award-card-body { padding: 1.35rem 1.5rem 1.6rem; border-top: 1px solid rgba(15,23,42,0.06); }
+                .award-card-body { padding: 1.35rem 1.5rem 1.6rem; border-top: 1px solid rgba(15,23,42,0.06); flex: 1; }
 
                 /* ── Affiliations & Certifications — logo + name table; "View" button opens the Link URL (e.g. a Drive link to the letter/certificate) ── */
                 .affil-row { transition: background 0.15s ease; }
@@ -351,8 +356,14 @@ const AboutUsPublic = () => {
                 }
                 @media (max-width: 640px) {
                     .aup-float-img { float: none !important; width: 100% !important; margin: 0 0 1.25rem 0 !important; display: flex !important; justify-content: center; }
-                    .award-card-grid { grid-template-columns: 1fr !important; }
+                    .award-card-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+                    .award-card-body { padding: 0.9rem 1rem 1.1rem !important; }
+                    .award-card-seal { width: 26px !important; height: 26px !important; top: 8px !important; right: 8px !important; }
                     .lightbox-nav-btn { left: 4px !important; right: 4px !important; width: 38px !important; height: 38px !important; }
+                    .history-gallery-thumb { width: 230px !important; margin: 0 8px !important; border-width: 3px !important; }
+                }
+                @media (max-width: 400px) {
+                    .history-gallery-thumb { width: 195px !important; margin: 0 6px !important; }
                 }
             `}</style>
 
@@ -592,13 +603,13 @@ const AboutUsPublic = () => {
                             <Reveal>
                                 <div style={{ marginBottom: '1.75rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>Celebrating Excellence</p>
-                                    <h2 style={{ fontFamily: getFontFamily(content.awardsHeadingFont), fontStyle: content.awardsHeadingItalic ? 'italic' : 'normal', fontSize: '30px', fontWeight: 800, color: content.awardsHeadingColor || '#0f172a', letterSpacing: '-1.5px' }}>{content.awardsHeading || 'Awards & Recognition'}</h2>
+                                    <h2 style={{ fontFamily: getFontFamily(content.awardsHeadingFont), fontStyle: content.awardsHeadingItalic ? 'italic' : 'normal', fontSize: 'clamp(21px,5vw,30px)', fontWeight: 800, color: content.awardsHeadingColor || '#0f172a', letterSpacing: '-1px' }}>{content.awardsHeading || 'Awards & Recognition'}</h2>
                                 </div>
                             </Reveal>
                             <div className="award-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '22px' }}>
                                 {awards.map((item, i) => (
-                                    <Reveal key={item.id || i} delay={i * 0.06}>
-                                        <div className="award-card">
+                                    <Reveal key={item.id || i} delay={i * 0.06} style={{ height: '100%' }}>
+                                        <div className="award-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                             <div className="award-card-top-bar" style={{ background: `linear-gradient(90deg,${tc.primary},${tc.secondary})` }}></div>
                                             <div className="award-card-photo">
                                                 {item.image ? (
@@ -615,13 +626,13 @@ const AboutUsPublic = () => {
                                             </div>
                                             <div className="award-card-body">
                                                 {(item.name || item.designation) && (
-                                                    <div style={{ marginBottom: '14px', paddingBottom: '14px', borderBottom: '1px solid rgba(15,23,42,0.08)' }}>
-                                                        {item.name && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '16px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px', lineHeight: 1.3 }}>{item.name}</p>}
-                                                        {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '12px', color: tc.primary, fontWeight: 600, marginTop: '3px' }}>{item.designation}</p>}
+                                                    <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(15,23,42,0.08)' }}>
+                                                        {item.name && <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(12.5px,3vw,14.5px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.3 }}>{item.name}</p>}
+                                                        {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(10px,2.4vw,11px)', color: tc.primary, fontWeight: 600, marginTop: '3px' }}>{item.designation}</p>}
                                                     </div>
                                                 )}
-                                                <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '10px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 800, marginBottom: '9px' }}>Award</p>
-                                                <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '19px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.4px', lineHeight: 1.3 }}>{item.heading}</p>
+                                                <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '8.5px', color: tc.primary, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 800, marginBottom: '7px' }}>Award</p>
+                                                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(13px,3.4vw,16px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.35 }}>{item.heading}</p>
                                             </div>
                                         </div>
                                     </Reveal>
