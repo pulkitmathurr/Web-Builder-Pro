@@ -124,12 +124,21 @@ const ModuleSelector = () => {
                 @media (max-width: 720px) {
                     .mod-grid { grid-template-columns: repeat(2, 1fr) !important; }
                 }
+                @media (max-width: 640px) {
+                    .modsel-page { padding: 1.5rem 0.6rem !important; }
+                    .modsel-header h1 { font-size: 22px !important; }
+                    .modsel-header p { font-size: 12.5px !important; }
+                }
                 @media (max-width: 480px) {
-                    .mod-grid { grid-template-columns: 1fr !important; }
+                    .mod-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 8px !important; padding: 12px !important; }
+                    .mod-item { flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center; padding: 12px 6px !important; gap: 6px !important; position: relative; }
+                    .mod-item-check { position: absolute !important; top: 6px !important; right: 6px !important; width: 15px !important; height: 15px !important; }
+                    .mod-item-icon svg { width: 18px !important; height: 18px !important; }
+                    .mod-item-label { font-size: 10px !important; line-height: 1.25 !important; }
                 }
             `}</style>
 
-            <div style={{
+            <div className="modsel-page" style={{
                 minHeight: '100vh',
                 background: CREAM_BG,
                 display: 'flex',
@@ -148,7 +157,7 @@ const ModuleSelector = () => {
                 <div style={{ width: '100%', maxWidth: '920px', position: 'relative', zIndex: 1 }}>
 
                     {/* Header */}
-                    <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                    <div className="modsel-header" style={{ textAlign: 'center', marginBottom: '3rem' }}>
                         <div style={{ width: '64px', height: '64px', background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`, borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem', boxShadow: `0 12px 32px ${hexToRgba(tc.primary, 0.3)}`, color: 'white' }}>
                             <svg width="28" height="28" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
@@ -252,7 +261,7 @@ const ModuleSelector = () => {
                                                 }}
                                             >
                                                 {/* Checkbox */}
-                                                <div style={{
+                                                <div className="mod-item-check" style={{
                                                     width: '18px', height: '18px', borderRadius: '5px',
                                                     border: isSelected ? 'none' : `1.5px solid ${ITEM_BORDER}`,
                                                     background: isSelected ? `linear-gradient(135deg,${tc.primary},${tc.secondary})` : 'transparent',
@@ -268,12 +277,12 @@ const ModuleSelector = () => {
                                                 </div>
 
                                                 {/* Icon */}
-                                                <div style={{ color: isSelected ? tc.primary : TEXT_MUTED_LIGHT, flexShrink: 0, transition: 'color 0.15s' }}>
+                                                <div className="mod-item-icon" style={{ color: isSelected ? tc.primary : TEXT_MUTED_LIGHT, flexShrink: 0, transition: 'color 0.15s' }}>
                                                     {module.icon}
                                                 </div>
 
                                                 {/* Label */}
-                                                <span style={{ fontSize: '12px', fontWeight: isSelected ? 600 : 400, color: isSelected ? '#0f172a' : TEXT_MUTED, lineHeight: 1.3, transition: 'all 0.15s' }}>
+                                                <span className="mod-item-label" style={{ fontSize: '12px', fontWeight: isSelected ? 600 : 400, color: isSelected ? '#0f172a' : TEXT_MUTED, lineHeight: 1.3, transition: 'all 0.15s' }}>
                                                     {module.label}
                                                 </span>
                                             </div>
