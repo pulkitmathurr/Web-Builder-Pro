@@ -20,6 +20,7 @@ const modulePageMap = {
     'gallery': '/admin/module/gallery',
     'achievements': '/admin/module/achievements',
     'alumni': '/admin/module/alumni',
+    'testimonials': '/admin/module/testimonials',
     'admissionProcedure': '/admin/module/admissionProcedure',
     'bookList': '/admin/module/bookList',
     'disclosure': '/admin/module/disclosure',

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createSchoolWithAdminApi } from '../../api/superAdmin.api';
 import ImageCropModal from '../../components/common/ImageCropModal';
+import { sanitizePhoneDigits, isValidPhone } from '../../utils/phone';
 import toast from 'react-hot-toast';
 
 const CreateSchool = () => {
@@ -18,7 +19,14 @@ const CreateSchool = () => {
     const [imagePreview, setImagePreview] = useState(null);
     const [imageCropSrc, setImageCropSrc] = useState(null);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'phone' || name === 'adminPhone') {
+            setFormData({ ...formData, [name]: sanitizePhoneDigits(value) });
+            return;
+        }
+        setFormData({ ...formData, [name]: value });
+    };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -34,6 +42,10 @@ const CreateSchool = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (formData.adminPhone && !isValidPhone(formData.adminPhone)) {
+            toast.error('Admin phone number must be exactly 10 digits');
+            return;
+        }
         setLoading(true);
         try {
             const submitData = new FormData();
@@ -180,7 +192,7 @@ const CreateSchool = () => {
                                                 </div>
                                                 <div>
                                                     <label style={labelStyle}>Phone Number</label>
-                                                    <input className="cs-input" type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="9876543210" style={inputStyle} />
+                                                    <input className="cs-input" type="tel" inputMode="numeric" maxLength={10} name="phone" value={formData.phone} onChange={handleChange} placeholder="9876543210" style={inputStyle} />
                                                 </div>
                                             </div>
                                             <div>
@@ -217,6 +229,7 @@ const CreateSchool = () => {
                                 <button type="button"
                                     onClick={() => {
                                         if (!formData.name || !formData.email) { toast.error('School name and email required'); return; }
+                                        if (formData.phone && !isValidPhone(formData.phone)) { toast.error('Phone number must be exactly 10 digits'); return; }
                                         setStep(2);
                                     }}
                                     style={{ padding: '10px 28px', background: 'linear-gradient(135deg,#6d8bff,#4f6ef7)', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(79,110,247,0.3)' }}>
@@ -256,7 +269,7 @@ const CreateSchool = () => {
 
                                     <div style={{ gridColumn: '1 / -1' }}>
                                         <label style={labelStyle}>Admin Phone</label>
-                                        <input className="cs-input" type="text" name="adminPhone" value={formData.adminPhone} onChange={handleChange} placeholder="9876543210" style={inputStyle} />
+                                        <input className="cs-input" type="tel" inputMode="numeric" maxLength={10} name="adminPhone" value={formData.adminPhone} onChange={handleChange} placeholder="9876543210" style={inputStyle} />
                                     </div>
 
                                     <div style={{ gridColumn: '1 / -1' }}>

@@ -91,10 +91,14 @@ const FeeTableCard = ({ table, tc, bc }) => {
                             </p>
                         );
                     }
+                    const trimmed = row.value != null ? String(row.value).trim() : '';
+                    const numValue = parseFloat(trimmed.replace(/,/g, ''));
+                    const isNumeric = trimmed !== '' && !isNaN(numValue) && /^[\d,.\s]+$/.test(trimmed);
+                    const displayValue = isNumeric ? `₹${numValue.toLocaleString('en-IN')}` : row.value;
                     return (
                         <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr auto', borderBottom: '1px solid #f1f5f9' }}>
                             <span style={{ padding: '8px 20px', fontSize: '16px', fontWeight: 700, color: '#0f172a', borderRight: '1px solid #f1f5f9' }}>{row.label}</span>
-                            <span style={{ padding: '8px 20px', fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textAlign: 'right' }}>{row.value}</span>
+                            <span style={{ padding: '8px 20px', fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', textAlign: 'right' }}>{displayValue}</span>
                         </div>
                     );
                 })}

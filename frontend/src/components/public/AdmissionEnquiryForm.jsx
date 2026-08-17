@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { submitEnquiryApi } from "../../api/enquiry.api";
+import { sanitizePhoneDigits, isValidPhone } from "../../utils/phone";
 import toast from "react-hot-toast";
 
 const CLASS_OPTIONS = ['Nursery', 'LKG', 'UKG', ...Array.from({ length: 12 }, (_, i) => `Class ${i + 1}`)];
@@ -47,8 +48,9 @@ const AdmissionEnquiryForm = ({ school, tc, dense = false }) => {
     const [submitted, setSubmitted] = useState(false);
 
     const update = (field, value) => {
-        setForm(prev => ({ ...prev, [field]: value }));
-        if (String(value).trim()) setErrors(prev => ({ ...prev, [field]: false }));
+        const v = field === 'phone' ? sanitizePhoneDigits(value) : value;
+        setForm(prev => ({ ...prev, [field]: v }));
+        if (String(v).trim()) setErrors(prev => ({ ...prev, [field]: false }));
     };
 
     const padY = dense ? '10px' : '14px';
@@ -65,10 +67,10 @@ const AdmissionEnquiryForm = ({ school, tc, dense = false }) => {
         e.preventDefault();
         const newErrors = {};
         if (!form.studentName.trim()) newErrors.studentName = true;
-        if (!form.phone.trim()) newErrors.phone = true;
+        if (!isValidPhone(form.phone)) newErrors.phone = true;
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error('Please fill in the required fields');
+            toast.error(!form.phone.trim() ? 'Please fill in the required fields' : 'Phone number must be exactly 10 digits');
             return;
         }
         setSubmitting(true);
@@ -148,7 +150,7 @@ const AdmissionEnquiryForm = ({ school, tc, dense = false }) => {
             </div>
             <div className="aef-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap }}>
                 <Field name="phone" label="Contact Number" required index={4} errors={errors} labelStyle={labelStyle}>
-                    <input className="aef-input" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
+                    <input className="aef-input" type="tel" inputMode="numeric" maxLength={10} value={form.phone} onChange={e => update('phone', e.target.value)}
                         placeholder="Enter phone number" style={{ ...inputStyle, ...(errors.phone ? errorStyle : {}) }} />
                 </Field>
                 <Field name="email" label="Email" index={5} errors={errors} labelStyle={labelStyle}>

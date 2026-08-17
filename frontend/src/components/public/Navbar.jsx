@@ -193,7 +193,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                     .navbar-hamburger { display: flex !important; }
                 }
                 @media (max-width: 1280px) {
-                    .navbar-badges img { height: 34px !important; }
+                    .navbar-badges img { height: 46px !important; }
                     .navbar-badges span { display: none !important; }
                     .navbar-right { gap: 1rem !important; }
                 }
@@ -336,7 +336,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                         {affiliationBadges.map(badge => (
                             <div key={badge.id || badge.url} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
                                 <img src={badge.url} alt={badge.label || ''} title={badge.label || ''}
-                                    style={{ height: '42px', width: 'auto', maxWidth: '68px', objectFit: 'contain' }} />
+                                    style={{ height: '58px', width: 'auto', maxWidth: '92px', objectFit: 'contain' }} />
                                 {badge.label && (
                                     <span style={{ fontSize: '8.5px', fontWeight: 700, color: textColor, textAlign: 'center', letterSpacing: '0.01em', whiteSpace: 'nowrap', maxWidth: '76px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                         {badge.label}

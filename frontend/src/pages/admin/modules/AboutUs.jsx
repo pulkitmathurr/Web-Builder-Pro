@@ -4,6 +4,7 @@ import {
   saveModuleContentApi,
   togglePublishApi,
   uploadContentImageApi,
+  uploadPdfApi,
 } from "../../../api/content.api";
 import toast from "react-hot-toast";
 import RichTextEditor from "../../../components/common/RichTextEditor";
@@ -66,6 +67,7 @@ const AboutUs = () => {
   const [content, setContent] = useState(defaultContent);
   const [savedSnapshot, setSavedSnapshot] = useState(null);
   const [uploading, setUploading] = useState({});
+  const [pdfUploading, setPdfUploading] = useState({});
   const [cropTarget, setCropTarget] = useState(null); // { mode: 'history' | 'leader' | 'historyGallery', id?, src }
   const [galleryQueue, setGalleryQueue] = useState([]); // remaining files still waiting to be cropped
 
@@ -178,7 +180,7 @@ const AboutUs = () => {
 
   // ── Affiliations & Certifications ──
   const addAffiliation = () => {
-    const item = { id: `aff-${Date.now()}`, image: "", heading: "", link: "" };
+    const item = { id: `aff-${Date.now()}`, image: "", heading: "", link: "", pdfUrl: "" };
     setContent((prev) => ({ ...prev, affiliations: [item, ...prev.affiliations] }));
   };
   const updateAffiliation = (id, field, value) => {
@@ -192,6 +194,17 @@ const AboutUs = () => {
   };
   const moveAffiliation = (idx, dir) => {
     setContent((prev) => ({ ...prev, affiliations: moveItem(prev.affiliations, idx, dir) }));
+  };
+  const uploadAffiliationPdf = async (id, file) => {
+    setPdfUploading((prev) => ({ ...prev, [id]: true }));
+    try {
+      const res = await uploadPdfApi(file);
+      updateAffiliation(id, "pdfUrl", res.data.url);
+    } catch (e) {
+      toast.error("Failed to upload PDF");
+    } finally {
+      setPdfUploading((prev) => ({ ...prev, [id]: false }));
+    }
   };
 
   // ── Awards & Recognition ──
@@ -1225,16 +1238,34 @@ const AboutUs = () => {
                       style={inputStyle}
                     />
                     <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>Examples: CBSE Affiliation, NCC, ISO Certified</p>
-                    <label style={{ ...labelStyle, marginTop: "1rem" }}>Link URL (optional)</label>
-                    <input
-                      className="au-input"
-                      type="text"
-                      value={item.link || ""}
-                      onChange={(e) => updateAffiliation(item.id, "link", e.target.value)}
-                      placeholder="Enter Link URL"
-                      style={inputStyle}
-                    />
-                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>Paste a Google Drive (or any) link to the affiliation letter/certificate — shown via the "View" button on your site.</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "1rem" }}>
+                      <div>
+                        <label style={labelStyle}>PDF Upload (optional)</label>
+                        <label style={{ display: "block", padding: "11px 14px", border: item.pdfUrl ? "1.5px solid #bbf7d0" : "1.5px dashed #cbd5e1", borderRadius: "10px", cursor: "pointer", fontSize: "13px", color: item.pdfUrl ? "#15803d" : "#64748b", background: item.pdfUrl ? "#f0fdf4" : "#fafafa", textAlign: "center" }}>
+                          {pdfUploading[item.id] ? "Uploading..." : item.pdfUrl ? "✓ PDF uploaded — click to change" : "📄 Click to upload PDF"}
+                          <input type="file" accept="application/pdf" style={{ display: "none" }}
+                            onChange={(e) => { const f = e.target.files[0]; e.target.value = ""; if (f) uploadAffiliationPdf(item.id, f); }} />
+                        </label>
+                        {item.pdfUrl && !pdfUploading[item.id] && (
+                          <button type="button" onClick={() => updateAffiliation(item.id, "pdfUrl", "")}
+                            style={{ marginTop: "6px", fontSize: "11.5px", fontWeight: 600, color: "#dc2626", background: "transparent", border: "none", cursor: "pointer", padding: "2px 0" }}>
+                            Remove PDF
+                          </button>
+                        )}
+                      </div>
+                      <div>
+                        <label style={labelStyle}>Or Link URL (optional)</label>
+                        <input
+                          className="au-input"
+                          type="text"
+                          value={item.link || ""}
+                          onChange={(e) => updateAffiliation(item.id, "link", e.target.value)}
+                          placeholder="Enter Link URL"
+                          style={inputStyle}
+                        />
+                      </div>
+                    </div>
+                    <p style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "5px" }}>Upload a PDF or paste a Google Drive (or any) link to the affiliation letter/certificate — either/both optional, shown via the "View" button on your site.</p>
                   </div>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { submitEnquiryApi } from "../../api/enquiry.api";
 import { uploadPdfApi } from "../../api/content.api";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import AdmissionEnquiryForm from "./AdmissionEnquiryForm";
+import { sanitizePhoneDigits, isValidPhone } from "../../utils/phone";
 import toast from "react-hot-toast";
 
 const inputStyleBase = {
@@ -129,8 +130,9 @@ const CareerEnquiryModal = ({ school, tc, bc }) => {
     if (!isModuleEnabled(school, 'career')) return null;
 
     const update = (field, value) => {
-        setForm(prev => ({ ...prev, [field]: value }));
-        if (value.trim()) setErrors(prev => ({ ...prev, [field]: false }));
+        const v = field === 'phone' ? sanitizePhoneDigits(value) : value;
+        setForm(prev => ({ ...prev, [field]: v }));
+        if (v.trim()) setErrors(prev => ({ ...prev, [field]: false }));
     };
     const resetAndClose = () => { setSubmitted(false); setForm(emptyCareerForm); setErrors({}); setResumeUrl(''); setOpen(false); };
 
@@ -151,10 +153,10 @@ const CareerEnquiryModal = ({ school, tc, bc }) => {
         e.preventDefault();
         const newErrors = {};
         if (!form.name.trim()) newErrors.name = true;
-        if (!form.phone.trim()) newErrors.phone = true;
+        if (!isValidPhone(form.phone)) newErrors.phone = true;
         if (Object.keys(newErrors).length > 0) {
             setErrors(newErrors);
-            toast.error('Please fill in all required fields');
+            toast.error(!form.phone.trim() ? 'Please fill in all required fields' : 'Phone number must be exactly 10 digits');
             return;
         }
         setSubmitting(true);
@@ -205,7 +207,7 @@ const CareerEnquiryModal = ({ school, tc, bc }) => {
                         <label style={labelStyle}>Phone Number<Required /></label>
                         <div style={{ position: 'relative' }}>
                             {IconPhone}
-                            <input className="enq-widget-input" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="Enter phone number" style={{ ...inputStyleBase, ...(errors.phone ? errorInputStyle : {}) }} required />
+                            <input className="enq-widget-input" type="tel" inputMode="numeric" maxLength={10} value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="Enter phone number" style={{ ...inputStyleBase, ...(errors.phone ? errorInputStyle : {}) }} required />
                         </div>
                         <FieldError show={errors.phone} />
                     </div>

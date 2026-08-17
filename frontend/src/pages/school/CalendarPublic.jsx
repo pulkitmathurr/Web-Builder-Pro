@@ -33,6 +33,7 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
 
 const CATEGORY_COLORS = { Holiday: '#ec4899', Exam: '#eab308', PTM: '#2563eb', Event: '#7c3aed', Other: '#d97706' };
 const WORKING_DAY_COLOR = '#99edc3';
+const SUNDAY_COLOR = '#dc2626';
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -291,7 +292,7 @@ const CalendarPublic = () => {
                                     {/* Weekday header */}
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '6px' }}>
                                         {WEEKDAYS.map(w => (
-                                            <div key={w} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: (w === 'Sun' || w === 'Sat') ? tc.primary : '#94a3b8', padding: '4px 0' }}>{w}</div>
+                                            <div key={w} style={{ textAlign: 'center', fontSize: '11px', fontWeight: 700, color: w === 'Sun' ? SUNDAY_COLOR : w === 'Sat' ? tc.primary : '#94a3b8', padding: '4px 0' }}>{w}</div>
                                         ))}
                                     </div>
 
@@ -303,7 +304,10 @@ const CalendarPublic = () => {
                                             const dayItems = (itemsByDate[key] || []).filter(it => !activeCategory || it.category === activeCategory);
                                             const hasAll = (itemsByDate[key] || []).length > 0;
                                             const isToday = key === todayKey;
-                                            const isWeekend = i % 7 === 0 || i % 7 === 6;
+                                            const isSunday = i % 7 === 0;
+                                            const isSaturday = i % 7 === 6;
+                                            const isWeekend = isSunday || isSaturday;
+                                            const weekendColor = isSunday ? SUNDAY_COLOR : tc.primary;
                                             const isSelected = selectedDay === key;
                                             const visibleDots = dayItems.slice(0, 4);
                                             const extraCount = dayItems.length - visibleDots.length;
@@ -317,15 +321,15 @@ const CalendarPublic = () => {
                                                         minHeight: 'clamp(56px,9vw,92px)', display: 'flex', flexDirection: 'column',
                                                         alignItems: 'flex-start', padding: '8px 8px 6px', gap: '4px',
                                                         borderRadius: '12px',
-                                                        border: isSelected ? `1.5px solid ${tc.primary}` : isToday ? `1.5px solid ${tc.primary}` : soloColor ? `1px solid ${soloColor}60` : isWeekend ? `1px solid ${tc.primary}35` : `1px solid ${WORKING_DAY_COLOR}`,
-                                                        background: `linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%), ${soloColor ? `${soloColor}35` : isSelected ? `${tc.primary}14` : isToday ? `${tc.primary}0a` : isWeekend ? `${tc.primary}14` : `${WORKING_DAY_COLOR}55`}`,
+                                                        border: isSelected ? `1.5px solid ${tc.primary}` : isToday ? `1.5px solid ${tc.primary}` : soloColor ? `1px solid ${soloColor}60` : isWeekend ? `1px solid ${weekendColor}35` : `1px solid ${WORKING_DAY_COLOR}`,
+                                                        background: `linear-gradient(160deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 55%), ${soloColor ? `${soloColor}35` : isSelected ? `${tc.primary}14` : isToday ? `${tc.primary}0a` : isWeekend ? `${weekendColor}14` : `${WORKING_DAY_COLOR}55`}`,
                                                     }}>
                                                     {soloColor && (
                                                         <span style={{ position: 'absolute', top: '7px', right: '7px', width: '13px', height: '13px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 1px 3px rgba(15,23,42,0.18)' }}></span>
                                                     )}
                                                     <span className="cal-day-num" style={{
                                                         fontSize: '14px', fontWeight: 800,
-                                                        color: isToday && !soloColor ? tc.primary : (!soloColor && isWeekend) ? `${tc.primary}cc` : '#1e293b',
+                                                        color: isToday && !soloColor ? tc.primary : (!soloColor && isWeekend) ? `${weekendColor}cc` : '#1e293b',
                                                     }}>{day}</span>
                                                     {soloColor ? (
                                                         <span style={{

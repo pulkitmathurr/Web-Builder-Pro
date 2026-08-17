@@ -37,6 +37,7 @@ const FOOTER_LINKS = [
     { key: 'faculty',        label: 'Faculty',        path: (slug) => `/school/${slug}/faculty` },
     { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure` },
     { key: 'alumni',         label: 'Alumni',         path: (slug) => `/school/${slug}/alumni` },
+    { key: 'testimonials',   label: 'Testimonials',   path: (slug) => `/school/${slug}/testimonials` },
     { key: 'tc',             label: 'TC Information', path: (slug) => `/school/${slug}/tc` },
     { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses` },
     { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
@@ -99,9 +100,9 @@ const Footer = ({ school, slug, tc, bgImage }) => {
         color: 'rgba(255,255,255,0.62)',
         cursor: 'pointer',
         transition: 'color 0.2s',
-        lineHeight: 1.4,
+        lineHeight: 1.5,
         display: 'block',
-        marginBottom: '11px',
+        marginBottom: '16px',
         breakInside: 'avoid',
     };
 
@@ -120,7 +121,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                 .footer-link:hover { color: #ffffff !important; }
                 .footer-social:hover { color: #fff !important; }
                 .footer-totop:hover { color: #fff !important; }
-                .footer-quicklinks { column-gap: 22px; }
+                .footer-quicklinks { column-gap: 38px; }
             `}</style>
 
             {/* Background — a subtle diagonal navy-toned gradient off the school's own

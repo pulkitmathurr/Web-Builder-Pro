@@ -275,25 +275,7 @@ const HomePage = () => {
         try {
             const res = await getModuleContentApi('home');
             if (res.data) {
-                let merged = { ...defaultContent, ...res.data.content };
-                // One-time carry-over: testimonials used to live under their own standalone
-                // module_key ('testimonials'), now folded into Home. If this school never
-                // saved testimonials under 'home' yet, pull any pre-existing data in so it
-                // isn't lost — this only touches local state, nothing is written until Save.
-                if (!merged.testimonials || merged.testimonials.length === 0) {
-                    try {
-                        const oldRes = await getModuleContentApi('testimonials');
-                        if (oldRes?.data?.content?.testimonials?.length > 0) {
-                            merged = {
-                                ...merged,
-                                testimonials: oldRes.data.content.testimonials,
-                                testimonialsHeading: oldRes.data.content.heading || merged.testimonialsHeading,
-                                testimonialsHeadingColor: oldRes.data.content.headingColor || merged.testimonialsHeadingColor,
-                                testimonialsHeadingFont: oldRes.data.content.headingFont || merged.testimonialsHeadingFont,
-                            };
-                        }
-                    } catch (e) { /* no legacy testimonials content — nothing to carry over */ }
-                }
+                const merged = { ...defaultContent, ...res.data.content };
                 setContent(merged);
                 setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);

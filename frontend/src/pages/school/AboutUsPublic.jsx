@@ -117,9 +117,9 @@ const SimpleDivider = ({ color }) => (
     </div>
 );
 
-// ── Affiliations & Certifications — logo + name table; a "View" button opens the admin's
-// Link URL (e.g. a Drive link) when set. Row order follows the admin's reorder (up/down)
-// controls, same as every other list ──
+// ── Affiliations & Certifications — logo + name table; a "View" button opens the uploaded
+// PDF, falling back to the admin's Link URL (e.g. a Drive link) when no PDF is set. Row
+// order follows the admin's reorder (up/down) controls, same as every other list ──
 const affilTdStyle = { fontFamily: "'Inter', system-ui, sans-serif", padding: '13px 20px', fontSize: '14.5px', color: '#334155', verticalAlign: 'middle', letterSpacing: '-0.1px' };
 
 const AffiliationsSection = ({ items, heading, headingColor, headingFont, headingItalic, tc, bc }) => {
@@ -160,8 +160,8 @@ const AffiliationsSection = ({ items, heading, headingColor, headingFont, headin
                                                 </div>
                                             </td>
                                             <td style={{ ...affilTdStyle, padding: '10px 6px', textAlign: 'center' }}>
-                                                {item.link ? (
-                                                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="affil-view-btn"
+                                                {(item.pdfUrl || item.link) ? (
+                                                    <a href={item.pdfUrl || item.link} target="_blank" rel="noopener noreferrer" className="affil-view-btn"
                                                         style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', borderRadius: '20px', background: tc.light, color: tc.primary, fontWeight: 700, fontSize: '11.5px', textDecoration: 'none', border: `1px solid ${tc.primary}30`, whiteSpace: 'nowrap' }}>
                                                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
                                                         View
@@ -267,6 +267,12 @@ const AboutUsPublic = () => {
                     animation: tickerScroll ${Math.max(18, historyGallery.length * 6)}s linear infinite;
                 }
                 .history-ticker-track:hover { animation-play-state: paused; }
+                .award-ticker-track {
+                    display: flex;
+                    width: max-content;
+                    animation: tickerScroll ${Math.max(20, awards.length * 7)}s linear infinite;
+                }
+                .award-ticker-track:hover { animation-play-state: paused; }
                 @keyframes historyFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
                 .history-frame { position: relative; padding: 14px; animation: historyFloat 5s ease-in-out infinite; }
                 .history-frame::before {
@@ -296,25 +302,32 @@ const AboutUsPublic = () => {
                 .history-frame:hover .corner-bl { bottom: -13px; left: -13px; }
                 .history-frame:hover .corner-br { bottom: -13px; right: -13px; }
 
-                /* ── Awards & Recognition cards — sharp-edged editorial card, taller 4:3 photo,
-                     square accent seal + top rule bar, bold sans headline for a crisp, corporate finish ── */
+                /* ── Awards & Recognition cards — premium medal-badge treatment: rounded card,
+                     gold-tinted top rule, circular trophy medal pinned over the photo's bottom
+                     edge, and an "Award" eyebrow pill instead of plain uppercase text ── */
                 .award-card {
-                    position: relative; border-radius: 4px; overflow: hidden; background: ${bc.card};
-                    border: 1px solid rgba(15,23,42,0.1);
-                    box-shadow: 0 2px 10px rgba(15,23,42,0.05);
+                    position: relative; border-radius: 16px; overflow: hidden; background: ${bc.card};
+                    border: 1px solid rgba(15,23,42,0.08);
+                    box-shadow: 0 4px 16px rgba(15,23,42,0.06);
                     transition: transform 0.35s cubic-bezier(0.16,1,0.3,1), box-shadow 0.35s ease, border-color 0.35s ease;
                 }
-                .award-card:hover { transform: translateY(-8px); box-shadow: 0 30px 54px -20px rgba(15,23,42,0.32); border-color: rgba(15,23,42,0.22); }
+                .award-card:hover { transform: translateY(-8px); box-shadow: 0 30px 54px -20px rgba(15,23,42,0.32); border-color: ${tc.primary}40; }
                 .award-card-top-bar { height: 4px; width: 100%; }
                 .award-card-photo { position: relative; aspect-ratio: 1/1; overflow: hidden; background: linear-gradient(135deg,${tc.light},${tc.primary}18); }
                 .award-card-photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
                 .award-card:hover .award-card-photo img { transform: scale(1.06); }
-                .award-card-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0) 55%, rgba(15,23,42,0.35) 100%); }
+                .award-card-scrim { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(15,23,42,0) 60%, rgba(15,23,42,0.4) 100%); }
                 .award-card-seal {
-                    position: absolute; top: 12px; right: 12px; width: 34px; height: 34px; border-radius: 6px;
-                    background: ${tc.primary};
+                    position: absolute; top: 12px; right: 12px; width: 38px; height: 38px; border-radius: 50%;
+                    background: linear-gradient(150deg,${tc.primary},${tc.secondary});
+                    border: 2px solid rgba(255,255,255,0.8);
                     display: flex; align-items: center; justify-content: center;
-                    box-shadow: 0 6px 16px rgba(15,23,42,0.28);
+                    box-shadow: 0 6px 16px rgba(15,23,42,0.35);
+                }
+                .award-badge-pill {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    padding: 3px 10px 3px 7px; border-radius: 999px; background: ${tc.light};
+                    border: 1px solid ${tc.primary}30; margin-bottom: 10px;
                 }
                 .award-card-body { padding: 1.35rem 1.5rem 1.6rem; border-top: 1px solid rgba(15,23,42,0.06); flex: 1; }
 
@@ -596,46 +609,53 @@ const AboutUsPublic = () => {
                     </div>
                 )}
 
-                {/* ── Awards & Recognition — photo-led premium card, same family as the Sports "Certifications" cards ── */}
+                {/* ── Awards & Recognition — same rolling single-row ticker as "What Drives Us",
+                     photo-led premium card, same family as the Sports "Certifications" cards ── */}
                 {awards.length > 0 && (
-                    <div style={{ padding: '2.5rem clamp(1.25rem,6vw,5rem)', background: bc.surface, position: 'relative', overflow: 'hidden' }}>
-                        <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                    <div style={{ padding: '2.5rem 0', background: bc.surface, position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,5rem)' }}>
                             <Reveal>
                                 <div style={{ marginBottom: '1.75rem' }}>
                                     <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '8px', fontWeight: 700 }}>Celebrating Excellence</p>
                                     <h2 style={{ fontFamily: getFontFamily(content.awardsHeadingFont), fontStyle: content.awardsHeadingItalic ? 'italic' : 'normal', fontSize: 'clamp(21px,5vw,30px)', fontWeight: 800, color: content.awardsHeadingColor || '#0f172a', letterSpacing: '-1px' }}>{content.awardsHeading || 'Awards & Recognition'}</h2>
                                 </div>
                             </Reveal>
-                            <div className="award-card-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '22px' }}>
-                                {awards.map((item, i) => (
-                                    <Reveal key={item.id || i} delay={i * 0.06} style={{ height: '100%' }}>
-                                        <div className="award-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                            <div className="award-card-top-bar" style={{ background: `linear-gradient(90deg,${tc.primary},${tc.secondary})` }}></div>
-                                            <div className="award-card-photo">
-                                                {item.image ? (
-                                                    <img src={item.image} alt={item.name || item.heading} />
-                                                ) : (
-                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <svg width="34" height="34" fill="none" stroke={tc.primary} strokeWidth="1.5" viewBox="0 0 24 24" style={{ opacity: 0.5 }}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
-                                                    </div>
-                                                )}
-                                                <div className="award-card-scrim"></div>
-                                                <div className="award-card-seal">
-                                                    <svg width="16" height="16" fill="none" stroke="#ffffff" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /></svg>
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+
+                            <div className="award-ticker-track">
+                                {[...awards, ...awards].map((item, i) => (
+                                    <div key={i} className="award-card" style={{ flexShrink: 0, width: '300px', margin: '0 11px', display: 'flex', flexDirection: 'column' }}>
+                                        <div className="award-card-top-bar" style={{ background: `linear-gradient(90deg,${tc.primary},${tc.secondary})` }}></div>
+                                        <div className="award-card-photo">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name || item.heading} />
+                                            ) : (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <svg width="40" height="40" fill="none" stroke={tc.primary} strokeWidth="1.4" viewBox="0 0 24 24" style={{ opacity: 0.45 }}><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
                                                 </div>
-                                            </div>
-                                            <div className="award-card-body">
-                                                {(item.name || item.designation) && (
-                                                    <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid rgba(15,23,42,0.08)' }}>
-                                                        {item.name && <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(12.5px,3vw,14.5px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.3 }}>{item.name}</p>}
-                                                        {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(10px,2.4vw,11px)', color: tc.primary, fontWeight: 600, marginTop: '3px' }}>{item.designation}</p>}
-                                                    </div>
-                                                )}
-                                                <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '8.5px', color: tc.primary, letterSpacing: '0.14em', textTransform: 'uppercase', fontWeight: 800, marginBottom: '7px' }}>Award</p>
-                                                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(13px,3.4vw,16px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.35 }}>{item.heading}</p>
+                                            )}
+                                            <div className="award-card-scrim"></div>
+                                            <div className="award-card-seal">
+                                                <svg width="18" height="18" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
                                             </div>
                                         </div>
-                                    </Reveal>
+                                        <div className="award-card-body">
+                                            <span className="award-badge-pill">
+                                                <svg width="11" height="11" fill="none" stroke={tc.primary} strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '9.5px', color: tc.primary, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 800 }}>Award</span>
+                                            </span>
+                                            <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(14px,3.6vw,17px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.35 }}>{item.heading}</p>
+                                            {(item.name || item.designation) && (
+                                                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(15,23,42,0.08)' }}>
+                                                    {item.name && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(11.5px,2.8vw,12.5px)', fontWeight: 700, color: '#334155', letterSpacing: '0', lineHeight: 1.3 }}>{item.name}</p>}
+                                                    {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(10px,2.4vw,11px)', color: '#94a3b8', fontWeight: 500, marginTop: '2px' }}>{item.designation}</p>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </div>

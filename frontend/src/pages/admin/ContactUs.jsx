@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { updateSchoolProfileApi, getSchoolProfileApi } from '../../api/school.api';
 import useSchoolStore from '../../store/schoolStore';
+import { sanitizePhoneDigits, isValidPhone } from '../../utils/phone';
 import toast from 'react-hot-toast';
 
 const hexToRgba = (hex, alpha) => {
@@ -48,10 +49,23 @@ const ContactUs = () => {
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'phone' || name === 'phone2') {
+            setFormData({ ...formData, [name]: sanitizePhoneDigits(value) });
+            return;
+        }
+        setFormData({ ...formData, [name]: value });
     };
 
  const handleSave = async () => {
+    if (formData.phone && !isValidPhone(formData.phone)) {
+        toast.error('Phone number must be exactly 10 digits');
+        return;
+    }
+    if (formData.phone2 && !isValidPhone(formData.phone2)) {
+        toast.error('Alternate phone number must be exactly 10 digits');
+        return;
+    }
     setSaving(true);
     try {
         let dataToSave = { ...formData };
@@ -292,11 +306,11 @@ const ContactUs = () => {
                             <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                 <div>
                                     <label style={labelStyle}>Phone Number</label>
-                                    <input type="text" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter Phone Number" style={inputStyle} />
+                                    <input type="tel" inputMode="numeric" maxLength={10} name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter Phone Number" style={inputStyle} />
                                 </div>
                                 <div>
                                     <label style={labelStyle}>Alternate Phone Number</label>
-                                    <input type="text" name="phone2" value={formData.phone2} onChange={handleChange} placeholder="Enter Alternate Phone Number" style={inputStyle} />
+                                    <input type="tel" inputMode="numeric" maxLength={10} name="phone2" value={formData.phone2} onChange={handleChange} placeholder="Enter Alternate Phone Number" style={inputStyle} />
                                 </div>
                             </div>
                         </div>

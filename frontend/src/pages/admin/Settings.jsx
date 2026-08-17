@@ -6,6 +6,7 @@ import ImageCropModal from '../../components/common/ImageCropModal';
 import { FONT_OPTIONS, GOOGLE_FONTS_URL, getFontFamily } from '../../constants/fonts';
 import { BASE_COLOR_OPTIONS } from '../../constants/publicNav';
 import { MUSIC_TRACKS } from '../../constants/musicTracks';
+import { sanitizePhoneDigits, isValidPhone } from '../../utils/phone';
 import toast from 'react-hot-toast';
 
 const MAX_AFFILIATION_BADGES = 3;
@@ -112,10 +113,23 @@ const AdminSettings = () => {
     };
 
     const handleProfileChange = (e) => {
-        setProfileData({ ...profileData, [e.target.name]: e.target.value });
+        const { name, value } = e.target;
+        if (name === 'phone' || name === 'phone2') {
+            setProfileData({ ...profileData, [name]: sanitizePhoneDigits(value) });
+            return;
+        }
+        setProfileData({ ...profileData, [name]: value });
     };
 
     const handleProfileSave = async () => {
+        if (profileData.phone && !isValidPhone(profileData.phone)) {
+            toast.error('Phone number must be exactly 10 digits');
+            return;
+        }
+        if (profileData.phone2 && !isValidPhone(profileData.phone2)) {
+            toast.error('Alternate phone number must be exactly 10 digits');
+            return;
+        }
         setSaving(true);
         try {
             await updateSchoolProfileApi(profileData);
@@ -582,11 +596,11 @@ const AdminSettings = () => {
                                 </div>
                                 <div>
                                     <label style={labelStyle}>Phone Number</label>
-                                    <input className="settings-input" type="text" name="phone" value={profileData.phone} onChange={handleProfileChange} placeholder="Enter Phone Number" style={inputStyle} />
+                                    <input className="settings-input" type="tel" inputMode="numeric" maxLength={10} name="phone" value={profileData.phone} onChange={handleProfileChange} placeholder="Enter Phone Number" style={inputStyle} />
                                 </div>
                                 <div>
                                     <label style={labelStyle}>Alternate Phone Number</label>
-                                    <input className="settings-input" type="text" name="phone2" value={profileData.phone2} onChange={handleProfileChange} placeholder="Enter Alternate Phone Number" style={inputStyle} />
+                                    <input className="settings-input" type="tel" inputMode="numeric" maxLength={10} name="phone2" value={profileData.phone2} onChange={handleProfileChange} placeholder="Enter Alternate Phone Number" style={inputStyle} />
                                 </div>
                             </div>
                         </div>

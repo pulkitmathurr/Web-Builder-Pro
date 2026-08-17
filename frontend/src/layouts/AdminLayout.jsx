@@ -18,6 +18,13 @@ const pageTitles = {
     "/admin/module/home": "Home Page",
 };
 
+const SectionLabel = ({ children, tc }) => (
+    <div style={{ padding: "10px 16px 6px", display: "flex", alignItems: "center", gap: "8px" }}>
+        <span style={{ width: "14px", height: "2px", borderRadius: "2px", background: `linear-gradient(90deg, ${tc.primary}, ${tc.secondary})`, flexShrink: 0 }} />
+        <span style={{ fontSize: "10px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.1em" }}>{children}</span>
+    </div>
+);
+
 const AdminLayout = () => {
     // Desktop-only icon-collapse toggle (≥900px) — below that the sidebar hides entirely
     // and a hamburger + slide-in drawer takes over, same pattern as the public site's Navbar.
@@ -61,7 +68,7 @@ const AdminLayout = () => {
     };
 
     const theme = {
-        sidebarBg: '#ffffff',
+        sidebarBg: bc.card,
         sidebarText: '#334155',
         sidebarTextMuted: '#94a3b8',
         sidebarActive: tc.primary,
@@ -143,9 +150,6 @@ const AdminLayout = () => {
         );
     }
 
-    const sectionLabelStyle = { padding: "4px 20px 4px", fontSize: "10px", color: theme.sidebarTextMuted, textTransform: "uppercase", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: "6px" };
-    const sectionLabelDotStyle = { width: "4px", height: "4px", borderRadius: "50%", background: tc.primary, flexShrink: 0 };
-
     const NavItem = ({ item, index = 0, forceExpanded = false, onNavigate }) => {
         const isActive = location.pathname === item.path;
         const isCollapsed = collapsed && !forceExpanded;
@@ -161,11 +165,12 @@ const AdminLayout = () => {
                     justifyContent: isCollapsed ? "center" : "flex-start",
                     cursor: "pointer", position: "relative",
                     background: isActive ? `linear-gradient(135deg, ${theme.sidebarActiveBg}, #ffffff)` : "transparent",
-                    boxShadow: isActive ? `inset 0 0 0 1px ${hexToRgba(tc.primary, 0.14)}` : "none",
+                    border: isActive ? `1px solid ${hexToRgba(tc.primary, 0.28)}` : "1px solid transparent",
+                    boxShadow: isActive ? `0 2px 8px ${hexToRgba(tc.primary, 0.12)}` : "none",
                     animationDelay: `${Math.min(index, 12) * 0.03}s`,
                 }}
-                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = theme.sidebarHover; }}
-                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = "transparent"; }}
+                onMouseEnter={(e) => { if (!isActive) { e.currentTarget.style.background = theme.sidebarHover; e.currentTarget.style.borderColor = "#e2e8f0"; } }}
+                onMouseLeave={(e) => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "transparent"; } }}
             >
                 {isActive && !isCollapsed && (
                     <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: "3px", height: "58%", borderRadius: "0 4px 4px 0", background: `linear-gradient(180deg, ${tc.primary}, ${tc.secondary})` }} />
@@ -173,14 +178,15 @@ const AdminLayout = () => {
                 <span className="admin-nav-icon" style={{
                     display: "flex", alignItems: "center", justifyContent: "center",
                     width: "30px", height: "30px", borderRadius: "8px", flexShrink: 0,
-                    background: isActive ? `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})` : "transparent",
+                    background: isActive ? `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})` : hexToRgba(tc.primary, 0.06),
+                    border: isActive ? "1px solid rgba(255,255,255,0.35)" : `1px solid ${hexToRgba(tc.primary, 0.14)}`,
                     color: isActive ? "#ffffff" : theme.sidebarTextMuted,
                     boxShadow: isActive ? `0 3px 10px ${hexToRgba(tc.primary, 0.35)}` : "none",
                 }}>
                     {item.icon}
                 </span>
                 {!isCollapsed && (
-                    <span style={{ fontSize: "13px", fontWeight: isActive ? 600 : 500, color: isActive ? theme.sidebarActiveText : theme.sidebarText, whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: "13px", fontWeight: isActive ? 600 : 500, letterSpacing: "-0.1px", color: isActive ? theme.sidebarActiveText : theme.sidebarText, whiteSpace: "nowrap" }}>
                         {item.label}
                     </span>
                 )}
@@ -221,12 +227,19 @@ const AdminLayout = () => {
                 width: collapsed ? "64px" : "260px",
                 minHeight: "100vh",
                 background: theme.sidebarBg,
-                backgroundImage: "radial-gradient(rgba(15,23,42,0.025) 1px, transparent 1px)",
+                backgroundImage: "radial-gradient(rgba(15,23,42,0.035) 1px, transparent 1px)",
                 backgroundSize: "18px 18px",
                 display: "flex", flexDirection: "column",
                 transition: "width 0.25s ease",
                 overflow: "hidden", flexShrink: 0,
+                position: "relative",
+                boxShadow: "1px 0 0 rgba(15,23,42,0.06), 4px 0 24px rgba(15,23,42,0.03)",
+                fontFamily: "'Inter', system-ui, sans-serif",
             }}>
+                {/* Decorative theme-colored orbs — same visual language as the page hero headers,
+                    so the sidebar doesn't read as a flat, empty column ── */}
+                <div style={{ position: "absolute", width: "220px", height: "220px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.secondary, 0.16)} 0%, transparent 70%)`, top: "-90px", left: "-70px", pointerEvents: "none" }} />
+                <div style={{ position: "absolute", width: "260px", height: "260px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.1)} 0%, transparent 70%)`, bottom: "120px", right: "-120px", pointerEvents: "none" }} />
 
                 {/* Logo */}
                 <div style={{
@@ -236,41 +249,45 @@ const AdminLayout = () => {
                     justifyContent: collapsed ? "center" : "flex-start",
                     flexShrink: 0,
                     position: "relative",
+                    zIndex: 1,
                 }}>
                     {collapsed ? (
                         <img src={logoCollapsed} alt="Logo" style={{ width: "40px", height: "40px", objectFit: "contain" }} />
                     ) : (
                         <img src={logo} alt="Web Builder Pro" style={{ width: "200px", height: "90px", objectFit: "contain", objectPosition: "left center", display: "block", marginLeft: "8px" }} />
                     )}
+                    <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, borderBottom: "1px solid #f1f5f9" }} />
                     <div style={{ position: "absolute", left: "16px", right: "16px", bottom: 0, height: "2px", borderRadius: "2px", background: `linear-gradient(90deg, ${tc.primary}, ${tc.secondary}, transparent)`, opacity: 0.55 }} />
                 </div>
 
                 {/* Scrollable nav area — fills remaining space so the branding footer below always stays pinned to the bottom */}
-                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", padding: "10px 8px 0", zIndex: 1, position: "relative" }}>
                     {/* Core Nav */}
-                    {!collapsed && (
-                        <div style={sectionLabelStyle}><span style={sectionLabelDotStyle} />Main</div>
-                    )}
-                    <nav style={{ padding: "4px 0" }}>
-                        {coreItems.map((item, i) => <NavItem key={item.key} item={item} index={i} />)}
-                    </nav>
+                    <div style={{ border: "1px solid #f1f5f9", borderRadius: "14px", background: "rgba(255,255,255,0.6)", padding: "4px 0" }}>
+                        {!collapsed && (
+                            <SectionLabel tc={tc}>Main</SectionLabel>
+                        )}
+                        <nav style={{ padding: "4px 0" }}>
+                            {coreItems.map((item, i) => <NavItem key={item.key} item={item} index={i} />)}
+                        </nav>
+                    </div>
 
                     {/* Modules Nav */}
                     {moduleItems.length > 0 && (
-                        <>
+                        <div style={{ border: "1px solid #f1f5f9", borderRadius: "14px", background: "rgba(255,255,255,0.6)", padding: "4px 0" }}>
                             {!collapsed && (
-                                <div style={{ ...sectionLabelStyle, paddingTop: "12px" }}><span style={sectionLabelDotStyle} />Modules</div>
+                                <SectionLabel tc={tc}>Modules</SectionLabel>
                             )}
                             <nav style={{ padding: "4px 0" }}>
                                 {moduleItems.map((item, i) => <NavItem key={item.key} item={item} index={coreItems.length + i} />)}
                             </nav>
-                        </>
+                        </div>
                     )}
                 </div>
 
                 {/* School branding — pinned at the bottom, always visible, never scrolls away */}
                 {school && (
-                    <div style={{ flexShrink: 0, borderTop: "0.5px solid #f1f5f9", padding: collapsed ? "10px 8px" : "12px" }}>
+                    <div style={{ flexShrink: 0, borderTop: "0.5px solid #f1f5f9", padding: collapsed ? "10px 8px" : "12px", position: "relative", zIndex: 1 }}>
                         <div style={{
                             padding: collapsed ? "8px 0" : "10px 12px",
                             borderRadius: "14px",
@@ -396,11 +413,18 @@ const AdminLayout = () => {
                         style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,0.5)", zIndex: 998, animation: "adminDrawerBackdropIn 0.2s ease" }} />
                     <div style={{
                         position: "fixed", top: 0, left: 0, bottom: 0, width: "min(280px, 84vw)", zIndex: 999,
-                        background: theme.sidebarBg, display: "flex", flexDirection: "column",
+                        background: theme.sidebarBg,
+                        backgroundImage: "radial-gradient(rgba(15,23,42,0.035) 1px, transparent 1px)",
+                        backgroundSize: "18px 18px",
+                        display: "flex", flexDirection: "column", overflow: "hidden",
                         boxShadow: "0 0 40px rgba(0,0,0,0.25)", animation: "adminDrawerSlideIn 0.25s cubic-bezier(0.16,1,0.3,1)",
+                        fontFamily: "'Inter', system-ui, sans-serif",
                     }}>
+                        <div style={{ position: "absolute", width: "200px", height: "200px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.secondary, 0.16)} 0%, transparent 70%)`, top: "-80px", left: "-60px", pointerEvents: "none" }} />
+                        <div style={{ position: "absolute", width: "220px", height: "220px", borderRadius: "50%", background: `radial-gradient(circle, ${hexToRgba(tc.primary, 0.1)} 0%, transparent 70%)`, bottom: "100px", right: "-100px", pointerEvents: "none" }} />
+
                         {/* Logo + close */}
-                        <div style={{ height: "80px", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, borderBottom: "0.5px solid #f1f5f9" }}>
+                        <div style={{ height: "80px", padding: "0 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0, borderBottom: "0.5px solid #f1f5f9", position: "relative", zIndex: 1 }}>
                             <img src={logo} alt="Web Builder Pro" style={{ width: "170px", height: "76px", objectFit: "contain", objectPosition: "left center", display: "block" }} />
                             <button onClick={() => setMobileOpen(false)}
                                 style={{ width: "32px", height: "32px", background: "#f8fafc", border: "0.5px solid #e2e8f0", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: theme.navbarText, flexShrink: 0 }}
@@ -409,23 +433,25 @@ const AdminLayout = () => {
                             </button>
                         </div>
 
-                        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", paddingTop: "8px" }}>
-                            <div style={sectionLabelStyle}><span style={sectionLabelDotStyle} />Main</div>
-                            <nav style={{ padding: "4px 0" }}>
-                                {coreItems.map((item, i) => <NavItem key={item.key} item={item} index={i} forceExpanded onNavigate={() => setMobileOpen(false)} />)}
-                            </nav>
+                        <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "10px", padding: "10px 8px 0", position: "relative", zIndex: 1 }}>
+                            <div style={{ border: "1px solid #f1f5f9", borderRadius: "14px", background: "rgba(255,255,255,0.6)", padding: "4px 0" }}>
+                                <SectionLabel tc={tc}>Main</SectionLabel>
+                                <nav style={{ padding: "4px 0" }}>
+                                    {coreItems.map((item, i) => <NavItem key={item.key} item={item} index={i} forceExpanded onNavigate={() => setMobileOpen(false)} />)}
+                                </nav>
+                            </div>
                             {moduleItems.length > 0 && (
-                                <>
-                                    <div style={{ ...sectionLabelStyle, paddingTop: "12px" }}><span style={sectionLabelDotStyle} />Modules</div>
+                                <div style={{ border: "1px solid #f1f5f9", borderRadius: "14px", background: "rgba(255,255,255,0.6)", padding: "4px 0" }}>
+                                    <SectionLabel tc={tc}>Modules</SectionLabel>
                                     <nav style={{ padding: "4px 0" }}>
                                         {moduleItems.map((item, i) => <NavItem key={item.key} item={item} index={coreItems.length + i} forceExpanded onNavigate={() => setMobileOpen(false)} />)}
                                     </nav>
-                                </>
+                                </div>
                             )}
                         </div>
 
                         {school && (
-                            <div style={{ flexShrink: 0, borderTop: "0.5px solid #f1f5f9", padding: "12px" }}>
+                            <div style={{ flexShrink: 0, borderTop: "0.5px solid #f1f5f9", padding: "12px", position: "relative", zIndex: 1 }}>
                                 <div style={{
                                     padding: "10px 12px", borderRadius: "14px",
                                     background: `linear-gradient(135deg, ${tc.light}, #ffffff)`,
