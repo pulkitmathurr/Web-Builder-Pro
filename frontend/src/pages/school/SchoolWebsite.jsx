@@ -56,6 +56,78 @@ const ShieldClipDefs = () => (
     </svg>
 );
 
+// ── Testimonials — quote card grid shown below Campus Glimpses. Same card
+// design as the old standalone Testimonials page, now driven by Home content. ──
+const TestimonialStarRow = ({ rating, color }) => (
+    <div style={{ display: 'flex', gap: '3px' }}>
+        {[1, 2, 3, 4, 5].map(star => (
+            <svg key={star} width="15" height="15" viewBox="0 0 24 24"
+                fill={star <= (rating || 0) ? color : 'none'}
+                stroke={star <= (rating || 0) ? color : '#d1d5db'} strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2.5l2.9 6 6.6.7-4.9 4.6 1.2 6.5L12 16.9l-5.8 3.4 1.2-6.5-4.9-4.6 6.6-.7L12 2.5z" />
+            </svg>
+        ))}
+    </div>
+);
+
+const TESTIMONIAL_TYPE_LABELS = { parent: 'Parent', alumni: 'Alumni', visitor: 'Visitor' };
+const TESTIMONIAL_TYPE_BADGE_COLORS = {
+    visitor: { bg: '#eff6ff', text: '#2563eb' },
+    alumni: { bg: '#fdf4ff', text: '#a21caf' },
+};
+
+const TestimonialCard = ({ t, index, tc }) => {
+    const initials = t.name ? t.name.trim().split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() : '?';
+    const typeLabel = TESTIMONIAL_TYPE_LABELS[t.type] || 'Parent';
+    const badgeColor = TESTIMONIAL_TYPE_BADGE_COLORS[t.type] || { bg: `${tc.primary}12`, text: tc.primary };
+
+    return (
+        <Reveal delay={Math.min(index, 6) * 0.06} style={{ height: '100%' }}>
+            <div style={{
+                background: '#ffffff', borderRadius: '18px', padding: '2rem 1.75rem', height: '100%',
+                display: 'flex', flexDirection: 'column', boxShadow: '0 4px 20px rgba(15,23,42,0.06)',
+                border: '0.5px solid #f1f5f9', position: 'relative',
+            }}>
+                <svg width="34" height="26" viewBox="0 0 34 26" fill="none" style={{ marginBottom: '14px', opacity: 0.9 }}>
+                    <path d="M0 26V15.6C0 6.9 5.4 1.3 13.5 0l1.6 3.9C9.4 5.3 6.6 8.9 6.2 14h7.3v12H0zm18.5 0V15.6c0-8.7 5.4-14.3 13.5-15.6L33.6 3.9c-5.7 1.4-8.5 5-8.9 10.1H32v12H18.5z" fill={tc.primary} />
+                </svg>
+
+                {t.quote && (
+                    <div className="rte-content" style={{ fontSize: '14.5px', color: '#334155', lineHeight: 1.8, flex: 1, marginBottom: '18px' }}
+                        dangerouslySetInnerHTML={{ __html: t.quote }} />
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+                    <div style={{ width: '46px', height: '46px', borderRadius: '50%', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})` }}>
+                        {t.photo ? (
+                            <img src={t.photo} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <span style={{ fontSize: '15px', fontWeight: 700, color: '#fff' }}>{initials}</span>
+                        )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>{t.name}</p>
+                        <p style={{ fontSize: '11.5px', color: '#94a3b8' }}>
+                            {t.role || typeLabel}
+                        </p>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '5px', flexShrink: 0 }}>
+                        <span style={{
+                            fontSize: '9.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                            padding: '3px 8px', borderRadius: '999px',
+                            background: badgeColor.bg,
+                            color: badgeColor.text,
+                        }}>
+                            {typeLabel}
+                        </span>
+                        {!!t.rating && <TestimonialStarRow rating={t.rating} color="#f59e0b" />}
+                    </div>
+                </div>
+            </div>
+        </Reveal>
+    );
+};
+
 // ── Thin autoscrolling strip, fixed above the navbar, surfacing the
 // latest announcements — admin-toggleable from the Home Page settings ──
 const AnnouncementTicker = ({ slug, tc, items }) => {
@@ -324,6 +396,7 @@ const SchoolWebsite = () => {
 
     const hasIntroSection = !!(homeContent?.introHeading || homeContent?.introDescription || homeContent?.introImage1 || homeContent?.introImage2);
     const campusImages = homeContent?.campusImages || [];
+    const testimonials = (homeContent?.testimonials || []).filter(t => t.name);
 
     const tickerItems = homeContent?.showAnnouncementTicker !== false && isModuleEnabled(school, 'announcements')
         ? [...(announcementsContent?.announcements || [])]
@@ -427,6 +500,9 @@ const SchoolWebsite = () => {
 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+.testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem; }
+@media (max-width: 960px) { .testimonials-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .testimonials-grid { grid-template-columns: 1fr; } }
                 @media (max-width: 480px) {
                     .hero-buttons-row { flex-wrap: nowrap !important; gap: 6px !important; }
                     .hero-water-btn { padding: 9px 8px !important; font-size: 9px !important; letter-spacing: 0.02em !important; white-space: nowrap !important; flex: 1 1 0 !important; text-align: center !important; }
@@ -605,6 +681,33 @@ const SchoolWebsite = () => {
                                         ))}
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </section>
+                )}
+
+                {/* ── Testimonials — optional quote grid shown below Campus Glimpses,
+                     admin-managed from Home Page settings. Hidden entirely until the
+                     admin adds at least one testimonial. ── */}
+                {testimonials.length > 0 && (
+                    <section style={{ background: bc.surface, padding: 'clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,6vw,5rem)' }}>
+                        <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
+                            <Reveal style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                                <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: tc.secondary, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                                    Testimonials
+                                </span>
+                                <h2 style={{
+                                    fontFamily: homeContent.testimonialsHeadingFont ? getFontFamily(homeContent.testimonialsHeadingFont) : "'Playfair Display', Georgia, serif",
+                                    fontSize: 'clamp(26px,3.8vw,40px)', fontWeight: 800, color: homeContent.testimonialsHeadingColor || tc.primary, marginBottom: '16px', letterSpacing: '-0.4px',
+                                }}>
+                                    {homeContent.testimonialsHeading || 'What People Say About Us'}
+                                </h2>
+                                <div style={{ width: '64px', height: '4px', borderRadius: '99px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, margin: '0 auto' }} />
+                            </Reveal>
+                            <div className="testimonials-grid">
+                                {testimonials.map((t, i) => (
+                                    <TestimonialCard key={t.id} t={t} index={i} tc={tc} />
+                                ))}
                             </div>
                         </div>
                     </section>

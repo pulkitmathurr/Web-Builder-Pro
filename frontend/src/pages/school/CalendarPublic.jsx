@@ -232,7 +232,7 @@ const CalendarPublic = () => {
                 )}
 
                 {/* ── Calendar ── */}
-                <div style={{ padding: '3rem clamp(1.25rem,6vw,3rem) 6rem' }}>
+                <div style={{ padding: '1.5rem clamp(1.25rem,6vw,3rem) 6rem' }}>
                     <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
 
                         {/* Legend — colored pill per category, doubles as the filter control */}

@@ -4,9 +4,11 @@ import { uploadHeroVideoApi, updateSchoolProfileApi } from '../../../api/school.
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
+import ReorderButtons from '../../../components/common/ReorderButtons';
 import useSchoolStore from '../../../store/schoolStore';
 import { FONT_OPTIONS, getFontFamily } from '../../../constants/fonts';
 import { SHIELD_PATH_D, SHIELD_ASPECT } from '../../../constants/shieldShape';
+import { moveItem } from '../../../utils/reorder';
 
 const CAMPUS_IMAGES_MAX = 10;
 const HERO_BANNERS_MAX = 5;
@@ -58,7 +60,18 @@ const defaultContent = {
     campusHeadingFont: '',
     campusSubtext: '',
     campusImages: [], // [{ id, url }]
+    testimonialsHeading: 'What People Say About Us',
+    testimonialsHeadingColor: '',
+    testimonialsHeadingFont: '',
+    testimonials: [], // [{ id, photo, name, type, role, rating, quote }]
 };
+
+const HOME_TABS = [
+    { key: 'hero', label: 'Hero', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> },
+    { key: 'highlight', label: 'Highlight', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg> },
+    { key: 'campus', label: 'Campus Glimpses', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg> },
+    { key: 'testimonials', label: 'Testimonials', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> },
+];
 
 // ── Small inline color-picker used for the hero text-color overrides ──
 const ColorField = ({ label, hint, value, onChange, defaultColor }) => (
@@ -129,6 +142,109 @@ const SingleImageUploadBox = ({ label, url, inputId, onSelect, onRemove, uploadi
     </div>
 );
 
+// ── Single testimonial entry card — photo, name/type, role, star rating, quote.
+// Each card manages its own crop-modal session for its photo upload. ──
+const TestimonialEntryCard = ({ tc, testimonial, index, length, onMove, onUpdate, onRemove, onUploadPhoto, uploading }) => {
+    const [cropSrc, setCropSrc] = useState(null);
+    const inputStyle = { width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
+    const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' };
+
+    return (
+        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ width: '26px', height: '26px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11.5px', fontWeight: 700, color: '#fff', background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`, flexShrink: 0 }}>{index + 1}</span>
+                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{testimonial.name || 'New Testimonial'}</p>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
+                    <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '1.5rem' }}>
+                <div>
+                    <label style={labelStyle}>Photo (optional)</label>
+                    <div onClick={() => document.getElementById(`hp-test-photo-${testimonial.id}`).click()}
+                        style={{ height: '140px', borderRadius: '12px', border: testimonial.photo ? '1px solid #e2e8f0' : '1.5px dashed #e2e8f0', background: testimonial.photo ? 'transparent' : '#fafafa', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        {uploading ? (
+                            <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                        ) : testimonial.photo ? (
+                            <img src={testimonial.photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <span style={{ fontSize: '12px', color: '#94a3b8' }}>👤 Upload</span>
+                        )}
+                    </div>
+                    <input id={`hp-test-photo-${testimonial.id}`} type="file" accept="image/*"
+                        onChange={e => {
+                            const f = e.target.files[0];
+                            e.target.value = '';
+                            if (f) setCropSrc(URL.createObjectURL(f));
+                        }} style={{ display: 'none' }} />
+                    <p style={{ fontSize: '10px', color: '#94a3b8', marginTop: '6px', textAlign: 'center' }}>Falls back to initials if left blank</p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1.7fr', gap: '12px' }}>
+                        <div>
+                            <label style={labelStyle}>Name</label>
+                            <input type="text" value={testimonial.name} onChange={e => onUpdate('name', e.target.value)} placeholder="Enter Full Name" style={inputStyle} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>Type</label>
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                                {['parent', 'alumni', 'visitor'].map(type => (
+                                    <button key={type} type="button" onClick={() => onUpdate('type', type)}
+                                        style={{
+                                            flex: 1, padding: '10px 6px', borderRadius: '10px', fontSize: '11.5px', fontWeight: 600, cursor: 'pointer', textTransform: 'capitalize',
+                                            border: `1px solid ${testimonial.type === type ? tc.primary : '#e5e9f0'}`,
+                                            background: testimonial.type === type ? hexToRgba(tc.primary, 0.08) : '#f8fafc',
+                                            color: testimonial.type === type ? tc.primary : '#64748b',
+                                        }}>
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Role / Relation (optional)</label>
+                        <input type="text" value={testimonial.role} onChange={e => onUpdate('role', e.target.value)}
+                            placeholder="Enter Role (e.g. Parent of Grade 5 Student)" style={inputStyle} />
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Rating</label>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                            {[1, 2, 3, 4, 5].map(star => (
+                                <svg key={star} onClick={() => onUpdate('rating', star)} style={{ cursor: 'pointer' }}
+                                    width="22" height="22" viewBox="0 0 24 24"
+                                    fill={star <= (testimonial.rating || 0) ? '#f59e0b' : 'none'}
+                                    stroke={star <= (testimonial.rating || 0) ? '#f59e0b' : '#cbd5e1'} strokeWidth="1.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 2.5l2.9 6 6.6.7-4.9 4.6 1.2 6.5L12 16.9l-5.8 3.4 1.2-6.5-4.9-4.6 6.6-.7L12 2.5z" />
+                                </svg>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <label style={labelStyle}>Quote</label>
+                        <RichTextEditor value={testimonial.quote} onChange={val => onUpdate('quote', val)}
+                            placeholder="Enter Testimonial Quote" minHeight="90px" fontSize="13px" />
+                    </div>
+                </div>
+            </div>
+
+            {cropSrc && (
+                <ImageCropModal
+                    imageSrc={cropSrc}
+                    aspect={1}
+                    onCancel={() => setCropSrc(null)}
+                    onCropComplete={(croppedFile) => { setCropSrc(null); onUploadPhoto(croppedFile); }}
+                />
+            )}
+        </div>
+    );
+};
+
 const HomePage = () => {
     const { tc, bc, school, fetchSchool } = useSchoolStore();
     const [loading, setLoading] = useState(true);
@@ -146,6 +262,8 @@ const HomePage = () => {
     const [cropSrc, setCropSrc] = useState(null);
     const [cropTarget, setCropTarget] = useState('banner'); // 'banner' | 'intro1' | 'intro2' | 'campus'
     const [imageQueue, setImageQueue] = useState([]); // remaining files still waiting to be cropped
+    const [activeTab, setActiveTab] = useState('hero');
+    const [testimonialUploading, setTestimonialUploading] = useState({});
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -157,7 +275,25 @@ const HomePage = () => {
         try {
             const res = await getModuleContentApi('home');
             if (res.data) {
-                const merged = { ...defaultContent, ...res.data.content };
+                let merged = { ...defaultContent, ...res.data.content };
+                // One-time carry-over: testimonials used to live under their own standalone
+                // module_key ('testimonials'), now folded into Home. If this school never
+                // saved testimonials under 'home' yet, pull any pre-existing data in so it
+                // isn't lost — this only touches local state, nothing is written until Save.
+                if (!merged.testimonials || merged.testimonials.length === 0) {
+                    try {
+                        const oldRes = await getModuleContentApi('testimonials');
+                        if (oldRes?.data?.content?.testimonials?.length > 0) {
+                            merged = {
+                                ...merged,
+                                testimonials: oldRes.data.content.testimonials,
+                                testimonialsHeading: oldRes.data.content.heading || merged.testimonialsHeading,
+                                testimonialsHeadingColor: oldRes.data.content.headingColor || merged.testimonialsHeadingColor,
+                                testimonialsHeadingFont: oldRes.data.content.headingFont || merged.testimonialsHeadingFont,
+                            };
+                        }
+                    } catch (e) { /* no legacy testimonials content — nothing to carry over */ }
+                }
                 setContent(merged);
                 setSavedSnapshot(JSON.stringify(merged));
                 setIsPublished(res.data.is_published === 1);
@@ -283,6 +419,34 @@ const HomePage = () => {
 
     const removeCampusImage = (id) => {
         setContent(prev => ({ ...prev, campusImages: prev.campusImages.filter(b => b.id !== id) }));
+    };
+
+    const addTestimonial = () => {
+        handleChange('testimonials', [{
+            id: `test-${Date.now()}`, photo: '', name: '', type: 'parent', role: '', rating: 5, quote: ''
+        }, ...content.testimonials]);
+    };
+
+    const updateTestimonial = (idx, field, val) => {
+        const updated = [...content.testimonials];
+        updated[idx] = { ...updated[idx], [field]: val };
+        handleChange('testimonials', updated);
+    };
+
+    const removeTestimonial = (idx) => {
+        handleChange('testimonials', content.testimonials.filter((_, i) => i !== idx));
+    };
+
+    const uploadTestimonialPhoto = async (idx, testimonialId, file) => {
+        setTestimonialUploading(prev => ({ ...prev, [testimonialId]: true }));
+        try {
+            const res = await uploadContentImageApi(file);
+            updateTestimonial(idx, 'photo', res.data.url);
+        } catch (e) {
+            toast.error('Failed to upload photo');
+        } finally {
+            setTestimonialUploading(prev => ({ ...prev, [testimonialId]: false }));
+        }
     };
 
     const handleVideoUpload = async () => {
@@ -476,6 +640,18 @@ const HomePage = () => {
                     </div>
                 </div>
 
+                {/* ── Section tabs ── */}
+                <div className="settings-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
+                    {HOME_TABS.map(t => (
+                        <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
+                            style={{ padding: '10px 20px', borderRadius: '6px', border: activeTab === t.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === t.key ? tc.light : '#ffffff', color: activeTab === t.key ? tc.primary : '#64748b', fontWeight: activeTab === t.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: activeTab === t.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none' }}>
+                            <span style={{ color: activeTab === t.key ? tc.primary : '#94a3b8' }}>{t.icon}</span>
+                            {t.label}
+                        </button>
+                    ))}
+                </div>
+
+                {activeTab === 'hero' && <>
                 {/* ── Hero Background ── */}
                 <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: '1.25rem' }}>
                     <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -672,7 +848,9 @@ const HomePage = () => {
                         )}
                     </div>
                 </div>
+                </>}
 
+                {activeTab === 'highlight' && <>
                 {/* ── Homepage Highlight ── */}
                 <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginTop: '1.25rem' }}>
                     <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -709,7 +887,9 @@ const HomePage = () => {
                         </div>
                     </div>
                 </div>
+                </>}
 
+                {activeTab === 'campus' && <>
                 {/* ── Campus Glimpses ── */}
                 <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginTop: '1.25rem' }}>
                     <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -772,6 +952,54 @@ const HomePage = () => {
                         </div>
                     </div>
                 </div>
+                </>}
+
+                {activeTab === 'testimonials' && <>
+                {/* ── Testimonials ── */}
+                <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                    <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Testimonials</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>What parents and visitors say — shown below Campus Glimpses on the home page</p>
+                        </div>
+                    </div>
+                    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div>
+                            <label style={labelStyle}>Heading</label>
+                            <input type="text" value={content.testimonialsHeading} onChange={e => handleChange('testimonialsHeading', e.target.value)}
+                                placeholder="Enter heading" style={inputStyle} />
+                            <ColorField label="Heading Color" value={content.testimonialsHeadingColor} defaultColor={tc.primary}
+                                onChange={val => handleChange('testimonialsHeadingColor', val)} />
+                            <FontField label="Heading Font" value={content.testimonialsHeadingFont} onChange={val => handleChange('testimonialsHeadingFont', val)} />
+                        </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'flex', margin: '1.25rem 0' }}>
+                    <button onClick={addTestimonial}
+                        style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
+                        + Add Testimonial
+                    </button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    {content.testimonials.map((t, idx) => (
+                        <TestimonialEntryCard key={t.id} tc={tc} testimonial={t} index={idx} length={content.testimonials.length}
+                            onMove={(i, dir) => handleChange('testimonials', moveItem(content.testimonials, i, dir))}
+                            onUpdate={(field, val) => updateTestimonial(idx, field, val)}
+                            onRemove={() => removeTestimonial(idx)}
+                            onUploadPhoto={(file) => uploadTestimonialPhoto(idx, t.id, file)}
+                            uploading={testimonialUploading[t.id]}
+                        />
+                    ))}
+                    {content.testimonials.length === 0 && (
+                        <p style={{ fontSize: '11px', color: '#cbd5e1' }}>No testimonials added yet — this section stays hidden on the public page until you add at least one.</p>
+                    )}
+                </div>
+                </>}
 
             </div>
 

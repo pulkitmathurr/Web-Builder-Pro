@@ -37,7 +37,6 @@ const FOOTER_LINKS = [
     { key: 'faculty',        label: 'Faculty',        path: (slug) => `/school/${slug}/faculty` },
     { key: 'infrastructure', label: 'Infrastructure', path: (slug) => `/school/${slug}/infrastructure` },
     { key: 'alumni',         label: 'Alumni',         path: (slug) => `/school/${slug}/alumni` },
-    { key: 'testimonials',   label: 'Testimonials',   path: (slug) => `/school/${slug}/testimonials` },
     { key: 'tc',             label: 'TC Information', path: (slug) => `/school/${slug}/tc` },
     { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses` },
     { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
