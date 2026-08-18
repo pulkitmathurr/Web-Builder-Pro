@@ -1,7 +1,10 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { resolveSchoolByDomainApi } from './api/school.api';
 
 // Pages
+import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import SuperAdminLogin from './pages/auth/SuperAdminLogin';
 
@@ -70,99 +73,154 @@ import AdminLayout from './layouts/AdminLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import EnquiryWidget from './components/public/EnquiryWidget';
 
+// ── Public school site routes — shared between the normal `/school/:slug/*` tree
+// and CustomDomainRoutes below (which reuses these same path patterns against a
+// synthetic location so none of the ~20 public page components need to change). ──
+const PUBLIC_SCHOOL_ROUTE_DEFS = [
+    { path: '/school/:slug', element: <SchoolWebsite /> },
+    { path: '/school/:slug/about', element: <AboutUsPublic /> },
+    { path: '/school/:slug/fee', element: <FeeStructurePublic /> },
+    { path: '/school/:slug/faculty', element: <FacultyPublic /> },
+    { path: '/school/:slug/infrastructure/:categorySlug', element: <InfrastructurePublic /> },
+    { path: '/school/:slug/infrastructure', element: <InfrastructurePublic /> },
+    { path: '/school/:slug/sports/:pageSlug', element: <SportsPublic /> },
+    { path: '/school/:slug/sports', element: <SportsPublic /> },
+    { path: '/school/:slug/gallery/:tab', element: <GalleryPublic /> },
+    { path: '/school/:slug/gallery', element: <GalleryPublic /> },
+    { path: '/school/:slug/achievements', element: <AchievementsPublic /> },
+    { path: '/school/:slug/alumni', element: <AlumniPublic /> },
+    { path: '/school/:slug/testimonials', element: <TestimonialsPublic /> },
+    { path: '/school/:slug/admission-procedure', element: <AdmissionProcedurePublic /> },
+    { path: '/school/:slug/book-list', element: <BookListPublic /> },
+    { path: '/school/:slug/public-disclosure', element: <PublicDisclosurePublic /> },
+    { path: '/school/:slug/tc', element: <TCInformationPublic /> },
+    { path: '/school/:slug/announcements/:id', element: <AnnouncementDetailPublic /> },
+    { path: '/school/:slug/announcements', element: <AnnouncementsPublic /> },
+    { path: '/school/:slug/events/:id', element: <EventDetailPublic /> },
+    { path: '/school/:slug/events', element: <EventsPublic /> },
+    { path: '/school/:slug/circulars/:id', element: <CircularDetailPublic /> },
+    { path: '/school/:slug/circulars', element: <CircularsPublic /> },
+    { path: '/school/:slug/calendar', element: <CalendarPublic /> },
+    { path: '/school/:slug/:levelSlug', element: <SchoolLevelPublic /> },
+];
+
+// ── Platform hosts — anything else attempting a page load is treated as a
+// candidate custom domain and resolved via the backend before rendering. ──
+const isPlatformHost = (host) => host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app');
+
+const FullPageSpinner = () => (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: '3px solid #4169E1', borderRadius: '50%', animation: 'appSpin 1s linear infinite' }}></div>
+        <style>{`@keyframes appSpin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+);
+
+// ── Renders the exact same public school routes, but matched against a synthetic
+// location that has the resolved slug's `/school/:slug` prefix prepended — so a
+// visitor on their own connected domain sees clean URLs (yourschool.com/about)
+// while every public page component still reads `slug` from useParams() as normal. ──
+const CustomDomainRoutes = ({ slug }) => {
+    const location = useLocation();
+    const syntheticLocation = { ...location, pathname: `/school/${slug}${location.pathname === '/' ? '' : location.pathname}` };
+    return (
+        <Routes location={syntheticLocation}>
+            {PUBLIC_SCHOOL_ROUTE_DEFS.map(r => <Route key={r.path} path={r.path} element={r.element} />)}
+            <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+    );
+};
+
+// ── Detects whether the current hostname belongs to the platform itself or to a
+// school's connected custom domain, and routes accordingly. ──
+const RootRouter = () => {
+    const [domainState, setDomainState] = useState(() => (
+        isPlatformHost(window.location.hostname) ? { status: 'platform' } : { status: 'checking' }
+    ));
+
+    useEffect(() => {
+        if (domainState.status !== 'checking') return;
+        resolveSchoolByDomainApi(window.location.hostname)
+            .then((res) => setDomainState(res?.data?.slug ? { status: 'custom', slug: res.data.slug } : { status: 'platform' }))
+            .catch(() => setDomainState({ status: 'platform' }));
+    }, [domainState.status]);
+
+    if (domainState.status === 'checking') return <FullPageSpinner />;
+    if (domainState.status === 'custom') return <CustomDomainRoutes slug={domainState.slug} />;
+
+    return (
+        <Routes>
+
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+            <Route path="/" element={<LandingPage />} />
+
+            {/* Public School Website */}
+            {PUBLIC_SCHOOL_ROUTE_DEFS.map(r => <Route key={r.path} path={r.path} element={r.element} />)}
+            <Route path="/school-not-found" element={<SchoolNotFound />} />
+
+            {/* Super Admin Protected Routes */}
+            <Route path="/super-admin" element={
+                <ProtectedRoute allowedRole="super_admin">
+                    <SuperAdminLayout />
+                </ProtectedRoute>
+            }>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<SuperAdminDashboard />} />
+                <Route path="schools" element={<ManageSchools />} />
+                <Route path="schools/create" element={<CreateSchool />} />
+            </Route>
+
+            {/* Admin Protected Routes */}
+            <Route path="/admin" element={
+                <ProtectedRoute allowedRole="admin">
+                    <AdminLayout />
+                </ProtectedRoute>
+            }>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="modules/select" element={<ModuleSelector />} />
+                <Route path="settings" element={<AdminSettings />} />
+                <Route path="contact" element={<ContactUs />} />
+                {/* Specific module routes pehle */}
+                <Route path="module/home" element={<HomePage />} />
+                <Route path="module/about" element={<AboutUs />} />
+                <Route path="module/fee" element={<FeeStructure />} />
+                <Route path="module/courses" element={<Courses />} />
+                <Route path="module/faculty" element={<Faculty />} />
+                <Route path="module/infrastructure" element={<Infrastructure />} />
+                <Route path="module/sports" element={<Sports />} />
+                <Route path="module/gallery" element={<Gallery />} />
+                <Route path="module/achievements" element={<Achievements />} />
+                <Route path="module/alumni" element={<Alumni />} />
+                <Route path="module/testimonials" element={<Testimonials />} />
+                <Route path="module/admissionProcedure" element={<AdmissionProcedure />} />
+                <Route path="module/bookList" element={<BookList />} />
+                <Route path="module/disclosure" element={<PublicDisclosure />} />
+                <Route path="module/tc" element={<TCInformation />} />
+                <Route path="module/announcements" element={<Announcements />} />
+                <Route path="module/events" element={<Events />} />
+                <Route path="module/circulars" element={<Circulars />} />
+                <Route path="module/calendar" element={<Calendar />} />
+                <Route path="module/admission" element={<AdmissionEnquiry />} />
+                <Route path="module/career" element={<CareerEnquiry />} />
+                {/* Generic module route baad mein */}
+                <Route path="module/:moduleKey" element={<ModulePage />} />
+            </Route>
+
+            {/* 404 */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+
+        </Routes>
+    );
+};
+
 function App() {
     return (
         <BrowserRouter>
             <Toaster position="top-right" />
             <EnquiryWidget />
-            <Routes>
-
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/super-admin/login" element={<SuperAdminLogin />} />
-                <Route path="/" element={<Navigate to="/login" replace />} />
-
-                {/* Public School Website */}
-                <Route path="/school/:slug" element={<SchoolWebsite />} />
-                <Route path="/school/:slug/about" element={<AboutUsPublic />} />
-                <Route path="/school/:slug/fee" element={<FeeStructurePublic />} />
-                <Route path="/school/:slug/faculty" element={<FacultyPublic />} />
-                <Route path="/school/:slug/infrastructure/:categorySlug" element={<InfrastructurePublic />} />
-                <Route path="/school/:slug/infrastructure" element={<InfrastructurePublic />} />
-                <Route path="/school/:slug/sports/:pageSlug" element={<SportsPublic />} />
-                <Route path="/school/:slug/sports" element={<SportsPublic />} />
-                <Route path="/school/:slug/gallery/:tab" element={<GalleryPublic />} />
-                <Route path="/school/:slug/gallery" element={<GalleryPublic />} />
-                <Route path="/school/:slug/achievements" element={<AchievementsPublic />} />
-                <Route path="/school/:slug/alumni" element={<AlumniPublic />} />
-                <Route path="/school/:slug/testimonials" element={<TestimonialsPublic />} />
-                <Route path="/school/:slug/admission-procedure" element={<AdmissionProcedurePublic />} />
-                <Route path="/school/:slug/book-list" element={<BookListPublic />} />
-                <Route path="/school/:slug/public-disclosure" element={<PublicDisclosurePublic />} />
-                <Route path="/school/:slug/tc" element={<TCInformationPublic />} />
-                <Route path="/school/:slug/announcements/:id" element={<AnnouncementDetailPublic />} />
-                <Route path="/school/:slug/announcements" element={<AnnouncementsPublic />} />
-                <Route path="/school/:slug/events/:id" element={<EventDetailPublic />} />
-                <Route path="/school/:slug/events" element={<EventsPublic />} />
-                <Route path="/school/:slug/circulars/:id" element={<CircularDetailPublic />} />
-                <Route path="/school/:slug/circulars" element={<CircularsPublic />} />
-                <Route path="/school/:slug/calendar" element={<CalendarPublic />} />
-                <Route path="/school/:slug/:levelSlug" element={<SchoolLevelPublic />} />
-                <Route path="/school-not-found" element={<SchoolNotFound />} />
-
-                {/* Super Admin Protected Routes */}
-                <Route path="/super-admin" element={
-                    <ProtectedRoute allowedRole="super_admin">
-                        <SuperAdminLayout />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<SuperAdminDashboard />} />
-                    <Route path="schools" element={<ManageSchools />} />
-                    <Route path="schools/create" element={<CreateSchool />} />
-                </Route>
-
-                {/* Admin Protected Routes */}
-                <Route path="/admin" element={
-                    <ProtectedRoute allowedRole="admin">
-                        <AdminLayout />
-                    </ProtectedRoute>
-                }>
-                    <Route index element={<Navigate to="dashboard" replace />} />
-                    <Route path="dashboard" element={<AdminDashboard />} />
-                    <Route path="modules/select" element={<ModuleSelector />} />
-                    <Route path="settings" element={<AdminSettings />} />
-                    <Route path="contact" element={<ContactUs />} />
-                    {/* Specific module routes pehle */}
-                    <Route path="module/home" element={<HomePage />} />
-                    <Route path="module/about" element={<AboutUs />} />
-                    <Route path="module/fee" element={<FeeStructure />} />
-                    <Route path="module/courses" element={<Courses />} />
-                    <Route path="module/faculty" element={<Faculty />} />
-                    <Route path="module/infrastructure" element={<Infrastructure />} />
-                    <Route path="module/sports" element={<Sports />} />
-                    <Route path="module/gallery" element={<Gallery />} />
-                    <Route path="module/achievements" element={<Achievements />} />
-                    <Route path="module/alumni" element={<Alumni />} />
-                    <Route path="module/testimonials" element={<Testimonials />} />
-                    <Route path="module/admissionProcedure" element={<AdmissionProcedure />} />
-                    <Route path="module/bookList" element={<BookList />} />
-                    <Route path="module/disclosure" element={<PublicDisclosure />} />
-                    <Route path="module/tc" element={<TCInformation />} />
-                    <Route path="module/announcements" element={<Announcements />} />
-                    <Route path="module/events" element={<Events />} />
-                    <Route path="module/circulars" element={<Circulars />} />
-                    <Route path="module/calendar" element={<Calendar />} />
-                    <Route path="module/admission" element={<AdmissionEnquiry />} />
-                    <Route path="module/career" element={<CareerEnquiry />} />
-                    {/* Generic module route baad mein */}
-                    <Route path="module/:moduleKey" element={<ModulePage />} />
-                </Route>
-
-                {/* 404 */}
-                <Route path="*" element={<Navigate to="/login" replace />} />
-
-            </Routes>
+            <RootRouter />
         </BrowserRouter>
     );
 }

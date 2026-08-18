@@ -7,16 +7,19 @@ const {
     selectModules,
     getSelectedModules,
     getPublicSchool,
+    getSchoolByDomain,
     uploadHeroVideo,
     uploadSchoolLogo,
     uploadWelcomeBanner,
-    uploadFooterBackground
+    uploadFooterBackground,
+    uploadProspectus
 } = require('./school.controller');
 const { protect, isAdmin } = require('../../middlewares/auth.middleware');
-const { upload, uploadVideo, uploadContentImage } = require('../../config/cloudinary');
+const { upload, uploadVideo, uploadContentImage, uploadPdf } = require('../../config/cloudinary');
 
 // ── Public Routes — No Auth ──────────────────────────
 router.get('/public/:slug', getPublicSchool);
+router.get('/public-domain/:domain', getSchoolByDomain);
 
 // ── Protected Routes ─────────────────────────────────
 router.use(protect);
@@ -45,5 +48,8 @@ router.post('/welcome-banner', uploadContentImage.single('welcomeBanner'), uploa
 
 // ── Footer Background Upload ─────────────────────────
 router.post('/footer-bg', uploadContentImage.single('footerBg'), uploadFooterBackground);
+
+// ── Prospectus Upload ────────────────────────────────
+router.post('/prospectus', uploadPdf.single('prospectus'), uploadProspectus);
 
 module.exports = router;

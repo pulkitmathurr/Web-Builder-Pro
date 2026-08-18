@@ -289,6 +289,21 @@ const EnquiryWidget = () => {
     const admissionOn = isModuleEnabled(school, 'admission');
     const careerOn = isModuleEnabled(school, 'career');
 
+    // ── Floating right-edge tabs — built as a list rather than two hardcoded
+    // buttons so a third (or more) tab spaces itself evenly automatically. ──
+    const floatingTabs = [
+        admissionOn && { key: 'admission', label: 'Enquire Now', onClick: () => window.dispatchEvent(new Event('open-admission-enquiry')) },
+        careerOn && { key: 'career', label: 'Career Enquiry', onClick: () => window.dispatchEvent(new Event('open-career-enquiry')) },
+        school.prospectus_url && { key: 'prospectus', label: 'Prospectus', href: school.prospectus_url },
+    ].filter(Boolean);
+
+    const tabTopPercent = (index, total) => {
+        if (total <= 1) return 50;
+        if (total === 2) return index === 0 ? 40 : 60;
+        if (total === 3) return [26, 50, 74][index];
+        return 25 + (index * 50) / (total - 1);
+    };
+
     return (
         <>
             <style>{`
@@ -321,32 +336,26 @@ const EnquiryWidget = () => {
 
             {/* Floating tabs — fixed to the right edge on every page. Vertical
                 (top-to-bottom) text in a rounded tab, matching the reference design. */}
-            {admissionOn && (
-                <button className="enq-widget-tab" onClick={() => window.dispatchEvent(new Event('open-admission-enquiry'))}
-                    style={{
-                        position: 'fixed', right: 0, top: careerOn ? '40%' : '45%', transform: 'translateY(-50%)', zIndex: 5000,
-                        background: tc.primary, color: '#ffffff',
-                        border: 'none', borderRadius: '10px 0 0 10px', padding: '13px 8px',
-                        fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em', cursor: 'pointer',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.28)', fontFamily: "'Inter', system-ui, sans-serif",
-                        transition: 'filter 0.2s ease', writingMode: 'vertical-rl', textOrientation: 'mixed',
-                    }}>
-                    Enquire Now
-                </button>
-            )}
-            {careerOn && (
-                <button className="enq-widget-tab" onClick={() => window.dispatchEvent(new Event('open-career-enquiry'))}
-                    style={{
-                        position: 'fixed', right: 0, top: admissionOn ? '60%' : '45%', transform: 'translateY(-50%)', zIndex: 5000,
-                        background: tc.primary, color: '#ffffff',
-                        border: 'none', borderRadius: '10px 0 0 10px', padding: '13px 8px',
-                        fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em', cursor: 'pointer',
-                        boxShadow: '0 4px 16px rgba(0,0,0,0.28)', fontFamily: "'Inter', system-ui, sans-serif",
-                        transition: 'filter 0.2s ease', writingMode: 'vertical-rl', textOrientation: 'mixed',
-                    }}>
-                    Career Enquiry
-                </button>
-            )}
+            {floatingTabs.map((t, i) => {
+                const tabStyle = {
+                    position: 'fixed', right: 0, top: `${tabTopPercent(i, floatingTabs.length)}%`, transform: 'translateY(-50%)', zIndex: 5000,
+                    background: tc.primary, color: '#ffffff',
+                    border: 'none', borderRadius: '10px 0 0 10px', padding: '13px 8px',
+                    fontSize: '12px', fontWeight: 700, letterSpacing: '0.02em', cursor: 'pointer',
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.28)', fontFamily: "'Inter', system-ui, sans-serif",
+                    transition: 'filter 0.2s ease', writingMode: 'vertical-rl', textOrientation: 'mixed',
+                    textDecoration: 'none', display: 'inline-block',
+                };
+                return t.href ? (
+                    <a key={t.key} href={t.href} target="_blank" rel="noopener noreferrer" className="enq-widget-tab" style={tabStyle}>
+                        {t.label}
+                    </a>
+                ) : (
+                    <button key={t.key} className="enq-widget-tab" onClick={t.onClick} style={tabStyle}>
+                        {t.label}
+                    </button>
+                );
+            })}
 
             <AdmissionEnquiryModal school={school} tc={tc} bc={bc} />
             <CareerEnquiryModal school={school} tc={tc} bc={bc} />

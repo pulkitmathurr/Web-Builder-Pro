@@ -186,6 +186,8 @@ const TCInformationPublic = () => {
                 .tc-result-pop { animation: resultPop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
                 .tc-session-card { transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease; }
                 .tc-session-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(15,23,42,0.1); }
+                .tc-record-card { transition: transform 0.25s ease, box-shadow 0.25s ease; }
+                .tc-record-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(15,23,42,0.1); }
             `}</style>
 
             <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="tc" />
@@ -378,38 +380,66 @@ const TCInformationPublic = () => {
 
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 22 }}>
                                         {result.records.map((record, i) => (
-                                            <div key={record.id || i} style={{ border: '1px solid #f1f5f9', borderRadius: 14, padding: '18px 20px', background: bc.card }}>
-                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 18 }}>
+                                            <div key={record.id || i} className="tc-record-card" style={{ border: '1px solid #e2e8f0', borderRadius: 18, overflow: 'hidden', background: bc.card, boxShadow: '0 4px 16px rgba(15,23,42,0.06)' }}>
+                                                {/* Header strip */}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', background: tc.light, borderBottom: '1px solid #e2e8f0' }}>
+                                                    <div style={{ width: 38, height: 38, borderRadius: 10, background: tc.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                                            <polyline points="14 2 14 8 20 8" />
+                                                            <path d="M9 15l2 2 4-4" />
+                                                        </svg>
+                                                    </div>
+                                                    <div style={{ fontSize: 15, fontWeight: 700, color: '#0f172a' }}>Transfer Certificate Record</div>
+                                                </div>
+
+                                                {/* Details */}
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
                                                     {[
                                                         ['TC No', record.tcNo],
                                                         ['Student Name', record.studentName],
                                                         ['Session', selectedSession.name],
-                                                    ].map(([k, v]) => (
-                                                        <div key={k} style={{ background: bc.surfaceAlt, border: '1px solid #f1f5f9', borderRadius: 12, padding: '12px 16px' }}>
-                                                            <div style={{ fontSize: 11.5, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5 }}>{k}</div>
-                                                            <div style={{ fontSize: 15, fontWeight: 600, color: '#0f172a', marginTop: 4 }}>{v || '—'}</div>
+                                                    ].map(([k, v], idx, arr) => (
+                                                        <div key={k} style={{ padding: '16px 20px', borderRight: idx < arr.length - 1 ? '1px solid #f1f5f9' : 'none', borderBottom: '1px solid #f1f5f9' }}>
+                                                            <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{k}</div>
+                                                            <div style={{ fontSize: 15.5, fontWeight: 700, color: '#0f172a' }}>{v || '—'}</div>
                                                         </div>
                                                     ))}
                                                 </div>
-                                                <a
-                                                    href={record.pdfUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    style={{
-                                                        display: 'inline-block',
-                                                        background: tc.primary,
-                                                        color: '#fff',
-                                                        border: 'none',
-                                                        borderRadius: 12,
-                                                        padding: '14px 30px',
-                                                        fontSize: 15,
-                                                        fontWeight: 700,
-                                                        cursor: 'pointer',
-                                                        textDecoration: 'none',
-                                                    }}
-                                                >
-                                                    Download TC in
-                                                </a>
+
+                                                {/* Action */}
+                                                <div style={{ padding: 18 }}>
+                                                    <a
+                                                        href={record.pdfUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            gap: 9,
+                                                            width: '100%',
+                                                            boxSizing: 'border-box',
+                                                            background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary || tc.primary})`,
+                                                            color: '#fff',
+                                                            border: 'none',
+                                                            borderRadius: 12,
+                                                            padding: '14px 30px',
+                                                            fontSize: 15,
+                                                            fontWeight: 700,
+                                                            cursor: 'pointer',
+                                                            textDecoration: 'none',
+                                                            boxShadow: `0 8px 18px ${tc.primary}40`,
+                                                        }}
+                                                    >
+                                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                                            <polyline points="7 10 12 15 17 10" />
+                                                            <line x1="12" y1="15" x2="12" y2="3" />
+                                                        </svg>
+                                                        Download TC
+                                                    </a>
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

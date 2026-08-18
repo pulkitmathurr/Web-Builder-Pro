@@ -9,6 +9,7 @@ import { getFontFamily } from "../../constants/fonts";
 import { SHIELD_PATH_D, SHIELD_ASPECT } from "../../constants/shieldShape";
 import { parseDate, shortDate } from "../../utils/dateTimeFormat";
 import { getMusicTrack } from "../../constants/musicTracks";
+import { getYoutubeEmbedUrl } from "../../utils/youtube";
 
 // ── Scroll-triggered fade+slide-up, same pattern used on every other public page ──
 const useScrollReveal = () => {
@@ -395,6 +396,7 @@ const SchoolWebsite = () => {
     const bc = getBaseColors(school.base_theme);
 
     const hasIntroSection = !!(homeContent?.introHeading || homeContent?.introDescription || homeContent?.introImage1 || homeContent?.introImage2);
+    const tourEmbedUrl = getYoutubeEmbedUrl(homeContent?.tourYoutubeUrl);
     const campusImages = homeContent?.campusImages || [];
     const testimonials = (homeContent?.testimonials || []).filter(t => t.name);
 
@@ -510,6 +512,13 @@ const SchoolWebsite = () => {
                 @media (max-width: 800px) {
                     .home-intro-grid { grid-template-columns: 1fr !important; }
                 }
+                /* ── Homepage Highlight shield photos — resting 3D tilt (fanned, opposite
+                     directions) that flattens and lifts on hover for a tangible card feel. ── */
+                .home-shield-1, .home-shield-2 { transition: transform 0.5s cubic-bezier(0.16,1,0.3,1), box-shadow 0.5s ease; transform-style: preserve-3d; }
+                .home-shield-1 { transform: perspective(1400px) rotateY(-10deg) rotateX(5deg); }
+                .home-shield-2 { transform: perspective(1400px) rotateY(8deg) rotateX(-4deg); }
+                .home-shield-photos:hover .home-shield-1 { transform: perspective(1400px) rotateY(-3deg) rotateX(2deg) translateY(-6px); }
+                .home-shield-photos:hover .home-shield-2 { transform: perspective(1400px) rotateY(3deg) rotateX(-2deg) translateY(-6px); }
                 .cg-tile img { transition: transform 0.6s cubic-bezier(0.16,1,0.3,1); }
                 .cg-tile-overlay, .cg-tile-ring { transition: opacity 0.4s ease; }
                 .cg-tile { transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease; }
@@ -596,12 +605,14 @@ const SchoolWebsite = () => {
                         <ShieldClipDefs />
                         <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(260px,400px) 1fr', gap: 'clamp(1.5rem,4vw,3rem)', alignItems: 'center' }}>
                             <Reveal>
-                                <div style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5' }}>
+                                <div className="home-shield-photos" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5', perspective: '1400px' }}>
                                     {/* Each shield photo is built from nested same-shape layers (gradient
                                          frame → thin hairline → photo) rather than a CSS border/outline,
-                                         since those get cut oddly by the clip-path shape. ── */}
+                                         since those get cut oddly by the clip-path shape. A resting 3D tilt
+                                         (see .home-shield-1/2 above) plus a layered ambient + contact shadow
+                                         gives the pair a tangible, fanned-card depth instead of sitting flat. ── */}
                                     {homeContent.introImage1 && (
-                                        <div style={{ position: 'absolute', left: 0, top: 0, width: '68%', aspectRatio: `${SHIELD_ASPECT}`, clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '7px', background: `linear-gradient(150deg,${tc.secondary},${tc.primary})`, boxShadow: '0 20px 45px rgba(0,0,0,0.2)', zIndex: 1 }}>
+                                        <div className="home-shield-1" style={{ position: 'absolute', left: 0, top: 0, width: '68%', aspectRatio: `${SHIELD_ASPECT}`, clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '7px', background: `linear-gradient(150deg,${tc.secondary},${tc.primary})`, boxShadow: `0 26px 50px rgba(0,0,0,0.24), 0 10px 24px ${tc.primary}40`, zIndex: 1 }}>
                                             <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '2.5px', background: '#ffffff' }}>
                                                 <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', overflow: 'hidden' }}>
                                                     <img src={homeContent.introImage1} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -610,7 +621,7 @@ const SchoolWebsite = () => {
                                         </div>
                                     )}
                                     {homeContent.introImage2 && (
-                                        <div style={{ position: 'absolute', right: 0, bottom: 0, width: '54%', aspectRatio: `${SHIELD_ASPECT}`, clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '6px', background: bc.surfaceAlt, boxShadow: '0 20px 45px rgba(0,0,0,0.25)', zIndex: 2 }}>
+                                        <div className="home-shield-2" style={{ position: 'absolute', right: 0, bottom: 0, width: '54%', aspectRatio: `${SHIELD_ASPECT}`, clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '6px', background: bc.surfaceAlt, boxShadow: `0 26px 50px rgba(0,0,0,0.3), 0 10px 22px ${tc.primary}35`, zIndex: 2 }}>
                                             <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '7px', background: `linear-gradient(150deg,${tc.secondary},${tc.primary})` }}>
                                                 <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', boxSizing: 'border-box', padding: '2.5px', background: '#ffffff' }}>
                                                     <div style={{ width: '100%', height: '100%', clipPath: 'url(#homeShieldClip)', overflow: 'hidden' }}>
@@ -636,6 +647,30 @@ const SchoolWebsite = () => {
                                     {homeContent.introDescription && (
                                         <div className="rte-content" style={{ fontSize: '15px', color: '#334155', lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: homeContent.introDescription }} />
                                     )}
+                                </div>
+                            </Reveal>
+                        </div>
+                    </section>
+                )}
+
+                {/* ── School Tour — optional embedded YouTube video, admin-managed from Home
+                     Page settings. Hidden entirely until the admin adds a valid YouTube link. ── */}
+                {tourEmbedUrl && (
+                    <section style={{ background: bc.surface, padding: 'clamp(2.5rem,6vw,4rem) clamp(1.25rem,6vw,5rem)' }}>
+                        <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
+                            <Reveal style={{ marginBottom: '1.75rem' }}>
+                                <h2 style={{
+                                    fontFamily: "'Playfair Display', Georgia, serif",
+                                    fontSize: 'clamp(26px,3.8vw,40px)', fontWeight: 800, color: tc.primary, letterSpacing: '-0.4px',
+                                }}>
+                                    {homeContent.tourHeading || 'School Tour'}
+                                </h2>
+                                <div style={{ width: '64px', height: '4px', borderRadius: '99px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, margin: '14px auto 0' }} />
+                            </Reveal>
+                            <Reveal delay={0.1}>
+                                <div style={{ position: 'relative', width: '100%', aspectRatio: '16/9', borderRadius: '18px', overflow: 'hidden', boxShadow: '0 20px 45px rgba(0,0,0,0.18)' }}>
+                                    <iframe src={tourEmbedUrl} title="School Tour" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
                                 </div>
                             </Reveal>
                         </div>

@@ -263,6 +263,10 @@ const FeeStructure = () => {
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
+                @keyframes rowIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+                @keyframes cardIn { from { opacity: 0; transform: translateY(14px) scale(0.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                @keyframes totalGlow { 0%, 100% { box-shadow: 0 2px 12px ${hexToRgba(tc.primary, 0.12)}; } 50% { box-shadow: 0 6px 22px ${hexToRgba(tc.primary, 0.28)}; } }
+                @keyframes tickPop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
                 .fs-section { animation: fadeInUp 0.35s ease forwards; }
                 @media (max-width: 800px) {
                     .fs-section { grid-template-columns: 1fr !important; }
@@ -270,13 +274,38 @@ const FeeStructure = () => {
                 @media (max-width: 560px) {
                     .fs-row-grid { grid-template-columns: 1fr 90px 40px !important; }
                 }
-                .fee-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; }
+                .fee-input { transition: border 0.2s, box-shadow 0.2s, background 0.2s, transform 0.15s; }
+                .fee-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; background: #ffffff !important; transform: translateY(-1px); }
                 .class-tab { transition: all 0.15s; }
                 .class-tab:hover { background: ${tc.light} !important; }
-                .fs-tab-btn { transition: all 0.15s; }
-                .fs-tab-btn:hover { border-color: ${tc.primary}55 !important; }
+                .fs-tab-btn { transition: all 0.2s cubic-bezier(0.16,1,0.3,1); position: relative; }
+                .fs-tab-btn:hover { border-color: ${tc.primary}55 !important; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(15,23,42,0.08); }
                 .fs-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .fs-hero-orb { animation: drift1 9s ease-in-out infinite; }
+                .fs-card-in { animation: cardIn 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+                .fs-class-item { animation: rowIn 0.3s cubic-bezier(0.16,1,0.3,1) both; transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease; }
+                .fs-class-item:hover { transform: translateX(4px); box-shadow: 0 3px 10px rgba(15,23,42,0.06); }
+                .fs-class-dot { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease; }
+                .fs-class-item:hover .fs-class-dot { transform: scale(1.3); }
+                .fs-remove-x { transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease; }
+                .fs-remove-x:hover { transform: rotate(90deg) scale(1.15); background: #fef2f2 !important; color: #ef4444 !important; }
+                .fs-fee-row { animation: rowIn 0.32s cubic-bezier(0.16,1,0.3,1) both; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease; }
+                .fs-fee-row:hover { transform: translateX(4px) scale(1.005); box-shadow: 0 6px 18px rgba(15,23,42,0.09); z-index: 1; position: relative; }
+                .fs-fee-icon { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease; }
+                .fs-fee-row:hover .fs-fee-icon { transform: scale(1.12) rotate(-6deg); }
+                .fs-remove-btn { transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease; }
+                .fs-remove-btn:hover { transform: rotate(90deg) scale(1.1); background: #fee2e2 !important; box-shadow: 0 4px 12px rgba(239,68,68,0.25); }
+                .fs-total-row { animation: totalGlow 3s ease-in-out infinite; transition: transform 0.2s ease; }
+                .fs-total-row:hover { transform: translateY(-1px); }
+                .fs-total-tick { animation: tickPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+                .fs-table-frame { position: relative; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+                .fs-table-frame:hover { transform: translateY(-2px); }
+                .fs-period-pill { transition: all 0.2s cubic-bezier(0.16,1,0.3,1); }
+                .fs-period-pill:hover { transform: translateY(-1px); }
+                .fs-add-fee-btn { transition: transform 0.18s ease, box-shadow 0.18s ease; }
+                .fs-add-fee-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px ${hexToRgba(tc.primary, 0.35)} !important; }
+                .fs-small-btn { transition: all 0.18s ease; }
+                .fs-small-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,0.08); }
                 @media (max-width: 640px) {
                     .dash-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
                     .fs-hero-inner { gap: 12px !important; }
@@ -346,32 +375,38 @@ const FeeStructure = () => {
                 <div className="fs-section" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '1.25rem', alignItems: 'flex-start' }}>
 
                     {/* ── Left — Class List ── */}
-                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', position: 'sticky', top: '24px' }}>
-                        <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)' }}>
-                            <p style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Classes</p>
-                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>{content.classes.length} added</p>
+                    <div className="fs-card-in" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', position: 'sticky', top: '24px' }}>
+                        <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #f8fafc', background: `linear-gradient(135deg,${tc.dark},${tc.primary})`, position: 'relative', overflow: 'hidden' }}>
+                            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '16px 16px', pointerEvents: 'none' }}></div>
+                            <p style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', marginBottom: '1px', position: 'relative' }}>Classes</p>
+                            <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.65)', position: 'relative' }}>{content.classes.length} added</p>
                         </div>
 
                         <div style={{ padding: '8px' }}>
                             {content.classes.length === 0 && (
                                 <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '1.5rem 0' }}>No classes added yet</p>
                             )}
-                            {content.classes.map(cls => (
+                            {content.classes.map((cls, ci) => (
                                 <div key={cls.name}
-                                    className="class-tab"
+                                    className="class-tab fs-class-item"
                                     onClick={() => setActiveClass(cls.name)}
                                     style={{
                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                         padding: '10px 12px', borderRadius: '8px', cursor: 'pointer', marginBottom: '2px',
                                         background: activeClass === cls.name ? tc.light : 'transparent',
-                                        border: activeClass === cls.name ? '1px solid #f9c4d4' : '1px solid transparent',
+                                        border: activeClass === cls.name ? `1px solid ${tc.primary}55` : '1px solid transparent',
+                                        borderLeft: activeClass === cls.name ? `3px solid ${tc.primary}` : '3px solid transparent',
+                                        animationDelay: `${ci * 0.035}s`,
                                     }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: cls.fees.length > 0 ? '#22c55e' : '#e2e8f0' }}></div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                                        <div className="fs-class-dot" style={{ width: '6px', height: '6px', borderRadius: '50%', background: cls.fees.length > 0 ? '#22c55e' : '#e2e8f0', boxShadow: cls.fees.length > 0 ? '0 0 0 3px #22c55e22' : 'none' }}></div>
                                         <span style={{ fontSize: '13px', fontWeight: activeClass === cls.name ? 600 : 400, color: activeClass === cls.name ? tc.primary : '#0f172a' }}>{cls.name}</span>
+                                        {cls.fees.length > 0 && (
+                                            <span style={{ fontSize: '9.5px', fontWeight: 700, color: activeClass === cls.name ? tc.primary : '#94a3b8', background: activeClass === cls.name ? '#ffffff' : '#f1f5f9', padding: '1px 6px', borderRadius: '999px' }}>{cls.fees.length}</span>
+                                        )}
                                     </div>
-                                    <button onClick={e => { e.stopPropagation(); removeClass(cls.name); }}
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px', fontSize: '14px', lineHeight: 1 }}>×</button>
+                                    <button onClick={e => { e.stopPropagation(); removeClass(cls.name); }} className="fs-remove-x"
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '2px 6px', fontSize: '14px', lineHeight: 1, borderRadius: '6px' }}>×</button>
                                 </div>
                             ))}
                         </div>
@@ -408,18 +443,19 @@ const FeeStructure = () => {
 
                     {/* ── Right — Fee Editor ── */}
                     {!activeClass ? (
-                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '4rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
-                            <div style={{ width: '56px', height: '56px', background: '#f1f5f9', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                                <svg width="24" height="24" fill="none" stroke="#94a3b8" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 21h14a1 1 0 001-1V6.41a1 1 0 00-.29-.7L16.29 2.29A1 1 0 0015.59 2H5a1 1 0 00-1 1v17a1 1 0 001 1z" /></svg>
+                        <div className="fs-card-in" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '4rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                            <div style={{ width: '56px', height: '56px', background: tc.light, borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <svg width="24" height="24" fill="none" stroke={tc.primary} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m-6 4h6m-6 4h4M5 21h14a1 1 0 001-1V6.41a1 1 0 00-.29-.7L16.29 2.29A1 1 0 0015.59 2H5a1 1 0 00-1 1v17a1 1 0 001 1z" /></svg>
                             </div>
                             <p style={{ fontSize: '15px', fontWeight: 500, color: '#0f172a', marginBottom: '6px' }}>No class selected</p>
                             <p style={{ fontSize: '13px', color: '#94a3b8' }}>Add a class from the left panel to start entering fees</p>
                         </div>
                     ) : (
-                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                        <div key={activeClass} className="fs-card-in" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                             {/* Header */}
-                            <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', width: '160px', height: '160px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.primary}12 0%, transparent 70%)`, top: '-90px', right: '-40px', pointerEvents: 'none' }}></div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative' }}>
                                     <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
                                         <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                                     </div>
@@ -429,7 +465,7 @@ const FeeStructure = () => {
                                     </div>
                                 </div>
                                 {activeClassData?.fees.length > 0 && (
-                                    <div style={{ padding: '8px 16px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '10px' }}>
+                                    <div className="fs-total-tick" style={{ padding: '8px 16px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '10px', position: 'relative' }}>
                                         <p style={{ fontSize: '11px', color: '#64748b', marginBottom: '2px' }}>Total {PERIODS.find(p => p.key === activePeriod)?.label} Fee</p>
                                         <p style={{ fontSize: '16px', fontWeight: 700, color: '#15803d' }}>
                                             ₹{getTotal(activeClassData.fees).toLocaleString('en-IN')}
@@ -442,13 +478,13 @@ const FeeStructure = () => {
                                 {/* Period Tabs — choose which table (Quarterly / Half-Yearly / Full Year) you're filling amounts for */}
                                 <div className="fs-period-tabs" style={{ display: 'flex', gap: '8px', marginBottom: '1.25rem' }}>
                                     {PERIODS.map(p => (
-                                        <button key={p.key} onClick={() => setActivePeriod(p.key)}
+                                        <button key={p.key} onClick={() => setActivePeriod(p.key)} className="fs-period-pill"
                                             style={{
                                                 padding: '9px 20px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer',
                                                 border: activePeriod === p.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0',
-                                                background: activePeriod === p.key ? tc.light : '#ffffff',
-                                                color: activePeriod === p.key ? tc.primary : '#64748b',
-                                                transition: 'all 0.15s',
+                                                background: activePeriod === p.key ? `linear-gradient(135deg,${tc.primary},${tc.secondary})` : '#ffffff',
+                                                color: activePeriod === p.key ? '#ffffff' : '#64748b',
+                                                boxShadow: activePeriod === p.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` : 'none',
                                             }}>
                                             {p.label}
                                         </button>
@@ -460,21 +496,31 @@ const FeeStructure = () => {
 
                                 {/* Fee List */}
                                 {activeClassData?.fees.length === 0 ? (
-                                    <div style={{ textAlign: 'center', padding: '3rem 0', color: '#94a3b8', fontSize: '13px' }}>
-                                        No fee types added yet — use the dropdown above
+                                    <div style={{ textAlign: 'center', padding: '2.75rem 0', border: '1.5px dashed #e2e8f0', borderRadius: '14px' }}>
+                                        <div style={{ width: '44px', height: '44px', background: tc.light, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px' }}>
+                                            <svg width="18" height="18" fill="none" stroke={tc.primary} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v8m0 0v2m0-2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
+                                        <p style={{ color: '#94a3b8', fontSize: '13px' }}>No fee types added yet — use the dropdown above</p>
                                     </div>
                                 ) : (
-                                    <div style={{ marginTop: '1.25rem' }}>
+                                    <div className="fs-table-frame" style={{ marginTop: '1.25rem', borderRadius: '16px', padding: '2px', background: `linear-gradient(135deg,${tc.primary}45,${tc.secondary}25,transparent 65%)` }}>
+                                    <div style={{ borderRadius: '14px', background: '#ffffff', padding: '10px', boxShadow: '0 2px 10px rgba(15,23,42,0.05)' }}>
                                         {/* Table Header */}
-                                        <div className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '8px 12px', background: `linear-gradient(135deg,${tc.dark},${tc.primary})`, borderRadius: '8px', marginBottom: '6px' }}>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Fee Type</span>
-                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{PERIODS.find(p => p.key === activePeriod)?.label} Amount (₹)</span>
+                                        <div className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '10px 14px', background: `linear-gradient(135deg,${tc.dark},${tc.primary})`, borderRadius: '10px', marginBottom: '8px', position: 'relative', overflow: 'hidden' }}>
+                                            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '14px 14px', pointerEvents: 'none' }}></div>
+                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', position: 'relative' }}>Fee Type</span>
+                                            <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', position: 'relative' }}>{PERIODS.find(p => p.key === activePeriod)?.label} Amount (₹)</span>
                                             <span></span>
                                         </div>
 
                                         {activeClassData.fees.map((fee, i) => (
-                                            <div key={fee.type} className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '10px 12px', borderBottom: '0.5px solid #f8fafc', alignItems: 'center', background: i % 2 === 0 ? '#fafafa' : '#ffffff', borderRadius: '6px', marginBottom: '3px' }}>
-                                                <span style={{ fontSize: '13px', fontWeight: 500, color: '#0f172a' }}>{fee.type}</span>
+                                            <div key={fee.type} className="fs-row-grid fs-fee-row" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '9px 12px', alignItems: 'center', background: i % 2 === 0 ? '#fafbfc' : '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '10px', marginBottom: '5px', animationDelay: `${i * 0.045}s` }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                                    <div className="fs-fee-icon" style={{ width: '28px', height: '28px', borderRadius: '8px', background: tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                                        <svg width="14" height="14" fill="none" stroke={tc.primary} strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V6m0 2v8m0 0v2m0-2c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                    </div>
+                                                    <span style={{ fontSize: '13px', fontWeight: 500, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fee.type}</span>
+                                                </div>
                                                 <div style={{ position: 'relative' }}>
                                                     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: '#64748b' }}>₹</span>
                                                     <input
@@ -486,7 +532,7 @@ const FeeStructure = () => {
                                                         style={{ ...inputStyle, paddingLeft: '28px' }}
                                                     />
                                                 </div>
-                                                <button onClick={() => removeFeeType(fee.type)}
+                                                <button onClick={() => removeFeeType(fee.type)} className="fs-remove-btn"
                                                     style={{ width: '36px', height: '36px', background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444', fontSize: '16px' }}>
                                                     ×
                                                 </button>
@@ -494,11 +540,15 @@ const FeeStructure = () => {
                                         ))}
 
                                         {/* Total Row */}
-                                        <div className="fs-row-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '12px 12px', marginTop: '6px', background: 'linear-gradient(135deg,#fdf0f5,#fff5f8)', borderRadius: '8px', border: '1px solid #f9c4d4' }}>
-                                            <span style={{ fontSize: '13px', fontWeight: 700, color: tc.primary }}>Total {PERIODS.find(p => p.key === activePeriod)?.label} Fee</span>
-                                            <span style={{ fontSize: '15px', fontWeight: 800, color: tc.primary }}>₹{getTotal(activeClassData.fees).toLocaleString('en-IN')}</span>
+                                        <div className="fs-row-grid fs-total-row" style={{ display: 'grid', gridTemplateColumns: '1fr 200px 44px', gap: '12px', padding: '13px 14px', marginTop: '8px', background: `linear-gradient(135deg,${tc.light},#fff5f8)`, borderRadius: '10px', border: `1px solid ${tc.primary}45` }}>
+                                            <span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 700, color: tc.primary }}>
+                                                <svg width="15" height="15" fill="none" stroke={tc.primary} strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                                Total {PERIODS.find(p => p.key === activePeriod)?.label} Fee
+                                            </span>
+                                            <span style={{ fontSize: '16px', fontWeight: 800, color: tc.primary }}>₹{getTotal(activeClassData.fees).toLocaleString('en-IN')}</span>
                                             <span></span>
                                         </div>
+                                    </div>
                                     </div>
                                 )}
                             </div>
@@ -510,7 +560,7 @@ const FeeStructure = () => {
                 {/* ── Optional Fee Tables ── */}
                 {activeTab === 'optional' && (
                 <div>
-                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: '1.25rem' }}>
+                    <div className="fs-card-in" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: '1.25rem' }}>
                         <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
                                 <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
@@ -557,7 +607,7 @@ const FeeStructure = () => {
                 {/* ── School Transport Tables ── */}
                 {activeTab === 'transport' && (
                 <div>
-                    <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: '1.25rem' }}>
+                    <div className="fs-card-in" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginBottom: '1.25rem' }}>
                         <div style={{ padding: '1.25rem 1.75rem', display: 'flex', alignItems: 'center', gap: '12px', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)' }}>
                             <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
                                 <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 19h8m-8 0a2 2 0 01-2-2v-1h12v1a2 2 0 01-2 2m-8 0v1m8-1v1M5 16V7a2 2 0 012-2h10a2 2 0 012 2v9M5 16h14M8 11h8" /></svg>
@@ -638,7 +688,7 @@ const AddFeeTypeRow = ({ onAdd, existingTypes, defaultFeeTypes, inputStyle }) =>
                     <option value="__other__">+ Other (custom)</option>
                 </select>
             </div>
-            <button onClick={handleAdd}
+            <button onClick={handleAdd} className="fs-add-fee-btn"
                 style={{ padding: '10px 20px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.25)}`, flexShrink: 0 }}>
                 + Add Fee
             </button>
@@ -718,21 +768,26 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {tables.length === 0 && (
-                <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', textAlign: 'center', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                <div className="fs-card-in" style={{ background: '#ffffff', border: '1.5px dashed #e2e8f0', borderRadius: '16px', padding: '2.5rem', textAlign: 'center' }}>
+                    <div style={{ width: '48px', height: '48px', background: tc.light, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                        <svg width="20" height="20" fill="none" stroke={tc.primary} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    </div>
                     <p style={{ fontSize: '13px', color: '#94a3b8' }}>No tables yet — click "+ Add Table" below to create one.</p>
                 </div>
             )}
 
-            {tables.map((table) => (
-                <div key={table.id} style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            {tables.map((table, ti) => (
+                <div key={table.id} className="fs-table-frame fs-card-in" style={{ borderRadius: '17px', padding: '2px', background: `linear-gradient(135deg,${tc.primary}40,${tc.secondary}22,transparent 65%)`, animationDelay: `${ti * 0.06}s` }}>
+                <div style={{ background: '#ffffff', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                     <div style={{ padding: '1rem 1.25rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <input
                             value={table.title}
                             onChange={e => onUpdateTable(sectionKey, table.id, 'title', e.target.value)}
                             placeholder="Enter Table Title"
+                            className="fee-input"
                             style={{ ...inputStyle, fontWeight: 600, flex: 1 }}
                         />
-                        <button onClick={() => onRemoveTable(sectionKey, table.id)}
+                        <button onClick={() => onRemoveTable(sectionKey, table.id)} className="fs-small-btn"
                             style={{ padding: '9px 16px', background: '#fef2f2', color: '#ef4444', border: '0.5px solid #fecaca', borderRadius: '8px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
                             Remove Table
                         </button>
@@ -743,31 +798,31 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
                             <div style={{ width: '68px', flexShrink: 0 }}></div>
                             <div style={{ flex: 1 }}>
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Item Column Label</label>
-                                <input value={table.itemLabel} onChange={e => onUpdateTable(sectionKey, table.id, 'itemLabel', e.target.value)} style={inputStyle} />
+                                <input value={table.itemLabel} onChange={e => onUpdateTable(sectionKey, table.id, 'itemLabel', e.target.value)} className="fee-input" style={inputStyle} />
                             </div>
                             <div style={{ flex: 1 }}>
                                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Amount Column Label</label>
-                                <input value={table.amountLabel} onChange={e => onUpdateTable(sectionKey, table.id, 'amountLabel', e.target.value)} style={inputStyle} />
+                                <input value={table.amountLabel} onChange={e => onUpdateTable(sectionKey, table.id, 'amountLabel', e.target.value)} className="fee-input" style={inputStyle} />
                             </div>
                             <div style={{ width: '32px', flexShrink: 0 }}></div>
                         </div>
 
-                        {table.rows.map(row => (
-                            <div key={row.id} style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', padding: '8px', background: '#fafafa', borderRadius: '8px' }}>
-                                <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', color: rowTypeBadge[row.type], width: '68px', flexShrink: 0 }}>{row.type}</span>
+                        {table.rows.map((row, ri) => (
+                            <div key={row.id} className="fs-fee-row" style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '8px', padding: '8px', background: '#fafbfc', border: '0.5px solid #f1f5f9', borderRadius: '9px', animationDelay: `${ri * 0.04}s` }}>
+                                <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', color: rowTypeBadge[row.type], background: `${rowTypeBadge[row.type]}14`, padding: '4px 0', borderRadius: '6px', textAlign: 'center', width: '68px', flexShrink: 0 }}>{row.type}</span>
                                 {row.type === 'item' ? (
                                     <>
                                         <input value={row.label} onChange={e => onUpdateRow(sectionKey, table.id, row.id, 'label', e.target.value)}
-                                            placeholder="Enter Item Label" style={{ ...inputStyle, flex: 1 }} />
+                                            placeholder="Enter Item Label" className="fee-input" style={{ ...inputStyle, flex: 1 }} />
                                         <input value={row.value} onChange={e => onUpdateRow(sectionKey, table.id, row.id, 'value', e.target.value)}
-                                            placeholder="Enter Amount" style={{ ...inputStyle, flex: 1 }} />
+                                            placeholder="Enter Amount" className="fee-input" style={{ ...inputStyle, flex: 1 }} />
                                     </>
                                 ) : (
                                     <input value={row.text} onChange={e => onUpdateRow(sectionKey, table.id, row.id, 'text', e.target.value)}
                                         placeholder={row.type === 'subheading' ? 'Enter Subheading Text' : 'Enter Footnote Text'}
-                                        style={{ ...inputStyle, flex: 1 }} />
+                                        className="fee-input" style={{ ...inputStyle, flex: 1 }} />
                                 )}
-                                <button onClick={() => onRemoveRow(sectionKey, table.id, row.id)}
+                                <button onClick={() => onRemoveRow(sectionKey, table.id, row.id)} className="fs-remove-btn"
                                     style={{ width: '32px', height: '32px', background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '7px', cursor: 'pointer', color: '#ef4444', fontSize: '14px', flexShrink: 0 }}>
                                     ×
                                 </button>
@@ -775,15 +830,16 @@ const FeeTableEditor = ({ sectionKey, tables, inputStyle, onAddTable, onRemoveTa
                         ))}
 
                         <div style={{ display: 'flex', gap: '8px', marginTop: '0.75rem' }}>
-                            <button onClick={() => onAddRow(sectionKey, table.id, 'item')} style={smallBtnStyle}>+ Item Row</button>
-                            <button onClick={() => onAddRow(sectionKey, table.id, 'subheading')} style={smallBtnStyle}>+ Subheading</button>
-                            <button onClick={() => onAddRow(sectionKey, table.id, 'note')} style={smallBtnStyle}>+ Note</button>
+                            <button onClick={() => onAddRow(sectionKey, table.id, 'item')} className="fs-small-btn" style={smallBtnStyle}>+ Item Row</button>
+                            <button onClick={() => onAddRow(sectionKey, table.id, 'subheading')} className="fs-small-btn" style={smallBtnStyle}>+ Subheading</button>
+                            <button onClick={() => onAddRow(sectionKey, table.id, 'note')} className="fs-small-btn" style={smallBtnStyle}>+ Note</button>
                         </div>
                     </div>
                 </div>
+                </div>
             ))}
 
-            <button onClick={() => onAddTable(sectionKey)}
+            <button onClick={() => onAddTable(sectionKey)} className="fs-add-fee-btn"
                 style={{ alignSelf: 'flex-start', padding: '10px 20px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.25)}` }}>
                 + Add Table
             </button>

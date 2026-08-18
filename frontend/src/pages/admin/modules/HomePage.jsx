@@ -9,6 +9,7 @@ import useSchoolStore from '../../../store/schoolStore';
 import { FONT_OPTIONS, getFontFamily } from '../../../constants/fonts';
 import { SHIELD_PATH_D, SHIELD_ASPECT } from '../../../constants/shieldShape';
 import { moveItem } from '../../../utils/reorder';
+import { getYoutubeEmbedUrl } from '../../../utils/youtube';
 
 const CAMPUS_IMAGES_MAX = 10;
 const HERO_BANNERS_MAX = 5;
@@ -55,6 +56,8 @@ const defaultContent = {
     introDescription: '',
     introImage1: '',
     introImage2: '',
+    tourHeading: 'School Tour',
+    tourYoutubeUrl: '',
     campusHeading: 'Campus Glimpses',
     campusHeadingColor: '',
     campusHeadingFont: '',
@@ -69,7 +72,8 @@ const defaultContent = {
 const HOME_TABS = [
     { key: 'hero', label: 'Hero', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg> },
     { key: 'highlight', label: 'Highlight', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg> },
-    { key: 'campus', label: 'Campus Glimpses', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg> },
+    { key: 'tour', label: 'School Tour', icon: <VideoIcon size={16} color="currentColor" /> },
+    { key: 'campus', label: 'Campus Glimpses', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /></svg> },
     { key: 'testimonials', label: 'Testimonials', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> },
 ];
 
@@ -867,6 +871,43 @@ const HomePage = () => {
                             <RichTextEditor value={content.introDescription} onChange={val => handleChange('introDescription', val)}
                                 placeholder="Enter description" minHeight="100px" fontSize="14px" fontFamily="'Inter', system-ui, sans-serif" />
                         </div>
+                    </div>
+                </div>
+                </>}
+
+                {activeTab === 'tour' && <>
+                {/* ── School Tour (YouTube video) ── */}
+                <div className="hp-section" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', marginTop: '1.25rem' }}>
+                    <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                            <VideoIcon size={18} color="white" />
+                        </div>
+                        <div>
+                            <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>School Tour</p>
+                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional section shown between Highlight and Campus Glimpses — embeds a YouTube video (e.g. a campus walkthrough)</p>
+                        </div>
+                    </div>
+                    <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                        <div>
+                            <label style={labelStyle}>Section Heading</label>
+                            <input type="text" value={content.tourHeading} onChange={e => handleChange('tourHeading', e.target.value)}
+                                placeholder="Enter section heading" style={inputStyle} />
+                        </div>
+                        <div>
+                            <label style={labelStyle}>YouTube Video URL</label>
+                            <input type="text" value={content.tourYoutubeUrl} onChange={e => handleChange('tourYoutubeUrl', e.target.value)}
+                                placeholder="Enter YouTube video link (e.g. https://youtu.be/...)" style={inputStyle} />
+                            {content.tourYoutubeUrl && !getYoutubeEmbedUrl(content.tourYoutubeUrl) && (
+                                <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '6px' }}>This doesn't look like a valid YouTube link.</p>
+                            )}
+                        </div>
+                        {getYoutubeEmbedUrl(content.tourYoutubeUrl) ? (
+                            <div style={{ borderRadius: '10px', overflow: 'hidden', border: '0.5px solid #e2e8f0', aspectRatio: '16/9', maxWidth: '480px' }}>
+                                <iframe src={getYoutubeEmbedUrl(content.tourYoutubeUrl)} title="School Tour preview" style={{ width: '100%', height: '100%', border: 'none' }} allowFullScreen />
+                            </div>
+                        ) : (
+                            <p style={{ fontSize: '11px', color: '#cbd5e1' }}>No video linked yet — this section stays hidden on the public page until you add a valid YouTube URL.</p>
+                        )}
                     </div>
                 </div>
                 </>}

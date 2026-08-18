@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { getSchoolProfileApi, updateSchoolProfileApi, updateSchoolSettingsApi, uploadSchoolLogoApi, uploadWelcomeBannerApi, uploadFooterBackgroundApi } from '../../api/school.api';
+import { useEffect, useRef, useState } from 'react';
+import { getSchoolProfileApi, updateSchoolProfileApi, updateSchoolSettingsApi, uploadSchoolLogoApi, uploadWelcomeBannerApi, uploadFooterBackgroundApi, uploadProspectusApi } from '../../api/school.api';
 import { uploadContentImageApi } from '../../api/content.api';
 import useSchoolStore from '../../store/schoolStore';
 import ImageCropModal from '../../components/common/ImageCropModal';
@@ -68,6 +68,17 @@ const AdminSettings = () => {
     const [uploadingBadge, setUploadingBadge] = useState(null);
     const [savingBadges, setSavingBadges] = useState(false);
 
+    const [customDomain, setCustomDomain] = useState('');
+    const [savingDomain, setSavingDomain] = useState(false);
+
+    const [prospectusUrl, setProspectusUrl] = useState('');
+    const [prospectusFile, setProspectusFile] = useState(null);
+    const [uploadingProspectus, setUploadingProspectus] = useState(false);
+    const [removingProspectus, setRemovingProspectus] = useState(false);
+
+    const tabsScrollRef = useRef(null);
+    const scrollTabs = (dir) => tabsScrollRef.current?.scrollBy({ left: dir * 240, behavior: 'smooth' });
+
     useEffect(() => { fetchProfile(); }, []);
 
     const fetchProfile = async () => {
@@ -105,6 +116,8 @@ const AdminSettings = () => {
                 ? JSON.parse(school.affiliation_badges || '[]')
                 : (school.affiliation_badges || []);
             setBadges(Array.isArray(parsedBadges) ? parsedBadges : []);
+            setCustomDomain(school.custom_domain || '');
+            setProspectusUrl(school.prospectus_url || '');
         } catch (e) {
             toast.error('Failed to load profile');
         } finally {
@@ -138,6 +151,60 @@ const AdminSettings = () => {
             toast.error('Failed to update profile');
         } finally {
             setSaving(false);
+        }
+    };
+
+    const handleDomainSave = async () => {
+        const domain = customDomain.trim().toLowerCase();
+        if (domain && !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) {
+            toast.error('Enter a valid domain, e.g. www.yourschool.com');
+            return;
+        }
+        setSavingDomain(true);
+        try {
+            await updateSchoolProfileApi({ custom_domain: domain || null });
+            setCustomDomain(domain);
+            toast.success(domain ? 'Custom domain saved!' : 'Custom domain removed');
+        } catch (e) {
+            toast.error('Failed to save custom domain');
+        } finally {
+            setSavingDomain(false);
+        }
+    };
+
+    const handleProspectusChange = (e) => {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (file) setProspectusFile(file);
+    };
+
+    const handleProspectusUpload = async () => {
+        if (!prospectusFile) return;
+        setUploadingProspectus(true);
+        try {
+            const formData = new FormData();
+            formData.append('prospectus', prospectusFile);
+            const res = await uploadProspectusApi(formData);
+            setProspectusUrl(res.data.prospectus_url);
+            setProspectusFile(null);
+            toast.success('Prospectus uploaded!');
+        } catch (e) {
+            toast.error('Failed to upload prospectus');
+        } finally {
+            setUploadingProspectus(false);
+        }
+    };
+
+    const handleProspectusRemove = async () => {
+        setRemovingProspectus(true);
+        try {
+            await updateSchoolProfileApi({ prospectus_url: null });
+            setProspectusUrl('');
+            toast.success('Prospectus removed');
+        } catch (e) {
+            toast.error('Failed to remove prospectus');
+        } finally {
+            setRemovingProspectus(false);
         }
     };
 
@@ -463,6 +530,8 @@ const AdminSettings = () => {
         { key: 'footerBg', label: 'Footer Background', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 15l4-4a2 2 0 012.8 0L16 16m-3-3l1.6-1.6a2 2 0 012.8 0L20 14"/></svg> },
         { key: 'bgMusic', label: 'Background Music', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg> },
         { key: 'affiliationBadges', label: 'Affiliation Badges', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8.5 13.5L7 21l5-2.5L17 21l-1.5-7.5"/></svg> },
+        { key: 'customDomain', label: 'Custom Domain', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18"/></svg> },
+        { key: 'prospectus', label: 'Prospectus', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> },
     ];
 
     if (loading) {
@@ -485,6 +554,8 @@ const AdminSettings = () => {
                 @keyframes heroIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
                 @keyframes drift1 { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-24px, 18px) scale(1.08); } }
                 .settings-section { animation: fadeInUp 0.35s ease forwards; }
+                .settings-tabs { scrollbar-width: none; -ms-overflow-style: none; }
+                .settings-tabs::-webkit-scrollbar { display: none; }
                 .settings-input:focus { border-color: ${tc.primary} !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.08)} !important; }
                 .settings-hero-item { animation: heroIn 0.55s cubic-bezier(0.16,1,0.3,1) both; }
                 .settings-hero-orb { animation: drift1 9s ease-in-out infinite; }
@@ -563,15 +634,26 @@ const AdminSettings = () => {
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="settings-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
-                    {tabs.map(tab => (
-                        <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                            style={{ padding: '10px 20px', borderRadius: '6px', border: activeTab === tab.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === tab.key ? tc.light : '#ffffff', color: activeTab === tab.key ? tc.primary : '#64748b', fontWeight: activeTab === tab.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: activeTab === tab.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none' }}>
-                            <span style={{ color: activeTab === tab.key ? tc.primary : '#94a3b8' }}>{tab.icon}</span>
-                            {tab.label}
-                        </button>
-                    ))}
+                {/* Tabs — single scrollable row with prev/next buttons instead of wrapping to
+                     multiple rows, since the tab count keeps growing as features are added. */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '1.75rem' }}>
+                    <button type="button" onClick={() => scrollTabs(-1)} aria-label="Scroll tabs left"
+                        style={{ flexShrink: 0, width: '32px', height: '32px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#ffffff', color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 18l-6-6 6-6" /></svg>
+                    </button>
+                    <div ref={tabsScrollRef} className="settings-tabs" style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', overflowX: 'auto', scrollBehavior: 'smooth', flex: 1 }}>
+                        {tabs.map(tab => (
+                            <button key={tab.key} onClick={() => setActiveTab(tab.key)}
+                                style={{ padding: '10px 20px', borderRadius: '6px', border: activeTab === tab.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === tab.key ? tc.light : '#ffffff', color: activeTab === tab.key ? tc.primary : '#64748b', fontWeight: activeTab === tab.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: activeTab === tab.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                                <span style={{ color: activeTab === tab.key ? tc.primary : '#94a3b8' }}>{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                    <button type="button" onClick={() => scrollTabs(1)} aria-label="Scroll tabs right"
+                        style={{ flexShrink: 0, width: '32px', height: '32px', borderRadius: '8px', border: `1.5px solid ${tc.primary}`, background: tc.light, color: tc.primary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18l6-6-6-6" /></svg>
+                    </button>
                 </div>
 
                 {/* ── Profile Tab ── */}
@@ -1311,6 +1393,141 @@ const AdminSettings = () => {
                             <p style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
                                 <InfoIcon /> Badges without an uploaded image are ignored on save. Small square/landscape logos with a transparent background work best.
                             </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Custom Domain — school points their own domain at their site via a DNS
+                     CNAME record. Save only stores the domain string; there's no automated
+                     verification or host-based routing yet, so this doesn't go live by itself. ── */}
+                {activeTab === 'customDomain' && (
+                    <div className="settings-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                            <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                    <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18"/></svg>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>Custom Domain</p>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8' }}>Point your own domain at your school website instead of the default link</p>
+                                </div>
+                                {customDomain && (
+                                    <span style={{ fontSize: '10.5px', fontWeight: 700, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '999px', padding: '4px 11px', flexShrink: 0 }}>
+                                        Pending Verification
+                                    </span>
+                                )}
+                            </div>
+                            <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div>
+                                    <label style={labelStyle}>Your Domain</label>
+                                    <input className="settings-input" type="text" value={customDomain} onChange={e => setCustomDomain(e.target.value)}
+                                        placeholder="e.g. www.yourschool.com" style={inputStyle} />
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button onClick={handleDomainSave} disabled={savingDomain}
+                                        style={{ padding: '11px 20px', background: savingDomain ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: savingDomain ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                        {savingDomain ? 'Saving...' : 'Save Domain'}
+                                    </button>
+                                    {customDomain && (
+                                        <button type="button" onClick={() => setCustomDomain('')} disabled={savingDomain}
+                                            style={{ padding: '11px 18px', background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, color: '#ef4444', cursor: savingDomain ? 'not-allowed' : 'pointer' }}>
+                                            Remove
+                                        </button>
+                                    )}
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <InfoIcon /> We don't register or sell domains — buy one from any registrar (GoDaddy, Namecheap, etc.) and point it here.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* DNS instructions — same CNAME/A-record pattern as Vercel's "Add Domain" flow */}
+                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                            <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)' }}>
+                                <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>How to connect your domain</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>Add one of these records at your domain registrar's DNS settings</p>
+                            </div>
+                            <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                                <div>
+                                    <p style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>For a subdomain (e.g. www.yourschool.com)</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                        {[['Type', 'CNAME'], ['Host', 'www'], ['Value', 'cname.vercel-dns.com']].map(([k, v]) => (
+                                            <div key={k} style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '8px', padding: '10px 12px' }}>
+                                                <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k}</div>
+                                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginTop: '2px', fontFamily: 'monospace' }}>{v}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>For a root domain (e.g. yourschool.com)</p>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                        {[['Type', 'A'], ['Host', '@'], ['Value', '76.76.21.21']].map(([k, v]) => (
+                                            <div key={k} style={{ background: '#f8fafc', border: '1px solid #f1f5f9', borderRadius: '8px', padding: '10px 12px' }}>
+                                                <div style={{ fontSize: '10px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{k}</div>
+                                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginTop: '2px', fontFamily: 'monospace' }}>{v}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                    DNS changes can take up to 48 hours to fully propagate. Once your record is live, our team will verify it and activate your custom domain.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Prospectus — a single PDF, shown as a "Download Prospectus" floating
+                     tab on the public site next to Admission/Career Enquiry (only when set). ── */}
+                {activeTab === 'prospectus' && (
+                    <div className="settings-section" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', maxWidth: '640px' }}>
+                        <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            </div>
+                            <div>
+                                <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>School Prospectus</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional — shows a "Download Prospectus" tab on your public site, next to Admission/Career Enquiry</p>
+                            </div>
+                        </div>
+                        <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {prospectusUrl && !prospectusFile ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: '#f0fdf4', border: '0.5px solid #bbf7d0', borderRadius: '10px' }}>
+                                    <span style={{ width: '36px', height: '36px', borderRadius: '9px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                        <svg width="17" height="17" fill="none" stroke="#15803d" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </span>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#15803d' }}>Prospectus is live on your website</p>
+                                        <a href={prospectusUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize: '11.5px', color: '#16a34a', textDecoration: 'underline' }}>View current PDF</a>
+                                    </div>
+                                    <button type="button" onClick={handleProspectusRemove} disabled={removingProspectus}
+                                        style={{ width: '30px', height: '30px', background: '#ffffff', border: '0.5px solid #fecaca', borderRadius: '8px', color: '#ef4444', cursor: removingProspectus ? 'wait' : 'pointer', fontSize: '15px', flexShrink: 0 }}
+                                        title="Remove prospectus">×</button>
+                                </div>
+                            ) : (
+                                <div onClick={() => document.getElementById('prospectusInput').click()}
+                                    style={{ border: '1.5px dashed #cbd5e1', borderRadius: '10px', padding: '2rem', textAlign: 'center', cursor: 'pointer', background: prospectusFile ? '#f8fafc' : '#fafafa' }}>
+                                    <div style={{ width: '44px', height: '44px', margin: '0 auto 10px', borderRadius: '12px', background: tc.light, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <svg width="20" height="20" fill="none" stroke={tc.primary} strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    {prospectusFile ? (
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>{prospectusFile.name}</p>
+                                    ) : (
+                                        <>
+                                            <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Click to upload your school prospectus</p>
+                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>PDF only · Max 10MB</p>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                            <input id="prospectusInput" type="file" accept="application/pdf" onChange={handleProspectusChange} style={{ display: 'none' }} />
+                            {prospectusFile && (
+                                <button onClick={handleProspectusUpload} disabled={uploadingProspectus}
+                                    style={{ padding: '11px', background: uploadingProspectus ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: uploadingProspectus ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                    {uploadingProspectus ? <><svg style={{ animation: 'spin 1s linear infinite', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Uploading...</> : 'Upload Prospectus'}
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

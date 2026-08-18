@@ -1,0 +1,664 @@
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import logo from "../assets/webbuilder-removebg-preview.png";
+
+// ── Scroll-triggered fade+slide-up, same IntersectionObserver pattern used on every public page ──
+const useScrollReveal = () => {
+    const ref = useRef(null);
+    const [visible, setVisible] = useState(false);
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) setVisible(true); }, { threshold: 0.15 });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+    return [ref, visible];
+};
+
+const Reveal = ({ children, delay = 0, style = {} }) => {
+    const [ref, visible] = useScrollReveal();
+    return (
+        <div ref={ref} style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translateY(0)' : 'translateY(30px)',
+            transition: `opacity 0.7s ease ${delay}s, transform 0.7s cubic-bezier(0.16,1,0.3,1) ${delay}s`,
+            ...style,
+        }}>
+            {children}
+        </div>
+    );
+};
+
+// ── Pop-in reveal (scale + fade) — used for cards, badges, anything that should feel like it's "popping" onto the page ──
+const PopReveal = ({ children, delay = 0, style = {} }) => {
+    const [ref, visible] = useScrollReveal();
+    return (
+        <div ref={ref} style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'scale(1) translateY(0)' : 'scale(0.88) translateY(16px)',
+            transition: `opacity 0.55s cubic-bezier(0.34,1.56,0.64,1) ${delay}s, transform 0.55s cubic-bezier(0.34,1.56,0.64,1) ${delay}s`,
+            ...style,
+        }}>
+            {children}
+        </div>
+    );
+};
+
+const BLUE = '#4169E1';
+const BLUE_DARK = '#2541A8';
+const BLUE_LIGHT = '#EDF1FD';
+const GREY = '#3B3B3B';
+const TEXT_MUTED_LIGHT = '#5B6270';
+const TEXT_DARK = '#20242C';
+const LIGHT_BG = '#F5F6FA';
+
+// ── Simple isometric "school building" icon — pure SVG, two tone variants, reused as a
+// floating hero accent and again (larger) in the closing CTA banner. ──
+const IsoSchool = ({ size = 96, tone = 'blue' }) => {
+    const top = tone === 'blue' ? '#93AAF0' : '#B7BBC2';
+    const left = tone === 'blue' ? BLUE : '#8B8F97';
+    const right = tone === 'blue' ? BLUE_DARK : GREY;
+    const trim = tone === 'blue' ? BLUE_DARK : GREY;
+    return (
+        <svg width={size} height={size * 1.08} viewBox="0 0 120 130" fill="none">
+            <polygon points="60,14 100,36 60,58 20,36" fill={top} />
+            <polygon points="20,36 60,58 60,112 20,90" fill={left} />
+            <polygon points="100,36 60,58 60,112 100,90" fill={right} />
+            <polygon points="30,34 60,18 60,40 30,54" fill={trim} opacity="0.9" />
+            <rect x="29" y="70" width="11" height="13" rx="1.5" fill="#ffffff" opacity="0.85" />
+            <rect x="47" y="76" width="11" height="13" rx="1.5" fill="#ffffff" opacity="0.55" />
+            <rect x="77" y="76" width="11" height="13" rx="1.5" fill="#ffffff" opacity="0.45" />
+            <rect x="34" y="93" width="15" height="19" rx="1.5" fill="#ffffff" opacity="0.9" />
+            <line x1="60" y1="14" x2="60" y2="1" stroke={trim} strokeWidth="2.5" strokeLinecap="round" />
+            <polygon points="60,1 73,5 60,9" fill={left} />
+        </svg>
+    );
+};
+
+const CheckIcon = ({ color = BLUE }) => (
+    <svg width="15" height="15" fill="none" stroke={color} strokeWidth="2.4" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+);
+
+const PlayIcon = ({ color = BLUE }) => (
+    <svg width="13" height="13" fill={color} viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+);
+
+// ── Sharp, rectangular module chip used inside the marquee — icon tile left, title +
+// one-line description right. Deliberately low-radius (sharp corners) per design brief. ──
+const ModuleChip = ({ m }) => (
+    <div className="lp-mod-chip" style={{
+        flexShrink: 0, width: '272px', display: 'flex', alignItems: 'center', gap: '14px',
+        padding: '14px 18px', background: '#ffffff', border: '1px solid #e7ebf5', borderRadius: '10px',
+        boxShadow: '0 4px 14px rgba(15,23,42,0.05)',
+    }}>
+        <div className="lp-mod-tile" style={{
+            width: '44px', height: '44px', borderRadius: '10px', flexShrink: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: `linear-gradient(145deg, ${m.accent}, ${BLUE_DARK})`,
+            boxShadow: `inset 0 2px 2px rgba(255,255,255,0.4), inset 0 -3px 6px rgba(0,0,0,0.25), 0 8px 16px ${m.accent}45`,
+        }}>
+            <svg width="20" height="20" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24">{m.icon}</svg>
+        </div>
+        <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: '13.5px', fontWeight: 700, color: TEXT_DARK, marginBottom: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</p>
+            <p style={{ fontSize: '11.5px', color: TEXT_MUTED_LIGHT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.desc}</p>
+        </div>
+    </div>
+);
+
+// ── Module showcase — every module actually built in the platform (matches App.jsx's
+// module/:key routes 1:1), rendered as a two-row infinite marquee rather than a static grid.
+// `accent` cycles through the blue/grey palette for the icon tile + title color-grade. ──
+const MODULE_ACCENTS = [BLUE, '#6C8EEF', BLUE_DARK, '#7C93E8', '#5B78D8'];
+const rawModules = [
+    { key: 'home', title: 'Home Page', desc: 'Hero banners & highlights', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /> },
+    { key: 'about', title: 'About Us', desc: 'Vision, mission & history', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+    { key: 'fee', title: 'Fee Structure', desc: 'Class-wise fee tables', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" /> },
+    { key: 'courses', title: 'Courses & Streams', desc: 'Every stream, explained', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /> },
+    { key: 'faculty', title: 'Faculty', desc: 'Meet the teaching staff', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /> },
+    { key: 'infrastructure', title: 'Infrastructure', desc: 'Campus facilities showcase', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /> },
+    { key: 'sports', title: 'Sports', desc: 'Events & certifications', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+    { key: 'gallery', title: 'Gallery', desc: 'Photos & video albums', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
+    { key: 'achievements', title: 'Achievements', desc: 'Awards & recognitions', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /> },
+    { key: 'alumni', title: 'Alumni', desc: 'Success stories network', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" /> },
+    { key: 'testimonials', title: 'Testimonials', desc: 'What parents say', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /> },
+    { key: 'admissionProcedure', title: 'Admission Procedure', desc: 'Step-by-step process', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /> },
+    { key: 'bookList', title: 'Book List', desc: 'Class-wise book lists', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /> },
+    { key: 'disclosure', title: 'Public Disclosure', desc: 'Mandatory CBSE info', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
+    { key: 'tc', title: 'TC Information', desc: 'Transfer certificates', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /> },
+    { key: 'announcements', title: 'Announcements', desc: 'Latest school news', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /> },
+    { key: 'events', title: 'Events & Activities', desc: 'Upcoming & past events', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
+    { key: 'calendar', title: 'Event Calendar', desc: 'Academic year at a glance', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /> },
+    { key: 'circulars', title: 'Circulars', desc: 'Official notices & PDFs', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /> },
+    { key: 'admission', title: 'Admission Enquiry', desc: 'Capture every lead', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /> },
+    { key: 'career', title: 'Career Enquiry', desc: 'Teacher job applications', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /> },
+].map((m, i) => ({ ...m, accent: MODULE_ACCENTS[i % MODULE_ACCENTS.length] }));
+
+const MODULES_ROW_TOP = rawModules.slice(0, 11);
+const MODULES_ROW_BOTTOM = rawModules.slice(11);
+
+const ICON_GROUPS = [
+    {
+        heading: 'For Your Website',
+        cards: [
+            { title: 'Custom Public Website', accent: BLUE, desc: 'A professional public site for your school, ready in minutes — no coding required.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /> },
+            { title: 'Rich Content Modules', accent: '#6C8EEF', desc: 'Fee tables, galleries, events, and more — manage everything from one place.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /> },
+            { title: 'Smart Enquiry Forms', accent: BLUE_DARK, desc: 'Admission and career forms that land straight in your inbox — no missed leads.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /> },
+        ],
+    },
+    {
+        heading: 'For Your Operations',
+        cards: [
+            { title: 'One Admin Dashboard', accent: BLUE, desc: 'Every module, one clean dashboard your staff will actually enjoy using.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" /> },
+            { title: 'Announcements & Calendar', accent: '#6C8EEF', desc: 'Keep parents and students updated on holidays, exams, and events — automatically.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /> },
+            { title: 'Secure by Design', accent: BLUE_DARK, desc: 'JWT-secured logins and tenant-isolated data, so every school\'s data stays its own.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /> },
+        ],
+    },
+];
+
+const TRUST_CARDS = [
+    { title: 'Room to Grow', desc: 'Scale as you go — from Base to Gold, more modules and storage whenever you need them.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /> },
+    { title: 'Seriously Secure', desc: 'JWT-secured logins and tenant-isolated data, kept separate for every single school.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /> },
+    { title: 'Your Own Domain', desc: 'Map a custom domain on Gold — yourschool.com, not a generic subdomain.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18" /> },
+    { title: 'Reliable Storage', desc: 'Cloudinary-backed uploads for photos, videos, and PDFs — built to last.', icon: <path strokeLinecap="round" strokeLinejoin="round" d="M3 15a4 4 0 004 4h10a4 4 0 001.6-7.67 5 5 0 00-9.5-2.79A4 4 0 003 15z" /> },
+];
+
+const DEMO_URL = '/school/st-marys-convent-school';
+
+const LandingPage = () => {
+    const navigate = useNavigate();
+    const [scrolled, setScrolled] = useState(false);
+    const [tilt, setTilt] = useState({ x: 0, y: 0 });
+    const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener('scroll', onScroll);
+        return () => window.removeEventListener('scroll', onScroll);
+    }, []);
+
+    const makeTilt = (setter, strengthX, strengthY) => (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        setter({ x: py * -strengthX, y: px * strengthY });
+    };
+    const handlePreviewMove = makeTilt(setTilt, 12, 16);
+    const handlePreviewLeave = () => setTilt({ x: 0, y: 0 });
+    const handleHeroMove = makeTilt(setHeroTilt, 6, 8);
+    const handleHeroLeave = () => setHeroTilt({ x: 0, y: 0 });
+
+    return (
+        <>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+                rel="stylesheet"
+            />
+            <style>{`
+                html, body, #root { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+                * { box-sizing: border-box; }
+                html { scroll-behavior: smooth; }
+
+                @keyframes lpOrbDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-26px,20px) scale(1.08); } }
+                @keyframes lpFloatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-16px); } }
+                @keyframes lpChipFloat { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-13px) rotate(3deg); } }
+                @keyframes lpShimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+                @keyframes lpSpin { to { transform: rotate(360deg); } }
+                @keyframes lpPulseRing { 0%,100% { box-shadow: 0 0 0 0 rgba(65,105,225,0.35); } 50% { box-shadow: 0 0 0 12px rgba(65,105,225,0); } }
+
+                .lp-shimmer-text {
+                    background: linear-gradient(90deg, ${TEXT_DARK}, ${BLUE}, ${TEXT_DARK});
+                    background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+                    animation: lpShimmer 8s linear infinite;
+                }
+                .lp-shimmer-text-light {
+                    background: linear-gradient(90deg, #ffffff, ${BLUE_LIGHT}, #ffffff);
+                    background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+                    animation: lpShimmer 8s linear infinite;
+                }
+
+                .lp-nav-link { transition: color 0.2s ease, text-shadow 0.2s ease; }
+                .lp-nav-link-dark:hover { color: ${BLUE} !important; }
+                .lp-nav-link-light:hover { color: #ffffff !important; text-shadow: 0 0 16px rgba(255,255,255,0.6); }
+
+                .lp-btn { position: relative; overflow: hidden; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+                .lp-btn::after { content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.45), transparent); transform: skewX(-20deg); transition: left 0.65s ease; }
+                .lp-btn:hover { transform: translateY(-2px); }
+                .lp-btn:hover::after { left: 130%; }
+                .lp-btn-outline:hover { background: ${BLUE} !important; color: #ffffff !important; }
+                .lp-btn-outline:hover svg { fill: #ffffff !important; }
+                .lp-btn-outline-hero:hover { background: #ffffff !important; color: ${BLUE_DARK} !important; border-color: #ffffff !important; }
+
+                .lp-mock-float { animation: lpFloatY 6.5s ease-in-out infinite; }
+                .lp-chip { position: absolute; border-radius: 14px; box-shadow: 0 14px 30px rgba(59,59,59,0.22); background: #ffffff; }
+                .lp-chip-1 { animation: lpChipFloat 5.5s ease-in-out infinite; }
+                .lp-chip-2 { animation: lpChipFloat 6.5s ease-in-out infinite reverse; }
+                .lp-chip-3 { animation: lpChipFloat 5s ease-in-out infinite; }
+
+                .lp-trust-card { transition: transform 0.28s cubic-bezier(0.16,1,0.3,1), box-shadow 0.28s ease, border-color 0.28s ease; }
+                .lp-trust-card:hover { transform: translateY(-6px) scale(1.015); box-shadow: 0 26px 50px rgba(0,0,0,0.16); }
+                .lp-icon-badge { transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+                .lp-trust-card:hover .lp-icon-badge { transform: scale(1.12) rotate(-6deg); }
+
+                /* ── 3D module / feature cards — a resting isometric tilt that flattens and
+                     lifts on hover, with a matching 3D icon tile (beveled, perspective-rotated). ── */
+                .lp-3d-card {
+                    transform: perspective(1000px) rotateX(3deg);
+                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease, background 0.3s ease, border-color 0.3s ease;
+                    transform-style: preserve-3d;
+                }
+                .lp-3d-card:hover {
+                    transform: perspective(1000px) rotateX(0deg) translateY(-10px);
+                    box-shadow: 0 34px 60px rgba(0,0,0,0.4);
+                    border-color: rgba(255,255,255,0.22) !important;
+                    background: rgba(255,255,255,0.06) !important;
+                }
+                .lp-3d-tile {
+                    transform: perspective(700px) rotateX(16deg) rotateY(-18deg);
+                    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+                }
+                .lp-3d-card:hover .lp-3d-tile { transform: perspective(700px) rotateX(0deg) rotateY(0deg) scale(1.08); }
+
+                .lp-tilt-frame { transition: transform 0.25s ease-out; transform-style: preserve-3d; }
+                .lp-hero-mock-tilt { transition: transform 0.25s ease-out; transform-style: preserve-3d; }
+
+                /* ── Module marquee — two rows of sharp rectangular chips, each row's content
+                     duplicated so the loop is seamless; rows scroll opposite directions and
+                     pause on hover so a module can actually be read. ── */
+                @keyframes lpMarqueeRight { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+                @keyframes lpMarqueeLeft { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+                .lp-mod-track { display: flex; gap: 16px; width: max-content; }
+                .lp-mod-track-right { animation: lpMarqueeRight 46s linear infinite; }
+                .lp-mod-track-left { animation: lpMarqueeLeft 42s linear infinite; }
+                .lp-mod-track:hover { animation-play-state: paused; }
+                .lp-mod-chip { transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease, border-color 0.25s ease; }
+                .lp-mod-chip:hover { transform: translateY(-5px); box-shadow: 0 16px 30px rgba(65,105,225,0.18) !important; border-color: ${BLUE}55 !important; }
+                .lp-mod-tile { transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); transform: perspective(500px) rotateX(14deg) rotateY(-16deg); }
+                .lp-mod-chip:hover .lp-mod-tile { transform: perspective(500px) rotateX(0deg) rotateY(0deg) scale(1.08); }
+
+                @media (max-width: 980px) {
+                    .lp-hero-grid { grid-template-columns: 1fr !important; text-align: center; }
+                    .lp-hero-visual { margin: 2.5rem auto 0 !important; max-width: 420px; }
+                    .lp-hero-ctas { justify-content: center !important; }
+                    .lp-hero-checks { justify-content: center !important; }
+                    .lp-preview-grid { grid-template-columns: 1fr !important; }
+                    .lp-trust-grid { grid-template-columns: 1fr !important; text-align: center; }
+                    .lp-trust-grid > div:first-child { align-items: center !important; }
+                    .lp-nav-links { display: none !important; }
+                }
+            `}</style>
+
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", color: TEXT_DARK, background: '#ffffff', minHeight: '100vh', overflowX: 'hidden' }}>
+
+                {/* ── Nav — fixed (not sticky) so it reliably follows on scroll regardless of
+                     ancestor overflow; height is constant so the hero's compensating top
+                     padding below always lines up exactly. ── */}
+                <nav style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50, height: '64px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '0 clamp(1.25rem,6vw,3.5rem)',
+                    background: scrolled ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.05)',
+                    backdropFilter: 'blur(14px)', WebkitBackdropFilter: 'blur(14px)',
+                    borderBottom: scrolled ? '1px solid rgba(59,59,59,0.08)' : '1px solid rgba(255,255,255,0.14)',
+                    transition: 'all 0.3s ease',
+                }}>
+                    <img src={logo} alt="Web Builder Pro" style={{ height: 'clamp(48px,6vw,60px)', objectFit: 'contain' }} />
+                    <div className="lp-nav-links" style={{ display: 'flex', alignItems: 'center', gap: '1.75rem' }}>
+                        <a href="#modules" className={`lp-nav-link ${scrolled ? 'lp-nav-link-dark' : 'lp-nav-link-light'}`} style={{ fontSize: '13px', fontWeight: 500, color: scrolled ? TEXT_MUTED_LIGHT : 'rgba(255,255,255,0.88)', textDecoration: 'none' }}>Modules</a>
+                        <a href="#features" className={`lp-nav-link ${scrolled ? 'lp-nav-link-dark' : 'lp-nav-link-light'}`} style={{ fontSize: '13px', fontWeight: 500, color: scrolled ? TEXT_MUTED_LIGHT : 'rgba(255,255,255,0.88)', textDecoration: 'none' }}>Features</a>
+                        <a href="#preview" className={`lp-nav-link ${scrolled ? 'lp-nav-link-dark' : 'lp-nav-link-light'}`} style={{ fontSize: '13px', fontWeight: 500, color: scrolled ? TEXT_MUTED_LIGHT : 'rgba(255,255,255,0.88)', textDecoration: 'none' }}>Preview</a>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button onClick={() => navigate('/login')} className={`lp-nav-link ${scrolled ? 'lp-nav-link-dark' : 'lp-nav-link-light'}`} style={{ fontSize: '12.5px', fontWeight: 600, color: scrolled ? TEXT_DARK : '#ffffff', background: 'none', border: 'none', cursor: 'pointer' }}>Log in</button>
+                        <button onClick={() => navigate('/login')} className="lp-btn"
+                            style={{ padding: '7px 16px', background: '#ffffff', color: BLUE_DARK, border: 'none', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+                            Get Started
+                        </button>
+                    </div>
+                </nav>
+
+                {/* ── Hero — blue base (not plain white), styled with a dot-grid, soft glow
+                     orbs, and a wave divider into the next (dark) section. paddingTop offsets
+                     the now-fixed nav's 64px height. ── */}
+                <section style={{ position: 'relative', padding: 'calc(64px + clamp(2rem,6vw,3.5rem)) clamp(1.25rem,6vw,4rem) clamp(4.5rem,8vw,6rem)', overflow: 'hidden', background: `linear-gradient(160deg, ${BLUE_DARK} 0%, ${BLUE} 55%, ${BLUE_DARK} 100%)` }}>
+                    <div style={{ position: 'absolute', width: '460px', height: '460px', borderRadius: '50%', background: `radial-gradient(circle, rgba(255,255,255,0.16) 0%, transparent 70%)`, top: '-160px', right: '-100px', animation: 'lpOrbDrift 10s ease-in-out infinite', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'absolute', width: '320px', height: '320px', borderRadius: '50%', background: `radial-gradient(circle, rgba(20,26,46,0.35) 0%, transparent 70%)`, bottom: '-120px', left: '-70px', animation: 'lpOrbDrift 12s ease-in-out infinite reverse', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(rgba(255,255,255,0.09) 1px, transparent 1px)`, backgroundSize: '26px 26px', pointerEvents: 'none' }}></div>
+                    <svg viewBox="0 0 1440 80" preserveAspectRatio="none" style={{ position: 'absolute', bottom: '-1px', left: 0, width: '100%', height: '64px', zIndex: 1 }}>
+                        <path d="M0,40 C360,90 1080,-10 1440,40 L1440,80 L0,80 Z" fill="#ffffff" />
+                    </svg>
+
+                    <div className="lp-hero-grid" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: '1.05fr 0.95fr', gap: 'clamp(2rem,5vw,3rem)', alignItems: 'center', position: 'relative', zIndex: 2 }}>
+
+                        {/* Left — copy */}
+                        <div>
+                            <Reveal>
+                                <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: '#ffffff', letterSpacing: '0.16em', textTransform: 'uppercase', padding: '6px 14px', background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: '999px', marginBottom: '1.5rem', backdropFilter: 'blur(6px)' }}>
+                                    School Website & Management Platform
+                                </span>
+                            </Reveal>
+                            <Reveal delay={0.08}>
+                                <h1 className="lp-shimmer-text-light" style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(38px,5.6vw,66px)', fontWeight: 800, lineHeight: 1.1, letterSpacing: '-1.5px', marginBottom: '1.35rem' }}>
+                                    Build a School Website That Stands Apart
+                                </h1>
+                            </Reveal>
+                            <Reveal delay={0.16}>
+                                <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(15px,1.6vw,17.5px)', fontWeight: 400, color: 'rgba(255,255,255,0.86)', lineHeight: 1.85, letterSpacing: '0.1px', maxWidth: '500px', marginBottom: '1.75rem' }}>
+                                    A complete platform to run your school's public website and day-to-day operations — fees, admissions, events, gallery, and more — all from one simple dashboard.
+                                </p>
+                            </Reveal>
+                            <Reveal delay={0.24}>
+                                <div className="lp-hero-checks" style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 24px', marginBottom: '2.25rem' }}>
+                                    {['Custom public website', 'One dashboard, every module', 'No coding required'].map(item => (
+                                        <span key={item} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontFamily: "'Inter', system-ui, sans-serif", fontSize: '13.5px', color: '#ffffff', fontWeight: 600, letterSpacing: '0.15px' }}>
+                                            <CheckIcon color="#ffffff" />{item}
+                                        </span>
+                                    ))}
+                                </div>
+                            </Reveal>
+                            <Reveal delay={0.32}>
+                                <div className="lp-hero-ctas" style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                    <button onClick={() => navigate('/login')} className="lp-btn"
+                                        style={{ padding: '15px 28px', background: '#ffffff', color: BLUE_DARK, border: 'none', borderRadius: '13px', fontSize: '15px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '9px', boxShadow: '0 10px 26px rgba(0,0,0,0.25)' }}>
+                                        Login to Dashboard
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M20 12H4" /></svg>
+                                    </button>
+                                    <a href={DEMO_URL} target="_blank" rel="noopener noreferrer" className="lp-btn lp-btn-outline-hero"
+                                        style={{ padding: '15px 26px', background: 'transparent', color: '#ffffff', border: '1.5px solid rgba(255,255,255,0.55)', borderRadius: '13px', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+                                        <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <PlayIcon color={BLUE_DARK} />
+                                        </span>
+                                        Watch Demo
+                                    </a>
+                                </div>
+                            </Reveal>
+                        </div>
+
+                        {/* Right — layered editor-style mockup with floating panels, mouse-tilt */}
+                        <div className="lp-hero-visual" style={{ position: 'relative', perspective: '1500px' }}
+                            onMouseMove={handleHeroMove} onMouseLeave={handleHeroLeave}>
+                            <div className="lp-mock-float" style={{ width: 'min(420px, 92vw)', margin: '0 auto', position: 'relative' }}>
+                                <div className="lp-hero-mock-tilt" style={{ transform: `rotateX(${heroTilt.x}deg) rotateY(${heroTilt.y}deg)` }}>
+                                    <div style={{ background: '#ffffff', borderRadius: '20px', overflow: 'hidden', boxShadow: `0 50px 90px rgba(65,105,225,0.28), 0 14px 34px rgba(0,0,0,0.14)`, border: '1px solid rgba(59,59,59,0.08)' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: '#fafbfe', borderBottom: '1px solid #eef0f6' }}>
+                                            <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#f87171' }}></span>
+                                            <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#fbbf24' }}></span>
+                                            <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#4ade80' }}></span>
+                                            <span style={{ fontSize: '11px', fontWeight: 600, color: TEXT_MUTED_LIGHT, marginLeft: '6px' }}>Home Page — Editor</span>
+                                            <span style={{ marginLeft: 'auto', fontSize: '10.5px', fontWeight: 700, color: '#fff', background: BLUE, padding: '4px 12px', borderRadius: '999px' }}>Publish</span>
+                                        </div>
+                                        <div style={{ padding: '22px 20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                            <div style={{ height: '15px', width: '70%', borderRadius: '4px', background: '#e6eaf5' }}></div>
+                                            <div style={{ height: '9px', width: '90%', borderRadius: '3px', background: '#f0f2f8' }}></div>
+                                            <div style={{ height: '9px', width: '55%', borderRadius: '3px', background: '#f0f2f8' }}></div>
+                                            <div style={{ height: '110px', borderRadius: '12px', marginTop: '6px', background: `linear-gradient(135deg, ${BLUE_LIGHT}, #f4f6fc)`, border: '1px solid #e6eaf5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: `linear-gradient(135deg,${BLUE},${BLUE_DARK})`, boxShadow: '0 10px 22px rgba(65,105,225,0.35)' }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Floating block-inserter panel */}
+                                <div className="lp-chip lp-chip-1" style={{ top: '-9%', left: '-13%', width: '150px', padding: '10px', border: '1px solid #eef0f6' }}>
+                                    <div style={{ fontSize: '9.5px', fontWeight: 700, color: TEXT_MUTED_LIGHT, marginBottom: '7px' }}>+ Add Block</div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px' }}>
+                                        {[0, 1, 2, 3, 4, 5].map(i => (
+                                            <div key={i} style={{ height: '22px', borderRadius: '5px', background: i === 0 ? BLUE_LIGHT : '#f4f6fa', border: i === 0 ? `1px solid ${BLUE}55` : '1px solid #eef0f6' }}></div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Floating dark nav panel */}
+                                <div className="lp-chip lp-chip-2" style={{ bottom: '4%', right: '-15%', width: '138px', padding: '10px', background: GREY }}>
+                                    <div style={{ fontSize: '9px', fontWeight: 700, color: 'rgba(255,255,255,0.5)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Dashboard</div>
+                                    {['Modules', 'Enquiries', 'Settings'].map((t, i) => (
+                                        <div key={t} style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 7px', borderRadius: '6px', background: i === 0 ? BLUE : 'transparent', marginBottom: '3px' }}>
+                                            <span style={{ width: '6px', height: '6px', borderRadius: '2px', background: i === 0 ? '#fff' : 'rgba(255,255,255,0.4)' }}></span>
+                                            <span style={{ fontSize: '10px', fontWeight: 600, color: i === 0 ? '#fff' : 'rgba(255,255,255,0.65)' }}>{t}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Floating isometric school badge */}
+                                <div className="lp-chip lp-chip-3" style={{ top: '30%', right: '-16%', width: '68px', height: '68px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <IsoSchool size={44} tone="blue" />
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+                {/* ── Module Showcase — every module in the platform, as a two-row infinite
+                     marquee of sharp rectangular chips (top row scrolls right, bottom row
+                     scrolls left). White base with a faint dot-grid + soft blue glows. ── */}
+                <section id="modules" style={{ padding: 'clamp(3rem,7vw,5.5rem) 0', background: '#ffffff', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(${BLUE}18 1px, transparent 1px)`, backgroundSize: '26px 26px', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'absolute', width: '420px', height: '420px', borderRadius: '50%', background: `radial-gradient(circle, ${BLUE}12 0%, transparent 70%)`, top: '-160px', left: '-80px', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'absolute', width: '380px', height: '380px', borderRadius: '50%', background: `radial-gradient(circle, ${BLUE_DARK}10 0%, transparent 70%)`, bottom: '-140px', right: '-80px', pointerEvents: 'none' }}></div>
+
+                    <div style={{ maxWidth: '1200px', margin: '0 auto clamp(2.5rem,5vw,3.5rem)', padding: '0 clamp(1.25rem,6vw,4rem)', position: 'relative' }}>
+                        <Reveal style={{ textAlign: 'center' }}>
+                            <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: BLUE_DARK, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                                A Module For Every Need
+                            </span>
+                            <h2 className="lp-shimmer-text" style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,4vw,44px)', fontWeight: 700, marginBottom: '12px', letterSpacing: '-0.6px' }}>
+                                Explore Every Module
+                            </h2>
+                            <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '14.5px', color: TEXT_MUTED_LIGHT, maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
+                                Publish once, manage everything — every module below is live in the platform today.
+                            </p>
+                        </Reveal>
+                    </div>
+
+                    <Reveal>
+                        <div style={{ position: 'relative' }}>
+                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '90px', background: 'linear-gradient(90deg,#ffffff,transparent)', zIndex: 2, pointerEvents: 'none' }}></div>
+                            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '90px', background: 'linear-gradient(270deg,#ffffff,transparent)', zIndex: 2, pointerEvents: 'none' }}></div>
+
+                            <div style={{ overflow: 'hidden', marginBottom: '16px' }}>
+                                <div className="lp-mod-track lp-mod-track-right">
+                                    {[...MODULES_ROW_TOP, ...MODULES_ROW_TOP].map((m, i) => <ModuleChip key={`${m.key}-${i}`} m={m} />)}
+                                </div>
+                            </div>
+                            <div style={{ overflow: 'hidden' }}>
+                                <div className="lp-mod-track lp-mod-track-left">
+                                    {[...MODULES_ROW_BOTTOM, ...MODULES_ROW_BOTTOM].map((m, i) => <ModuleChip key={`${m.key}-${i}`} m={m} />)}
+                                </div>
+                            </div>
+                        </div>
+                    </Reveal>
+                </section>
+
+                {/* ── Feature icon-cards — two grouped rows on dark bg, same 3D tile treatment
+                     as the module cards above so the two dark sections read as one system. ── */}
+                <section id="features" style={{ padding: 'clamp(2.5rem,6vw,4rem) clamp(1.25rem,6vw,4rem) clamp(4rem,7vw,5.5rem)', background: '#333333', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }}></div>
+                    <div style={{ position: 'absolute', width: '360px', height: '360px', borderRadius: '50%', background: `radial-gradient(circle, ${BLUE}18 0%, transparent 70%)`, top: '-120px', right: '-60px', pointerEvents: 'none' }}></div>
+                    <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3.5rem', position: 'relative' }}>
+                        {ICON_GROUPS.map((group, gi) => (
+                            <div key={group.heading}>
+                                <Reveal delay={gi * 0.05}>
+                                    <h3 className="lp-shimmer-text-light" style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,3.8vw,40px)', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: '8px' }}>{group.heading}</h3>
+                                    <div style={{ width: '56px', height: '4px', borderRadius: '99px', background: `linear-gradient(90deg,${BLUE},${BLUE_LIGHT})`, marginBottom: '1.75rem' }} />
+                                </Reveal>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1.5rem' }}>
+                                    {group.cards.map((c, i) => (
+                                        <PopReveal key={c.title} delay={i * 0.07}>
+                                            <div className="lp-3d-card" style={{ background: 'rgba(255,255,255,0.035)', border: '1px solid rgba(255,255,255,0.09)', borderRadius: '18px', padding: '1.75rem', height: '100%', boxShadow: '0 10px 24px rgba(0,0,0,0.2)' }}>
+                                                <div className="lp-3d-tile" style={{
+                                                    width: '52px', height: '52px', borderRadius: '15px', marginBottom: '14px',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    background: `linear-gradient(145deg, ${c.accent}, ${BLUE_DARK})`,
+                                                    boxShadow: `inset 0 2px 2px rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.28), 0 12px 22px ${c.accent}50`,
+                                                }}>
+                                                    <svg width="22" height="22" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24">{c.icon}</svg>
+                                                </div>
+                                                <p style={{
+                                                    fontSize: '16px', fontWeight: 700, marginBottom: '7px',
+                                                    background: `linear-gradient(90deg, #ffffff, ${c.accent})`, WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent',
+                                                }}>{c.title}</p>
+                                                <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.58)', lineHeight: 1.7 }}>{c.desc}</p>
+                                            </div>
+                                        </PopReveal>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ── Screenshots / Product Preview ── */}
+                <section id="preview" style={{ padding: 'clamp(3rem,7vw,5rem) clamp(1.25rem,6vw,4rem)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: `radial-gradient(${BLUE}12 1px, transparent 1px)`, backgroundSize: '28px 28px', pointerEvents: 'none' }}></div>
+                    <div style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
+                        <Reveal style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                            <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: BLUE_DARK, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '12px' }}>
+                                See It In Action
+                            </span>
+                            <h2 className="lp-shimmer-text" style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,4vw,44px)', fontWeight: 700, marginBottom: '12px', letterSpacing: '-0.6px' }}>
+                                A Dashboard That Feels Effortless
+                            </h2>
+                            <p style={{ fontSize: '14.5px', color: TEXT_MUTED_LIGHT, maxWidth: '560px', margin: '0 auto', lineHeight: 1.7 }}>
+                                Move your mouse over the preview below — every module in your admin panel follows the same clean, guided layout.
+                            </p>
+                        </Reveal>
+
+                        <div className="lp-preview-grid" style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.7fr', gap: 'clamp(1.5rem,4vw,2.5rem)', alignItems: 'center' }}>
+                            <Reveal>
+                                <div style={{ perspective: '1600px' }} onMouseMove={handlePreviewMove} onMouseLeave={handlePreviewLeave}>
+                                    <div className="lp-tilt-frame" style={{ transform: `perspective(1600px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg)` }}>
+                                        <div style={{ background: '#ffffff', borderRadius: '20px', overflow: 'hidden', boxShadow: `0 40px 80px rgba(65,105,225,0.22), 0 10px 26px rgba(0,0,0,0.1)`, border: '1px solid #eef0f6' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '13px 18px', background: '#fafbfe', borderBottom: '1px solid #eef0f6' }}>
+                                                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f87171' }}></span>
+                                                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#fbbf24' }}></span>
+                                                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#4ade80' }}></span>
+                                                <div style={{ marginLeft: '14px', flex: 1, height: '20px', borderRadius: '999px', background: '#ffffff', border: '1px solid #eef0f6' }}></div>
+                                            </div>
+                                            <div style={{ display: 'flex' }}>
+                                                <div style={{ width: '90px', flexShrink: 0, background: '#fafbfe', padding: '18px 12px', display: 'flex', flexDirection: 'column', gap: '13px', borderRight: '1px solid #eef0f6' }}>
+                                                    {[BLUE, '#dbe2f5', '#dbe2f5', '#dbe2f5', '#dbe2f5', '#dbe2f5'].map((c, i) => (
+                                                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                                                            <div style={{ width: '9px', height: '9px', borderRadius: '4px', background: c, flexShrink: 0 }}></div>
+                                                            <div style={{ height: '6px', flex: 1, borderRadius: '3px', background: c, opacity: 0.7 }}></div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <div style={{ flex: 1, padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                                        {[BLUE, BLUE_DARK, GREY].map((c, i) => (
+                                                            <div key={i} style={{ height: '54px', borderRadius: '10px', background: `${c}14`, border: `1px solid ${c}35` }}></div>
+                                                        ))}
+                                                    </div>
+                                                    <div style={{ height: '110px', borderRadius: '12px', background: `linear-gradient(180deg, ${BLUE_LIGHT}, #eef1fb)`, display: 'flex', alignItems: 'flex-end', gap: '8px', padding: '14px' }}>
+                                                        {[35, 55, 45, 70, 50, 85, 60, 75, 40].map((h, i) => (
+                                                            <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: '3px', background: `linear-gradient(180deg,${BLUE},${BLUE_DARK})` }}></div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Reveal>
+
+                            <Reveal delay={0.12}>
+                                <div style={{ width: 'min(200px, 60vw)', margin: '0 auto' }}>
+                                    <div style={{ background: GREY, borderRadius: '26px', padding: '10px 8px', boxShadow: `0 30px 60px rgba(65,105,225,0.22)` }}>
+                                        <div style={{ background: '#ffffff', borderRadius: '18px', overflow: 'hidden' }}>
+                                            <div style={{ height: '70px', background: `linear-gradient(150deg,${BLUE_DARK},${BLUE})` }}></div>
+                                            <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                <div style={{ height: '9px', width: '70%', borderRadius: '3px', background: '#dbe2f5' }}></div>
+                                                <div style={{ height: '7px', width: '90%', borderRadius: '3px', background: '#eef1fb' }}></div>
+                                                <div style={{ height: '7px', width: '80%', borderRadius: '3px', background: '#eef1fb' }}></div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
+                                                    <div style={{ height: '38px', borderRadius: '7px', background: '#fafbfe' }}></div>
+                                                    <div style={{ height: '38px', borderRadius: '7px', background: '#fafbfe' }}></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p style={{ textAlign: 'center', fontSize: '12px', color: TEXT_MUTED_LIGHT, marginTop: '14px' }}>Your public website, on every screen</p>
+                                </div>
+                            </Reveal>
+                        </div>
+                    </div>
+                </section>
+
+                {/* ── Trust section — "Built to grow with your school" ── */}
+                <section style={{ padding: 'clamp(3rem,7vw,5rem) clamp(1.25rem,6vw,4rem)', background: LIGHT_BG, position: 'relative', overflow: 'hidden' }}>
+                    <svg width="420" height="420" viewBox="0 0 420 420" style={{ position: 'absolute', right: '-90px', bottom: '-100px', pointerEvents: 'none', opacity: 0.5 }}>
+                        <circle cx="210" cy="210" r="180" stroke={BLUE} strokeWidth="1" fill="none" opacity="0.35" />
+                        <ellipse cx="210" cy="210" rx="180" ry="70" stroke={BLUE} strokeWidth="1" fill="none" opacity="0.3" />
+                        <ellipse cx="210" cy="210" rx="180" ry="120" stroke={BLUE} strokeWidth="1" fill="none" opacity="0.3" />
+                        <ellipse cx="210" cy="210" rx="70" ry="180" stroke={BLUE} strokeWidth="1" fill="none" opacity="0.3" />
+                        <line x1="30" y1="210" x2="390" y2="210" stroke={BLUE} strokeWidth="1" opacity="0.25" />
+                        <line x1="210" y1="30" x2="210" y2="390" stroke={BLUE} strokeWidth="1" opacity="0.25" />
+                    </svg>
+                    <div className="lp-trust-grid" style={{ maxWidth: '1200px', margin: '0 auto', position: 'relative' }}>
+                        <Reveal style={{ maxWidth: '560px', marginBottom: '3rem' }}>
+                            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(28px,4vw,44px)', fontWeight: 700, marginBottom: '14px', letterSpacing: '-0.6px', lineHeight: 1.15 }}>
+                                Built to Grow With Your School
+                            </h2>
+                            <p style={{ fontSize: '14.5px', color: TEXT_MUTED_LIGHT, lineHeight: 1.8, marginBottom: '1.75rem' }}>
+                                Every plan comes with a fast, secure, reliable platform — so you can focus on your school, not your website.
+                            </p>
+                            <button onClick={() => navigate('/login')} className="lp-btn"
+                                style={{ padding: '13px 26px', background: `linear-gradient(135deg,${BLUE},${BLUE_DARK})`, color: '#fff', border: 'none', borderRadius: '11px', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(65,105,225,0.32)' }}>
+                                Get Started
+                            </button>
+                        </Reveal>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1.25rem' }}>
+                            {TRUST_CARDS.map((c, i) => (
+                                <PopReveal key={c.title} delay={i * 0.07}>
+                                    <div className="lp-trust-card" style={{ background: '#ffffff', border: '1px solid #e8ebf3', borderRadius: '16px', padding: '1.6rem', height: '100%' }}>
+                                        <div className="lp-icon-badge" style={{ width: '42px', height: '42px', borderRadius: '50%', background: BLUE, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px' }}>
+                                            <svg width="19" height="19" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24">{c.icon}</svg>
+                                        </div>
+                                        <p style={{ fontSize: '15px', fontWeight: 700, color: TEXT_DARK, marginBottom: '7px' }}>{c.title}</p>
+                                        <p style={{ fontSize: '12.5px', color: TEXT_MUTED_LIGHT, lineHeight: 1.7 }}>{c.desc}</p>
+                                    </div>
+                                </PopReveal>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ── CTA banner ── */}
+                <section style={{ padding: 'clamp(2.5rem,6vw,4rem) clamp(1.25rem,6vw,4rem)' }}>
+                    <Reveal>
+                        <div style={{ maxWidth: '1080px', margin: '0 auto', position: 'relative', overflow: 'hidden', borderRadius: '24px', padding: 'clamp(2rem,5vw,3.5rem)', background: `linear-gradient(135deg, ${GREY}, ${BLUE_DARK} 60%, ${BLUE})`, textAlign: 'center' }}>
+                            <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)', backgroundSize: '22px 22px', pointerEvents: 'none' }}></div>
+                            <div style={{ position: 'absolute', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(255,255,255,0.12)', top: '-24px', left: '10%', animation: 'lpChipFloat 6s ease-in-out infinite' }}></div>
+                            <div style={{ position: 'relative', margin: '0 auto 1rem', width: '110px' }}>
+                                <IsoSchool size={110} tone="blue" />
+                            </div>
+                            <h2 className="lp-shimmer-text-light" style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(24px,3.4vw,34px)', fontWeight: 700, marginBottom: '10px', position: 'relative' }}>
+                                Ready to bring your school online?
+                            </h2>
+                            <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.82)', marginBottom: '1.75rem', position: 'relative' }}>
+                                Login to your dashboard and start building your school's website today.
+                            </p>
+                            <button onClick={() => navigate('/login')} className="lp-btn"
+                                style={{ padding: '14px 32px', background: '#ffffff', color: BLUE_DARK, border: 'none', borderRadius: '13px', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer', position: 'relative', boxShadow: '0 10px 28px rgba(0,0,0,0.25)' }}>
+                                Login to Dashboard
+                            </button>
+                        </div>
+                    </Reveal>
+                </section>
+
+                {/* ── Footer ── */}
+                <footer style={{ padding: '2rem clamp(1.25rem,6vw,4rem) 2.5rem', borderTop: '1px solid #eef0f6', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <img src={logo} alt="Web Builder Pro" style={{ height: '32px', objectFit: 'contain', opacity: 0.85 }} />
+                    <p style={{ fontSize: '12.5px', color: TEXT_MUTED_LIGHT }}>© 2026 Web Builder Pro. All rights reserved.</p>
+                    <a href="/super-admin/login" style={{ fontSize: '11px', color: '#a8afbd', textDecoration: 'none' }}>Platform Owner? Super Admin Login</a>
+                </footer>
+
+            </div>
+        </>
+    );
+};
+
+export default LandingPage;

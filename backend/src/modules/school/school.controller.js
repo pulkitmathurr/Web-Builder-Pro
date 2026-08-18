@@ -5,6 +5,7 @@ const {
     selectModulesService,
     getSelectedModulesService,
     getPublicSchoolService,
+    getSchoolSlugByDomainService,
 } = require('./school.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
 
@@ -68,6 +69,16 @@ const getPublicSchool = async (req, res) => {
     }
 };
 
+// ── Resolve School by Custom Domain ──────────────────
+const getSchoolByDomain = async (req, res) => {
+    try {
+        const result = await getSchoolSlugByDomainService(req.params.domain);
+        return sendSuccess(res, 'School resolved', result);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 // ── Upload Hero Video ────────────────────────────────
 const uploadHeroVideo = async (req, res) => {
     try {
@@ -120,6 +131,18 @@ const uploadFooterBackground = async (req, res) => {
     }
 };
 
+// ── Upload Prospectus ─────────────────────────────────
+const uploadProspectus = async (req, res) => {
+    try {
+        if (!req.file) return sendError(res, 'No file uploaded', 400);
+        const prospectusUrl = req.file.path;
+        await updateSchoolProfileService(req.user.schoolId, { prospectus_url: prospectusUrl });
+        return sendSuccess(res, 'Prospectus uploaded successfully', { prospectus_url: prospectusUrl });
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 const getDashboardStats = async (req, res) => {
     try {
         const stats = await getDashboardStatsService();
@@ -136,9 +159,11 @@ module.exports = {
     selectModules,
     getSelectedModules,
     getPublicSchool,
+    getSchoolByDomain,
     uploadHeroVideo,
     uploadSchoolLogo,
     uploadWelcomeBanner,
     uploadFooterBackground,
+    uploadProspectus,
     getDashboardStats,
 };

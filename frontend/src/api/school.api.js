@@ -34,6 +34,13 @@ export const getPublicSchoolApi = async (slug) => {
     return response.data;
 };
 
+// Resolves a hostname (e.g. www.theirschool.com) to the school it belongs to, if any
+// school has connected that domain via Settings -> Custom Domain.
+export const resolveSchoolByDomainApi = async (domain) => {
+    const response = await axiosInstance.get(`/school/public-domain/${domain}`);
+    return response.data;
+};
+
 export const uploadHeroVideoApi = async (formData) => {
     const response = await axiosInstance.post('/school/hero-video', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
@@ -60,6 +67,13 @@ export const uploadWelcomeBannerApi = async (formData) => {
 export const uploadFooterBackgroundApi = async (formData) => {
     assertImageSizeOk(formData.get('footerBg'));
     const response = await axiosInstance.post('/school/footer-bg', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};
+
+export const uploadProspectusApi = async (formData) => {
+    const response = await axiosInstance.post('/school/prospectus', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
     return response.data;

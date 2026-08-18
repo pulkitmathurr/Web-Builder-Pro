@@ -35,7 +35,8 @@ const updateSchoolProfileService = async (schoolId, data) => {
         'map_url', 'facebook', 'instagram', 'youtube', 'twitter', 'linkedin',
         'hero_video_url', 'hero_video_title', 'logo_url', 'intro_message', 'intro_message_enabled',
         'welcome_banner_enabled', 'welcome_banner_url', 'welcome_banner_link',
-        'footer_bg_url', 'bg_music_enabled', 'bg_music_track', 'affiliation_badges'
+        'footer_bg_url', 'bg_music_enabled', 'bg_music_track', 'affiliation_badges', 'custom_domain',
+        'prospectus_url'
     ];
 
     const fieldsToUpdate = allowedFields.filter((field) =>
@@ -136,7 +137,8 @@ const getPublicSchoolService = async (slug) => {
             s.facebook, s.instagram, s.youtube, s.twitter, s.linkedin,
             s.hero_video_url, s.hero_video_title, s.intro_message, s.intro_message_enabled,
             s.welcome_banner_enabled, s.welcome_banner_url, s.welcome_banner_link,
-            s.footer_bg_url, s.bg_music_enabled, s.bg_music_track, s.affiliation_badges
+            s.footer_bg_url, s.bg_music_enabled, s.bg_music_track, s.affiliation_badges,
+            s.prospectus_url
         FROM tbl_schools s
         WHERE s.slug = ? AND s.status = 'active'`,
         [slug]
@@ -155,6 +157,24 @@ const getPublicSchoolService = async (slug) => {
         : (school.affiliation_badges || []);
 
     return school;
+};
+
+// ── Resolve School by Custom Domain ──────────────────
+// Used by the frontend on first load to detect a visitor arriving via a school's
+// own connected domain (e.g. www.theirschool.com) rather than the platform's own
+// host — returns just the slug, which the frontend then treats exactly like a
+// normal /school/:slug visit.
+const getSchoolSlugByDomainService = async (domain) => {
+    const [rows] = await pool.query(
+        `SELECT slug FROM tbl_schools WHERE custom_domain = ? AND status = 'active'`,
+        [domain]
+    );
+
+    if (rows.length === 0) {
+        throw new AppError('No school connected to this domain', 404);
+    }
+
+    return { slug: rows[0].slug };
 };
 
 const getDashboardStatsService = async () => {
@@ -194,5 +214,6 @@ module.exports = {
     selectModulesService,
     getSelectedModulesService,
     getPublicSchoolService,
+    getSchoolSlugByDomainService,
     getDashboardStatsService,
 };

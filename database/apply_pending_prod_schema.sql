@@ -19,7 +19,13 @@ ALTER TABLE tbl_schools ADD COLUMN bg_music_track VARCHAR(50) NULL AFTER bg_musi
 -- 4. Affiliation Badges
 ALTER TABLE tbl_schools ADD COLUMN affiliation_badges JSON NULL AFTER bg_music_track;
 
--- 5. Enquiries table (Admission / Career)
+-- 5. Custom Domain
+ALTER TABLE tbl_schools ADD COLUMN custom_domain VARCHAR(255) NULL AFTER affiliation_badges;
+
+-- 6. Prospectus URL
+ALTER TABLE tbl_schools ADD COLUMN prospectus_url VARCHAR(500) NULL AFTER custom_domain;
+
+-- 7. Enquiries table (Admission / Career)
 CREATE TABLE IF NOT EXISTS tbl_enquiries (
   id INT NOT NULL AUTO_INCREMENT,
   uuid VARCHAR(36) NOT NULL,
