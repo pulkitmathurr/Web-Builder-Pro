@@ -5,6 +5,7 @@ import RichTextEditor from '../../../components/common/RichTextEditor';
 import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import ImageSizeHint from '../../../components/admin/ImageSizeHint';
+import ImageCropModal from '../../../components/common/ImageCropModal';
 import useSchoolStore from '../../../store/schoolStore';
 import toast from 'react-hot-toast';
 
@@ -25,6 +26,7 @@ const Results = () => {
     const [content, setContent] = useState(defaultContent);
     const [savedSnapshot, setSavedSnapshot] = useState(null);
     const [uploading, setUploading] = useState({});
+    const [cropTarget, setCropTarget] = useState(null); // { id, src }
 
     useEffect(() => { fetchContent(); }, []);
 
@@ -84,6 +86,23 @@ const Results = () => {
     };
 
     const updateField = (field, value) => setContent(prev => ({ ...prev, [field]: value }));
+
+    // ── Crop confirmed — freeform crop (adjustable from all 4 sides), same
+    // pattern as the History image on the About Us page ──
+    const onCropConfirmed = async (croppedFile) => {
+        const target = cropTarget;
+        setCropTarget(null);
+        if (!target) return;
+        setUploading(prev => ({ ...prev, [target.id]: true }));
+        try {
+            const res = await uploadContentImageApi(croppedFile);
+            setContent(prev => ({
+                ...prev,
+                results: prev.results.map(r => r.id === target.id ? { ...r, imageUrl: res.data.url } : r),
+            }));
+        } catch (e) { toast.error(e.message || 'Failed to upload'); }
+        finally { setUploading(prev => ({ ...prev, [target.id]: false })); }
+    };
 
     const inputStyle = {
         width: '100%', padding: '11px 14px', border: '1px solid #e5e9f0',
@@ -218,28 +237,30 @@ const Results = () => {
                                     updateField('results', updated);
                                 }}
                                 onRemove={() => updateField('results', content.results.filter((_, i) => i !== idx))}
-                                onUploadImage={async (file) => {
-                                    setUploading(prev => ({ ...prev, [r.id]: true }));
-                                    try {
-                                        const res = await uploadContentImageApi(file);
-                                        const updated = [...content.results];
-                                        updated[idx] = { ...updated[idx], imageUrl: res.data.url };
-                                        updateField('results', updated);
-                                    } catch (e) { toast.error(e.message || 'Failed to upload'); }
-                                    finally { setUploading(prev => ({ ...prev, [r.id]: false })); }
-                                }}
+                                onFileSelected={(file) => setCropTarget({ id: r.id, src: URL.createObjectURL(file) })}
                                 uploading={uploading[r.id]}
                             />
                         ))}
                     </div>
                 </div>
             </div>
+
+            {cropTarget && (
+                <ImageCropModal
+                    imageSrc={cropTarget.src}
+                    aspect={null}
+                    accent={tc.primary}
+                    accentLight={tc.secondary}
+                    onCancel={() => setCropTarget(null)}
+                    onCropComplete={onCropConfirmed}
+                />
+            )}
         </>
     );
 };
 
 // ── Result Card ──
-const ResultCard = ({ result, onUpdate, onRemove, onUploadImage, uploading, delay = 0 }) => {
+const ResultCard = ({ result, onUpdate, onRemove, onFileSelected, uploading, delay = 0 }) => {
     const inputStyle = { width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' };
 
@@ -266,9 +287,9 @@ const ResultCard = ({ result, onUpdate, onRemove, onUploadImage, uploading, dela
             <div>
                 <label style={labelStyle}>Result Image</label>
                 <label className="results-img-upload" style={{ display: 'block', padding: '11px 14px', border: result.imageUrl ? '1.5px solid #bbf7d0' : '1.5px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontSize: '13px', color: result.imageUrl ? '#15803d' : '#64748b', background: result.imageUrl ? '#f0fdf4' : '#fafafa', textAlign: 'center' }}>
-                    {uploading ? 'Uploading...' : result.imageUrl ? '✓ Image uploaded — click to change' : '🖼️ Click to upload image'}
+                    {uploading ? 'Uploading...' : result.imageUrl ? '✓ Image uploaded — click to change' : '🖼️ Click to upload — crop tool will open'}
                     <input type="file" accept="image/*" style={{ display: 'none' }}
-                        onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) onUploadImage(f); }} />
+                        onChange={e => { const f = e.target.files[0]; e.target.value = ''; if (f) onFileSelected(f); }} />
                 </label>
                 {result.imageUrl && !uploading && (
                     <>
@@ -279,7 +300,7 @@ const ResultCard = ({ result, onUpdate, onRemove, onUploadImage, uploading, dela
                         </button>
                     </>
                 )}
-                <ImageSizeHint>Under 5MB. Use a clean, readable scan or export of the result sheet.</ImageSizeHint>
+                <ImageSizeHint>Crop is freely adjustable from every side after upload — pick exactly how much to keep. Under 5MB.</ImageSizeHint>
             </div>
         </div>
     );

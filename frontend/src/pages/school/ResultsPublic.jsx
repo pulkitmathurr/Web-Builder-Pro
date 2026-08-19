@@ -30,28 +30,27 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
     );
 };
 
-const ResultCard = ({ result, tc, index, onOpen }) => (
-    <Reveal delay={Math.min(index * 0.05, 0.3)}>
-        <div onClick={onOpen} className="result-card"
-            style={{ background: '#fff', borderRadius: '14px', overflow: 'hidden', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(15,23,42,0.06)', cursor: 'pointer', transition: 'transform 0.25s ease, box-shadow 0.25s ease' }}>
-            <div style={{ height: '190px', background: '#f1f5f9', overflow: 'hidden' }}>
-                <img src={result.imageUrl} alt={result.title} className="result-card-img"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.35s ease' }} />
+// ── Single-column list, one large clickable result image per row (title +
+// session/class label above it) — mirrors the reference site's plain
+// "Result 2025-26 Class 12" heading + full-width image layout. ──
+const ResultRow = ({ result, tc, index, onOpen }) => (
+    <Reveal delay={Math.min(index * 0.06, 0.3)}>
+        <div style={{ marginBottom: '3.25rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '16px' }}>
+                {result.title && (
+                    <h3 style={{ fontSize: '19px', fontWeight: 700, color: '#0f172a', lineHeight: 1.4, marginBottom: (result.session || result.className) ? '9px' : 0 }}>{result.title}</h3>
+                )}
+                {(result.session || result.className) && (
+                    <span style={{ display: 'inline-block', fontSize: '11px', fontWeight: 700, color: '#fff', background: `linear-gradient(135deg, ${tc.primary}, ${tc.secondary})`, padding: '4px 14px', borderRadius: '999px', letterSpacing: '0.04em', textTransform: 'uppercase', boxShadow: `0 4px 12px ${tc.primary}40` }}>
+                        {[result.session, result.className].filter(Boolean).join(' · ')}
+                    </span>
+                )}
             </div>
-            <div style={{ padding: '1rem 1.15rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '7px', flexWrap: 'wrap' }}>
-                    {result.session && (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: '#fff', background: tc.primary, padding: '2.5px 9px', borderRadius: '999px', letterSpacing: '0.03em' }}>
-                            {result.session}
-                        </span>
-                    )}
-                    {result.className && (
-                        <span style={{ fontSize: '10px', fontWeight: 700, color: tc.primary, background: tc.light, padding: '2.5px 9px', borderRadius: '999px', letterSpacing: '0.03em' }}>
-                            {result.className}
-                        </span>
-                    )}
+            <div onClick={onOpen} className="result-frame">
+                <div className="result-frame-inner">
+                    <img src={result.imageUrl} alt={result.title || 'Result'} className="result-img" />
                 </div>
-                <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: '#0f172a', lineHeight: 1.4 }}>{result.title}</h3>
+                <div className="result-frame-shine"></div>
             </div>
         </div>
     </Reveal>
@@ -104,7 +103,7 @@ const ResultsPublic = () => {
     if (!content) return <NotPublished tc={tc} slug={slug} label="Results" />;
 
     const results = [...(content.results || [])]
-        .filter(r => r.title && r.imageUrl)
+        .filter(r => r.imageUrl)
         .sort((a, b) => (b.session || '').localeCompare(a.session || ''));
 
     return (
@@ -123,8 +122,47 @@ const ResultsPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
-                .result-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(15,23,42,0.12) !important; }
-                .result-card:hover .result-card-img { transform: scale(1.06); }
+                .result-frame {
+                    position: relative;
+                    padding: 4px;
+                    border-radius: 16px;
+                    background: linear-gradient(135deg, ${tc.primary}, ${tc.secondary});
+                    cursor: pointer;
+                    box-shadow: 0 10px 28px rgba(15,23,42,0.10);
+                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s cubic-bezier(0.16,1,0.3,1);
+                    overflow: hidden;
+                }
+                .result-frame:hover {
+                    transform: translateY(-8px);
+                    box-shadow: 0 24px 50px ${tc.primary}40, 0 10px 28px rgba(15,23,42,0.14);
+                }
+                .result-frame-inner {
+                    position: relative;
+                    z-index: 1;
+                    background: #ffffff;
+                    border-radius: 12px;
+                    padding: 8px;
+                    overflow: hidden;
+                }
+                .result-img {
+                    display: block;
+                    width: 100%;
+                    height: auto;
+                    border-radius: 7px;
+                    transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
+                }
+                .result-frame:hover .result-img { transform: scale(1.04); }
+                .result-frame-shine {
+                    position: absolute;
+                    top: 0; left: -60%;
+                    width: 40%; height: 100%;
+                    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.55), transparent);
+                    transform: skewX(-20deg);
+                    transition: left 0.85s ease;
+                    z-index: 2;
+                    pointer-events: none;
+                }
+                .result-frame:hover .result-frame-shine { left: 130%; }
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
@@ -159,17 +197,15 @@ const ResultsPublic = () => {
                     </div>
                 )}
 
-                {/* ── Result grid ── */}
+                {/* ── Result list ── */}
                 <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 6rem' }}>
-                    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                    <div style={{ maxWidth: '760px', margin: '0 auto' }}>
                         {results.length === 0 ? (
                             <p style={{ textAlign: 'center', fontSize: '14px', color: '#94a3b8' }}>No results published yet. Please check back soon.</p>
                         ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem' }}>
-                                {results.map((r, i) => (
-                                    <ResultCard key={r.id} result={r} tc={tc} index={i} onOpen={() => setLightbox(r)} />
-                                ))}
-                            </div>
+                            results.map((r, i) => (
+                                <ResultRow key={r.id} result={r} tc={tc} index={i} onOpen={() => setLightbox(r)} />
+                            ))
                         )}
                     </div>
                 </div>

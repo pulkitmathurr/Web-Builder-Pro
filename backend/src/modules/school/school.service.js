@@ -86,7 +86,7 @@ const selectModulesService = async (schoolId, modules) => {
     const validModules = [
         "home", "about", "fee", "courses", "faculty", "infrastructure",
         "sports", "gallery", "achievements", "alumni", "testimonials", "disclosure", "tc",
-        "events", "calendar", "announcements", "circulars", "admissionProcedure", "bookList", "admission",
+        "events", "calendar", "announcements", "circulars", "results", "admissionProcedure", "bookList", "admission",
         "career", "contact", "settings",
     ];
 
