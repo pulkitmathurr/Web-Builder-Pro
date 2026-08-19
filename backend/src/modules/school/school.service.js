@@ -31,7 +31,7 @@ const getSchoolProfileService = async (schoolId) => {
 // latter since COALESCE(NULL, logo_url) just keeps the old value.
 const updateSchoolProfileService = async (schoolId, data) => {
     const allowedFields = [
-        'name', 'phone', 'phone2', 'address', 'city', 'state', 'pincode',
+        'name', 'phone', 'phone2', 'whatsapp_number', 'address', 'city', 'state', 'pincode',
         'map_url', 'facebook', 'instagram', 'youtube', 'twitter', 'linkedin',
         'hero_video_url', 'hero_video_title', 'logo_url', 'intro_message', 'intro_message_enabled',
         'welcome_banner_enabled', 'welcome_banner_url', 'welcome_banner_link',
@@ -130,7 +130,7 @@ const getSelectedModulesService = async (schoolId) => {
 const getPublicSchoolService = async (slug) => {
     const [rows] = await pool.query(
         `SELECT
-            s.id, s.name, s.slug, s.email, s.phone, s.phone2, s.address,
+            s.id, s.name, s.slug, s.email, s.phone, s.phone2, s.whatsapp_number, s.address,
             s.city, s.state, s.pincode, s.logo_url, s.theme, s.base_theme,
             s.nav_font, s.heading_font,
             s.selected_modules, s.status, s.map_url,

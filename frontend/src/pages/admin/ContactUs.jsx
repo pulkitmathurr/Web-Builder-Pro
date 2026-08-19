@@ -17,7 +17,7 @@ const ContactUs = () => {
     const [activeSection, setActiveSection] = useState('location');
     const [hoveredSocial, setHoveredSocial] = useState(null);
     const [formData, setFormData] = useState({
-        phone: '', phone2: '', address: '', city: '', state: '', pincode: '',
+        phone: '', phone2: '', whatsapp_number: '', address: '', city: '', state: '', pincode: '',
         map_url: '', facebook: '', instagram: '', youtube: '', twitter: '', linkedin: '',
     });
 
@@ -30,6 +30,7 @@ const ContactUs = () => {
             setFormData({
                 phone: school.phone || '',
                 phone2: school.phone2 || '',
+                whatsapp_number: school.whatsapp_number || '',
                 address: school.address || '',
                 city: school.city || '',
                 state: school.state || '',
@@ -50,7 +51,7 @@ const ContactUs = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        if (name === 'phone' || name === 'phone2') {
+        if (name === 'phone' || name === 'phone2' || name === 'whatsapp_number') {
             setFormData({ ...formData, [name]: sanitizePhoneDigits(value) });
             return;
         }
@@ -64,6 +65,10 @@ const ContactUs = () => {
     }
     if (formData.phone2 && !isValidPhone(formData.phone2)) {
         toast.error('Alternate phone number must be exactly 10 digits');
+        return;
+    }
+    if (formData.whatsapp_number && !isValidPhone(formData.whatsapp_number)) {
+        toast.error('WhatsApp number must be exactly 10 digits');
         return;
     }
     setSaving(true);
@@ -311,6 +316,11 @@ const ContactUs = () => {
                                 <div>
                                     <label style={labelStyle}>Alternate Phone Number</label>
                                     <input type="tel" inputMode="numeric" maxLength={10} name="phone2" value={formData.phone2} onChange={handleChange} placeholder="Enter Alternate Phone Number" style={inputStyle} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>WhatsApp Number</label>
+                                    <input type="tel" inputMode="numeric" maxLength={10} name="whatsapp_number" value={formData.whatsapp_number} onChange={handleChange} placeholder="Enter WhatsApp Number" style={inputStyle} />
+                                    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px' }}>Shows a floating WhatsApp chat button on your public website. Leave blank to hide it.</p>
                                 </div>
                             </div>
                         </div>

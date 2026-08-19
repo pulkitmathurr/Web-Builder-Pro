@@ -186,7 +186,7 @@ const BackgroundMusicPlayer = ({ track, tc }) => {
                 aria-label={muted ? `Play background music: ${track.label}` : `Mute background music: ${track.label}`}
                 title={muted ? `Play "${track.label}"` : `Mute "${track.label}"`}
                 style={{
-                    position: 'fixed', bottom: '24px', right: '24px', zIndex: 1200,
+                    position: 'fixed', bottom: '88px', right: '24px', zIndex: 1200,
                     width: '48px', height: '48px', borderRadius: '50%', border: 'none',
                     background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`,
                     color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { getPublicModuleContentApi, getPublishedModulesApi } from "../../api/content.api";
 import { COURSE_LEVELS, isLevelComplete } from "../../utils/courseLevels";
 import { isModuleEnabled } from "../../constants/publicNav";
+import WhatsAppButton from "./WhatsAppButton";
 
 const SocialIcon = ({ type }) => {
     const icons = {
@@ -110,6 +111,8 @@ const Footer = ({ school, slug, tc, bgImage }) => {
     const contactTextStyle = { fontSize: '13px', color: 'rgba(255,255,255,0.68)', lineHeight: 1.6, textDecoration: 'none' };
 
     return (
+        <>
+        <WhatsAppButton school={school} />
         <footer style={{ position: 'relative', overflow: 'hidden', fontFamily: "'Inter', system-ui, sans-serif", color: 'rgba(255,255,255,0.85)' }}>
             <style>{`
                 @media (max-width: 900px) {
@@ -267,6 +270,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
 
             </div>
         </footer>
+        </>
     );
 };
 

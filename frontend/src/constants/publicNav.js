@@ -106,6 +106,7 @@ export const NAVBAR_ITEMS = [
         links: [
             { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses`, subItems: COURSE_LEVELS, dynamicSubItems: 'courses' },
             { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
+            { key: 'results',            label: 'Results',              path: (slug) => `/school/${slug}/results` },
             { key: 'tc',                 label: 'TC Information',       path: (slug) => `/school/${slug}/tc` },
             { key: 'achievements',       label: 'Achievements',         path: (slug) => `/school/${slug}/achievements` },
             { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
@@ -159,6 +160,7 @@ export const FOOTER_NAV_GROUPS = [
         links: [
             { key: 'courses',            label: 'Courses',              path: (slug) => `/school/${slug}/courses` },
             { key: 'fee',                label: 'Fee Structure',        path: (slug) => `/school/${slug}/fee` },
+            { key: 'results',            label: 'Results',              path: (slug) => `/school/${slug}/results` },
             { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
             { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
             { key: 'disclosure',         label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },

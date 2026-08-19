@@ -44,3 +44,6 @@ CREATE TABLE IF NOT EXISTS tbl_enquiries (
   KEY school_id (school_id),
   CONSTRAINT tbl_enquiries_ibfk_1 FOREIGN KEY (school_id) REFERENCES tbl_schools (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 8. WhatsApp Number (floating public chat button)
+ALTER TABLE tbl_schools ADD COLUMN whatsapp_number VARCHAR(20) NULL AFTER phone2;

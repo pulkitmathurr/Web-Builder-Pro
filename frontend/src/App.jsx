@@ -38,6 +38,7 @@ import Announcements from './pages/admin/modules/Announcements';
 import Events from './pages/admin/modules/Events';
 import Circulars from './pages/admin/modules/Circulars';
 import Calendar from './pages/admin/modules/Calendar';
+import Results from './pages/admin/modules/Results';
 import AdmissionEnquiry from './pages/admin/modules/AdmissionEnquiry';
 import CareerEnquiry from './pages/admin/modules/CareerEnquiry';
 // School Website
@@ -65,6 +66,7 @@ import EventDetailPublic from './pages/school/EventDetailPublic';
 import CircularsPublic from './pages/school/CircularsPublic';
 import CircularDetailPublic from './pages/school/CircularDetailPublic';
 import CalendarPublic from './pages/school/CalendarPublic';
+import ResultsPublic from './pages/school/ResultsPublic';
 // Layouts
 import SuperAdminLayout from './layouts/SuperAdminLayout';
 import AdminLayout from './layouts/AdminLayout';
@@ -101,6 +103,7 @@ const PUBLIC_SCHOOL_ROUTE_DEFS = [
     { path: '/school/:slug/circulars/:id', element: <CircularDetailPublic /> },
     { path: '/school/:slug/circulars', element: <CircularsPublic /> },
     { path: '/school/:slug/calendar', element: <CalendarPublic /> },
+    { path: '/school/:slug/results', element: <ResultsPublic /> },
     { path: '/school/:slug/:levelSlug', element: <SchoolLevelPublic /> },
 ];
 
@@ -202,6 +205,7 @@ const RootRouter = () => {
                 <Route path="module/events" element={<Events />} />
                 <Route path="module/circulars" element={<Circulars />} />
                 <Route path="module/calendar" element={<Calendar />} />
+                <Route path="module/results" element={<Results />} />
                 <Route path="module/admission" element={<AdmissionEnquiry />} />
                 <Route path="module/career" element={<CareerEnquiry />} />
                 {/* Generic module route baad mein */}
