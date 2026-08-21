@@ -581,9 +581,8 @@ const SchoolWebsite = () => {
                         </h1>
 
                         {homeContent?.tagline && (
-                            <p style={{ fontFamily: homeContent.taglineFont ? getFontFamily(homeContent.taglineFont) : undefined, fontSize: 'clamp(16px,3.2vw,22px)', color: homeContent.taglineColor || tc.secondary, marginBottom: '20px', fontWeight: 600, letterSpacing: '0.02em' }}>
-                                {homeContent.tagline}
-                            </p>
+                            <div className="rte-content" style={{ fontFamily: homeContent.taglineFont ? getFontFamily(homeContent.taglineFont) : undefined, fontSize: 'clamp(16px,3.2vw,22px)', color: homeContent.taglineColor || tc.secondary, marginBottom: '20px', fontWeight: 600, letterSpacing: '0.02em', overflowWrap: 'normal', wordBreak: 'normal' }}
+                                dangerouslySetInnerHTML={{ __html: homeContent.tagline }} />
                         )}
 
                         {homeContent?.subText && (

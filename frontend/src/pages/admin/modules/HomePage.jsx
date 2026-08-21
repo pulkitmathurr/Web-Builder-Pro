@@ -541,9 +541,6 @@ const HomePage = () => {
                     .hp-status-badge { padding: 4px 9px !important; }
                     .hp-status-badge span { font-size: 9.5px !important; }
                     .hp-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
-
-                    /* ── Live Preview card — hide on mobile only, visible on desktop ── */
-                    .hp-preview { display: none !important; }
                 }
                 .rte-content p { margin-bottom: 0.8em; }
                 .rte-content p:last-child { margin-bottom: 0; }
@@ -802,14 +799,16 @@ const HomePage = () => {
                             <FontField label="School Name Font" value={content.schoolNameFont} onChange={val => handleChange('schoolNameFont', val)} />
                         </div>
                         <div>
-                            <label style={labelStyle}>School Tagline *</label>
-                            <input className="hp-input" type="text" value={content.tagline} onChange={e => handleChange('tagline', e.target.value)}
-                                placeholder="Enter School Tagline" style={inputStyle} />
-                            <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px' }}>This is the big headline on your home page — e.g. "Empowering Young Minds Since 1998"</p>
-                            <ColorField label="Tagline Color" value={content.taglineColor} defaultColor={tc.secondary}
-                                onChange={val => handleChange('taglineColor', val)} />
-                            <FontField label="Tagline Font" value={content.taglineFont} onChange={val => handleChange('taglineFont', val)} />
-                        </div>
+    <label style={labelStyle}>School Tagline *</label>
+    <RichTextEditor value={content.tagline} onChange={val => handleChange('tagline', val)}
+        placeholder="Enter School Tagline"
+        minHeight="60px"
+        maxWidth="1070px" fontSize="20px" fontFamily="'Inter', system-ui, sans-serif" />
+    <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '5px' }}>This is the big headline on your home page — e.g. "Empowering Young Minds Since 1998"</p>
+    <ColorField label="Tagline Color" value={content.taglineColor} defaultColor={tc.secondary}
+        onChange={val => handleChange('taglineColor', val)} />
+    <FontField label="Tagline Font" value={content.taglineFont} onChange={val => handleChange('taglineFont', val)} />
+</div>
                         <div>
     <label style={labelStyle}>Sub Text</label>
     <RichTextEditor value={content.subText} onChange={val => handleChange('subText', val)}
@@ -822,16 +821,6 @@ const HomePage = () => {
         onChange={val => handleChange('subTextColor', val)} />
     <FontField label="Sub Text Font" value={content.subTextFont} onChange={val => handleChange('subTextFont', val)} />
 </div>
-
-                        {/* Live Preview */}
-                        {(school?.name || content.tagline || content.subText) && (
-                            <div className="hp-preview" style={{ padding: '1.5rem', background: `linear-gradient(135deg,${tc.dark},${tc.primary})`, borderRadius: '8px', border: `1px solid ${hexToRgba(tc.primary, 0.3)}` }}>
-                                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Preview</p>
-                                {school?.name && <h1 style={{ fontFamily: getFontFamily(content.schoolNameFont), fontSize: '28px', fontWeight: 900, color: content.schoolNameColor || '#ffffff', marginBottom: '6px', letterSpacing: '-1px' }}>{school.name}</h1>}
-                                {content.tagline && <h2 style={{ fontSize: '20px', fontWeight: 700, color: content.taglineColor || tc.secondary, marginBottom: '8px', letterSpacing: '-0.3px' }}>{content.tagline}</h2>}
-                                {content.subText && <div className="rte-content" style={{ fontSize: '14px', color: content.subTextColor || 'rgba(255,255,255,0.55)', lineHeight: 1.7 }} dangerouslySetInnerHTML={{ __html: content.subText }} />}
-                            </div>
-                        )}
                     </div>
                 </div>
                 </>}
