@@ -109,7 +109,7 @@ const PUBLIC_SCHOOL_ROUTE_DEFS = [
 
 // ── Platform hosts — anything else attempting a page load is treated as a
 // candidate custom domain and resolved via the backend before rendering. ──
-const isPlatformHost = (host) => host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app');
+const isPlatformHost = (host) => host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app') || host === 'wbpro.in' || host === 'www.wbpro.in';
 
 const FullPageSpinner = () => (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

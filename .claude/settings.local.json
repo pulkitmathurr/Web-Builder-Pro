@@ -169,7 +169,13 @@
       "Bash(find backend/src/config -iname \"db.js\")",
       "Bash(cat frontend/vercel.json)",
       "Bash(find . -iname \".vercel\" -maxdepth 3)",
-      "Bash(find . -iname \"project.json\" -path \"*vercel*\")"
+      "Bash(find . -iname \"project.json\" -path \"*vercel*\")",
+      "Bash(ls -la .env*)",
+      "Bash(find . -maxdepth 1 -iname \"*.env*\")",
+      "Bash(C:/xampp/mysql/bin/mysql.exe *)",
+      "WebFetch(domain:apskotaedu.co.in)",
+      "WebFetch(domain:localhost)",
+      "Bash(tasklist //FI \"WINDOWTITLE eq*\")"
     ]
   }
 }
