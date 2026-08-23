@@ -18,3 +18,13 @@ export const refreshTokenApi = async () => {
     const response = await axiosInstance.post('/auth/refresh');
     return response.data;
 };
+
+export const forgotPasswordApi = async (email, role) => {
+    const response = await axiosInstance.post('/auth/forgot-password', { email, role });
+    return response.data;
+};
+
+export const resetPasswordApi = async (token, role, newPassword) => {
+    const response = await axiosInstance.post('/auth/reset-password', { token, role, newPassword });
+    return response.data;
+};

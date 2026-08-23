@@ -169,9 +169,8 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                         </div>
 
                         {tagline && (
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.7, marginBottom: '18px', maxWidth: '280px' }}>
-                                {tagline}
-                            </p>
+                            <div className="rte-content" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.7, marginBottom: '18px', maxWidth: '280px' }}
+                                dangerouslySetInnerHTML={{ __html: tagline }} />
                         )}
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

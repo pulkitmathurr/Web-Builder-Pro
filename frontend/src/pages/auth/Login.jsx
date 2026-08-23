@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { loginApi } from "../../api/auth.api";
 import useAuthStore from "../../store/authStore";
@@ -394,6 +394,9 @@ const Login = () => {
                   )}
                 </button>
               </div>
+              <Link to="/forgot-password" style={{ display: "block", textAlign: "right", fontSize: "12px", fontWeight: 600, color: BLUE, textDecoration: "none", marginTop: "8px" }}>
+                Forgot password?
+              </Link>
             </div>
 
             {/* Submit */}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { loginApi } from '../../api/auth.api';
 import useAuthStore from '../../store/authStore';
@@ -177,9 +177,9 @@ const SuperAdminLogin = () => {
                         </button>
                     </form>
 
-                    <p className="sa-forgot" style={{ textAlign: 'center', fontSize: '13px', color: '#9a9a9a', marginTop: '22px', cursor: 'default' }}>
+                    <Link to="/super-admin/forgot-password" className="sa-forgot" style={{ display: 'block', textAlign: 'center', fontSize: '13px', color: '#9a9a9a', marginTop: '22px', textDecoration: 'none' }}>
                         Forgot your password?
-                    </p>
+                    </Link>
                 </div>
 
                 {/* Footer */}

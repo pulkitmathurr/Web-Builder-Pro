@@ -4,16 +4,65 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const routes = require('./src/routes/index.routes');
+const { pool } = require('./src/config/db');
 
 const app = express();
 
-// ── Middlewares ──────────────────────────────────────
-// TODO: lock this down to the Vercel URL (via FRONTEND_URL) once it's known —
-// `origin: true` reflects whatever Origin header the request sent, which
-// accepts everything for now while still working with credentials:true
-// (a literal '*' origin is rejected by browsers when credentials are used).
+// ── CORS ──────────────────────────────────────────────
+// Origins allowed without a DB lookup: the platform's own hosts (mirrors
+// isPlatformHost() in frontend/src/App.jsx). Anything else is checked
+// against tbl_schools.custom_domain, since schools can connect their own
+// domain and must be able to call the API with credentials from it too.
+const staticAllowedOrigins = new Set([process.env.FRONTEND_URL].filter(Boolean));
+
+const isStaticAllowedHost = (hostname) =>
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.vercel.app') ||
+    hostname === 'wbpro.in' ||
+    hostname === 'www.wbpro.in';
+
+// Custom-domain lookups are cached briefly so CORS doesn't hit the DB on
+// every single request from a school's connected domain.
+const customDomainCache = new Map(); // hostname -> { allowed, expiresAt }
+const CUSTOM_DOMAIN_CACHE_MS = 5 * 60 * 1000;
+
+const isAllowedCustomDomain = async (hostname) => {
+    const cached = customDomainCache.get(hostname);
+    if (cached && cached.expiresAt > Date.now()) return cached.allowed;
+
+    const [rows] = await pool.query(
+        `SELECT id FROM tbl_schools WHERE custom_domain = ? AND status = 'active' LIMIT 1`,
+        [hostname]
+    );
+    const allowed = rows.length > 0;
+    customDomainCache.set(hostname, { allowed, expiresAt: Date.now() + CUSTOM_DOMAIN_CACHE_MS });
+    return allowed;
+};
+
 app.use(cors({
-    origin: true,
+    origin: async (origin, callback) => {
+        // No Origin header = non-browser request (curl, server health check) — allow.
+        if (!origin) return callback(null, true);
+        if (staticAllowedOrigins.has(origin)) return callback(null, true);
+
+        let hostname;
+        try {
+            hostname = new URL(origin).hostname;
+        } catch {
+            return callback(new Error('Not allowed by CORS'));
+        }
+
+        if (isStaticAllowedHost(hostname)) return callback(null, true);
+
+        try {
+            if (await isAllowedCustomDomain(hostname)) return callback(null, true);
+        } catch (err) {
+            console.error('CORS custom-domain lookup failed:', err.message);
+        }
+
+        return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 

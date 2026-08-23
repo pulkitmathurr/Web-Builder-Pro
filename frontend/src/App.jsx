@@ -7,6 +7,8 @@ import { resolveSchoolByDomainApi } from './api/school.api';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import SuperAdminLogin from './pages/auth/SuperAdminLogin';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 
 // Super Admin
 import SuperAdminDashboard from './pages/superAdmin/Dashboard';
@@ -156,6 +158,9 @@ const RootRouter = () => {
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+            <Route path="/forgot-password" element={<ForgotPassword role="admin" />} />
+            <Route path="/super-admin/forgot-password" element={<ForgotPassword role="super_admin" />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={<LandingPage />} />
 
             {/* Public School Website */}

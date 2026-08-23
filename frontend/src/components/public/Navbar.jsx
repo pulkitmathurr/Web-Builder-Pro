@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { GOOGLE_FONTS_URL, getFontFamily } from "../../constants/fonts";
 import { NAVBAR_ITEMS, isModuleEnabled } from "../../constants/publicNav";
@@ -59,7 +59,7 @@ const ChevronDownSm = ({ color, open }) => (
 // ── Shared top navbar — logo/name on the left, Home + hover dropdowns on the right.
 // Dropdown items with subItems (Infrastructure, Courses, and the top-level Sports item)
 // open a nested flyout to the right on hover, instead of listing everything inline. ──
-const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, topOffset = 0 }) => {
+const Navbar = forwardRef(({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, topOffset = 0 }, ref) => {
     const navigate = useNavigate();
     // Navbar background is always solid white now (no transparent-over-hero state),
     // so this is always true — kept as a variable since text/border colors below key off it.
@@ -216,7 +216,7 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
                 .mobile-drawer-panel::-webkit-scrollbar { width: 5px; }
                 .mobile-drawer-panel::-webkit-scrollbar-thumb { background: ${tc.primary}30; border-radius: 3px; }
             `}</style>
-            <nav className="navbar-inner" style={{
+            <nav ref={ref} className="navbar-inner" style={{
                 position: 'fixed', top: `${topOffset}px`, left: 0, right: 0, zIndex: 1000,
                 height: '92px', padding: '0 3rem',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -523,6 +523,8 @@ const Navbar = ({ school, slug, tc, scrollY = 0, activeKey, forceSolid = false, 
             </div>
         </>
     );
-};
+});
+
+Navbar.displayName = 'Navbar';
 
 export default Navbar;

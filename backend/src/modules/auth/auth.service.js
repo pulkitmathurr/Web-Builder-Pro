@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const { pool } = require("../../config/db");
 const {
@@ -6,6 +7,7 @@ const {
   generateRefreshToken,
 } = require("../../utils/jwt.utils");
 const AppError = require("../../utils/error.utils");
+const { sendMail } = require("../../config/mailer");
 
 const loginService = async (email, password, role) => {
   // Step 1 — Find user by email
@@ -136,4 +138,118 @@ const refreshTokenService = async (refreshToken) => {
   return { accessToken: newAccessToken };
 };
 
-module.exports = { loginService, logoutService, refreshTokenService };
+// ── Forgot Password ──────────────────────────────────
+// Always resolves successfully regardless of whether the email exists, so a
+// caller can't use this endpoint to enumerate registered admin/super-admin
+// emails — the "no such email" case just silently skips sending anything.
+const forgotPasswordService = async (email, role) => {
+  const table = role === "super_admin" ? "tbl_super_admins" : "tbl_admins";
+  const [rows] = await pool.query(
+    `SELECT id, name, email FROM ${table} WHERE email = ?`,
+    [email],
+  );
+
+  if (rows.length === 0) return;
+
+  const user = rows[0];
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+
+  await pool.query(
+    `INSERT INTO tbl_password_resets (role, admin_id, super_admin_id, token_hash, expires_at)
+        VALUES (?, ?, ?, ?, ?)`,
+    [
+      role,
+      role === "admin" ? user.id : null,
+      role === "super_admin" ? user.id : null,
+      tokenHash,
+      expiresAt,
+    ],
+  );
+
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${rawToken}&role=${role}`;
+
+  if (process.env.NODE_ENV !== "production") {
+    console.log("🔗 [dev only] Password reset link:", resetUrl);
+  }
+
+  try {
+    await sendMail({
+      to: user.email,
+      subject: "Reset your Web Builder Pro password",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #20242C;">
+          <h2 style="color: #4169E1;">Reset your password</h2>
+          <p>Hi ${user.name || ""},</p>
+          <p>We received a request to reset your Web Builder Pro password. This link is valid for 30 minutes.</p>
+          <p style="margin: 28px 0;">
+            <a href="${resetUrl}" style="background: #4169E1; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+              Reset Password
+            </a>
+          </p>
+          <p>If you didn't request this, you can safely ignore this email — your password will stay unchanged.</p>
+          <p style="color: #9aa3b8; font-size: 12px; margin-top: 32px;">Web Builder Pro</p>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("Failed to send password reset email:", err.message);
+    throw new AppError("Failed to send reset email. Please try again later.", 500);
+  }
+};
+
+// ── Reset Password ───────────────────────────────────
+const resetPasswordService = async (token, role, newPassword) => {
+  if (!token || !role || !newPassword) {
+    throw new AppError("Token, role and new password are required", 400);
+  }
+  if (newPassword.length < 6) {
+    throw new AppError("Password must be at least 6 characters", 400);
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+
+  const [rows] = await pool.query(
+    `SELECT * FROM tbl_password_resets
+        WHERE token_hash = ? AND role = ? AND used_at IS NULL AND expires_at > NOW()`,
+    [tokenHash, role],
+  );
+
+  if (rows.length === 0) {
+    throw new AppError("This reset link is invalid or has expired", 400);
+  }
+
+  const resetRow = rows[0];
+  const table = role === "super_admin" ? "tbl_super_admins" : "tbl_admins";
+  const userId = role === "super_admin" ? resetRow.super_admin_id : resetRow.admin_id;
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await pool.query(`UPDATE ${table} SET password = ? WHERE id = ?`, [
+    hashedPassword,
+    userId,
+  ]);
+
+  await pool.query(
+    `UPDATE tbl_password_resets SET used_at = NOW() WHERE id = ?`,
+    [resetRow.id],
+  );
+
+  // Log the user out of every existing session — a leaked/guessed old
+  // session shouldn't survive a password reset.
+  await pool.query(
+    role === "super_admin"
+      ? `UPDATE tbl_refresh_tokens SET is_revoked = 1 WHERE super_admin_id = ?`
+      : `UPDATE tbl_refresh_tokens SET is_revoked = 1 WHERE admin_id = ?`,
+    [userId],
+  );
+};
+
+module.exports = {
+  loginService,
+  logoutService,
+  refreshTokenService,
+  forgotPasswordService,
+  resetPasswordService,
+};

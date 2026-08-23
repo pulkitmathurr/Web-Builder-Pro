@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getPublicSchoolApi } from "../../api/school.api";
 import { getPublicModuleContentApi } from "../../api/content.api";
@@ -131,7 +131,7 @@ const TestimonialCard = ({ t, index, tc }) => {
 
 // ── Thin autoscrolling strip, fixed above the navbar, surfacing the
 // latest announcements — admin-toggleable from the Home Page settings ──
-const AnnouncementTicker = ({ slug, tc, items }) => {
+const AnnouncementTicker = forwardRef(({ slug, tc, items }, ref) => {
     const navigate = useNavigate();
 
     const label = items
@@ -140,6 +140,7 @@ const AnnouncementTicker = ({ slug, tc, items }) => {
 
     return (
         <div
+            ref={ref}
             onClick={() => navigate(`/school/${slug}/announcements`)}
             role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter') navigate(`/school/${slug}/announcements`); }}
             className="announcement-ticker"
@@ -160,7 +161,9 @@ const AnnouncementTicker = ({ slug, tc, items }) => {
             </div>
         </div>
     );
-};
+});
+
+AnnouncementTicker.displayName = 'AnnouncementTicker';
 
 // ── Floating background-music toggle — starts muted (browsers block
 // autoplay-with-sound anyway) with a speaker icon so the visitor opts in ──
@@ -294,6 +297,42 @@ const SchoolWebsite = () => {
     const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
     const [introLayout, setIntroLayout] = useState({ lines: [], fontSize: 80 });
 
+    // ── Navbar/ticker height is measured live (instead of assumed via hardcoded
+    // px values) so the hero section always sits flush below them, whether or
+    // not the ticker is showing — no gap, no overlap, in either state. ──
+    const navRef = useRef(null);
+    const tickerRef = useRef(null);
+    const [navHeight, setNavHeight] = useState(92);
+    const [tickerHeight, setTickerHeight] = useState(34);
+
+    const tickerItems = homeContent?.showAnnouncementTicker !== false && isModuleEnabled(school, 'announcements')
+        ? [...(announcementsContent?.announcements || [])]
+            .filter(a => a.title)
+            .sort((a, b) => {
+                if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+                return (parseDate(b.date) || 0) - (parseDate(a.date) || 0);
+            })
+            .slice(0, 5)
+        : [];
+    const tickerVisible = tickerItems.length > 0;
+
+    useEffect(() => {
+        if (!tickerVisible) return;
+        const el = tickerRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => setTickerHeight(entry.contentRect.height));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [tickerVisible]);
+
+    useEffect(() => {
+        const el = navRef.current;
+        if (!el) return;
+        const ro = new ResizeObserver(([entry]) => setNavHeight(entry.contentRect.height));
+        ro.observe(el);
+        return () => ro.disconnect();
+    }, [loading]);
+
     useEffect(() => { fetchSchool(); }, [slug]);
 
     useEffect(() => {
@@ -399,17 +438,6 @@ const SchoolWebsite = () => {
     const tourEmbedUrl = getYoutubeEmbedUrl(homeContent?.tourYoutubeUrl);
     const campusImages = homeContent?.campusImages || [];
     const testimonials = (homeContent?.testimonials || []).filter(t => t.name);
-
-    const tickerItems = homeContent?.showAnnouncementTicker !== false && isModuleEnabled(school, 'announcements')
-        ? [...(announcementsContent?.announcements || [])]
-            .filter(a => a.title)
-            .sort((a, b) => {
-                if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-                return (parseDate(b.date) || 0) - (parseDate(a.date) || 0);
-            })
-            .slice(0, 5)
-        : [];
-    const tickerVisible = tickerItems.length > 0;
 
     return (
         <>
@@ -541,18 +569,19 @@ const SchoolWebsite = () => {
 
                 {/* ── Latest Announcement Ticker — admin-toggleable in Home Page settings.
                      Sits above the Navbar (topOffset pushes the fixed Navbar down by the
-                     ticker's height) so it's only ever present on this page. ── */}
+                     ticker's real measured height) so it's only ever present on this page. ── */}
                 {tickerVisible && (
-                    <AnnouncementTicker slug={slug} tc={tc} items={tickerItems} />
+                    <AnnouncementTicker ref={tickerRef} slug={slug} tc={tc} items={tickerItems} />
                 )}
 
                 {/* ── Shared Navbar ── */}
-                <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" topOffset={tickerVisible ? 34 : 0} />
+                <Navbar ref={navRef} school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" topOffset={tickerVisible ? tickerHeight : 0} />
 
                 {/* ── Hero — video / banner slideshow background.
-                     marginTop pushes it below the fixed Navbar (92px, plus the ticker's 34px
-                     when visible) instead of the image starting behind/under the navbar. ── */}
-                <div style={{ width: '100%', marginTop: `${(tickerVisible ? 34 : 0) + 92}px`, height: `calc(100vh - ${(tickerVisible ? 34 : 0) + 92}px)`, minHeight: '500px', position: 'relative', overflow: 'hidden' }}>
+                     marginTop pushes it below the fixed Navbar and ticker (both measured live
+                     via ResizeObserver, not assumed) instead of the image starting behind/under
+                     them or leaving a gap — stays correct in both ticker states. ── */}
+                <div style={{ width: '100%', marginTop: `${(tickerVisible ? tickerHeight : 0) + navHeight}px`, height: `calc(100vh - ${(tickerVisible ? tickerHeight : 0) + navHeight}px)`, minHeight: '500px', position: 'relative', overflow: 'hidden' }}>
                     {heroBanners.length > 0 ? (
                         heroBanners.map((b, i) => (
                             <div key={b.id || b.url} aria-hidden={i !== bannerIndex}

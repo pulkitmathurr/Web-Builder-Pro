@@ -1,4 +1,10 @@
-const { loginService, logoutService, refreshTokenService } = require('./auth.service');
+const {
+    loginService,
+    logoutService,
+    refreshTokenService,
+    forgotPasswordService,
+    resetPasswordService,
+} = require('./auth.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
 
 const login = async (req, res) => {
@@ -67,4 +73,38 @@ const refreshToken = async (req, res) => {
     }
 };
 
-module.exports = { login, logout, refreshToken };
+const forgotPassword = async (req, res) => {
+    try {
+        const { email, role } = req.body;
+
+        if (!email || !role) {
+            return sendError(res, 'Email and role are required', 400);
+        }
+        if (!['super_admin', 'admin'].includes(role)) {
+            return sendError(res, 'Invalid role', 400);
+        }
+
+        await forgotPasswordService(email, role);
+
+        // Always the same response, whether or not the email exists.
+        return sendSuccess(res, 'If that email is registered, a reset link has been sent.');
+
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+const resetPassword = async (req, res) => {
+    try {
+        const { token, role, newPassword } = req.body;
+
+        await resetPasswordService(token, role, newPassword);
+
+        return sendSuccess(res, 'Password reset successful. You can now log in.');
+
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+module.exports = { login, logout, refreshToken, forgotPassword, resetPassword };
