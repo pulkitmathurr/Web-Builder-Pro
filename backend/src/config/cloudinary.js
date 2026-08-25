@@ -86,4 +86,12 @@ const uploadVideo = multer({
     limits: { fileSize: 50 * 1024 * 1024 },
 });
 
-module.exports = { cloudinary, upload, uploadContentImage, uploadPdf, uploadVideo };
+// Home page hero video only — same Cloudinary storage as uploadVideo, but capped
+// tighter (5MB) since it's a background/decorative clip, not the general-purpose
+// content video uploader other modules (e.g. Events) rely on staying at 50MB.
+const uploadHeroVideo = multer({
+    storage: videoStorage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+module.exports = { cloudinary, upload, uploadContentImage, uploadPdf, uploadVideo, uploadHeroVideo };

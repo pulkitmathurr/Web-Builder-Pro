@@ -1,5 +1,5 @@
 import axiosInstance from '../config/axios';
-import { assertImageSizeOk } from '../utils/fileValidation';
+import { assertImageSizeOk, assertHeroVideoSizeOk } from '../utils/fileValidation';
 
 // ── Profile ──────────────────────────────────────────
 export const getSchoolProfileApi = async () => {
@@ -42,6 +42,7 @@ export const resolveSchoolByDomainApi = async (domain) => {
 };
 
 export const uploadHeroVideoApi = async (formData) => {
+    assertHeroVideoSizeOk(formData.get('heroVideo'));
     const response = await axiosInstance.post('/school/hero-video', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });

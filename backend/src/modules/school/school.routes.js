@@ -16,7 +16,7 @@ const {
     getStorageUsage
 } = require('./school.controller');
 const { protect, isAdmin } = require('../../middlewares/auth.middleware');
-const { upload, uploadVideo, uploadContentImage, uploadPdf } = require('../../config/cloudinary');
+const { upload, uploadContentImage, uploadPdf, uploadHeroVideo: uploadHeroVideoMiddleware } = require('../../config/cloudinary');
 const { checkStorageLimitMiddleware } = require('../../utils/storage.utils');
 
 // ── Public Routes — No Auth ──────────────────────────
@@ -45,8 +45,8 @@ router.get('/storage-usage', getStorageUsage);
 // ── Logo Upload ──────────────────────────────────────
 router.post('/logo', checkStorageLimitMiddleware, upload.single('schoolLogo'), uploadSchoolLogo);
 
-// ── Video Upload ─────────────────────────────────────
-router.post('/hero-video', checkStorageLimitMiddleware, uploadVideo.single('heroVideo'), uploadHeroVideo);
+// ── Video Upload — 5MB cap, tighter than the shared content-video uploader ──
+router.post('/hero-video', checkStorageLimitMiddleware, uploadHeroVideoMiddleware.single('heroVideo'), uploadHeroVideo);
 
 // ── Welcome Banner Upload ────────────────────────────
 router.post('/welcome-banner', checkStorageLimitMiddleware, uploadContentImage.single('welcomeBanner'), uploadWelcomeBanner);
