@@ -78,3 +78,9 @@ export const uploadProspectusApi = async (formData) => {
     });
     return response.data;
 };
+
+// ── Storage Usage ─────────────────────────────────────
+export const getStorageUsageApi = async () => {
+    const response = await axiosInstance.get('/school/storage-usage');
+    return response.data;
+};

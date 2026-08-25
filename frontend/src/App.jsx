@@ -6,6 +6,7 @@ import { resolveSchoolByDomainApi } from './api/school.api';
 // Pages
 import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
 import SuperAdminLogin from './pages/auth/SuperAdminLogin';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
@@ -14,10 +15,12 @@ import ResetPassword from './pages/auth/ResetPassword';
 import SuperAdminDashboard from './pages/superAdmin/Dashboard';
 import ManageSchools from './pages/superAdmin/ManageSchools';
 import CreateSchool from './pages/superAdmin/CreateSchool';
+import Plans from './pages/superAdmin/Plans';
 
 // Admin
 import AdminDashboard from './pages/admin/Dashboard';
 import ModuleSelector from './pages/admin/ModuleSelector';
+import Billing from './pages/admin/Billing';
 import AdminSettings from './pages/admin/Settings';
 import ModulePage from './pages/admin/ModulePage';
 import ContactUs from './pages/admin/ContactUs';
@@ -157,6 +160,7 @@ const RootRouter = () => {
 
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
             <Route path="/super-admin/login" element={<SuperAdminLogin />} />
             <Route path="/forgot-password" element={<ForgotPassword role="admin" />} />
             <Route path="/super-admin/forgot-password" element={<ForgotPassword role="super_admin" />} />
@@ -177,6 +181,7 @@ const RootRouter = () => {
                 <Route path="dashboard" element={<SuperAdminDashboard />} />
                 <Route path="schools" element={<ManageSchools />} />
                 <Route path="schools/create" element={<CreateSchool />} />
+                <Route path="plans" element={<Plans />} />
             </Route>
 
             {/* Admin Protected Routes */}
@@ -188,6 +193,7 @@ const RootRouter = () => {
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="modules/select" element={<ModuleSelector />} />
+                <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<AdminSettings />} />
                 <Route path="contact" element={<ContactUs />} />
                 {/* Specific module routes pehle */}

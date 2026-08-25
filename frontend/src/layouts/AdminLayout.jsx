@@ -13,6 +13,7 @@ import { getFontFamily } from "../constants/fonts";
 const pageTitles = {
     "/admin/dashboard": "Dashboard",
     "/admin/modules/select": "Select Modules",
+    "/admin/billing": "Billing",
     "/admin/settings": "General Settings",
     "/admin/contact": "Contact Us",
     "/admin/module/home": "Home Page",
@@ -106,7 +107,12 @@ const AdminLayout = () => {
     const fetchModules = async () => {
         try {
             const res = await getSelectedModulesApi();
-            const { selectedModules: mods, isFirstLogin } = res.data;
+            const { selectedModules: mods, isFirstLogin, hasActivePlan } = res.data;
+            if (!hasActivePlan) {
+                if (location.pathname !== "/admin/billing") navigate("/admin/billing");
+                setLoading(false);
+                return;
+            }
             if (isFirstLogin) {
                 navigate("/admin/modules/select");
                 return;

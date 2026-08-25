@@ -9,11 +9,17 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Per-school folder suffix — keeps uploads segregated so Cloudinary's own usage
+// stats can be cross-checked against the tbl_media_usage ledger later. req.user is
+// already set by `protect` (which runs before these upload middlewares in every
+// route chain), so no extra DB lookup is needed here.
+const schoolFolder = (base) => (req) => `${base}/school-${req.user?.schoolId || 'misc'}`;
+
 // Image upload (small — logos, profile photos)
 const imageStorage = new CloudinaryStorage({
     cloudinary,
     params: {
-        folder: 'school-saas/schools',
+        folder: schoolFolder('school-saas/schools'),
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
         transformation: [{ width: 800, height: 800, crop: 'limit', quality: 'auto' }],
     },
@@ -23,7 +29,7 @@ const imageStorage = new CloudinaryStorage({
 const contentImageStorage = new CloudinaryStorage({
     cloudinary,
     params: {
-        folder: 'school-saas/content',
+        folder: schoolFolder('school-saas/content'),
         allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
         transformation: [{ width: 1920, height: 1920, crop: 'limit', quality: 'auto' }],
     },
@@ -42,7 +48,7 @@ const contentImageStorage = new CloudinaryStorage({
 const pdfStorage = new CloudinaryStorage({
     cloudinary,
     params: {
-        folder: 'school-saas/documents',
+        folder: schoolFolder('school-saas/documents'),
         resource_type: 'raw',
         allowed_formats: ['pdf'],
         public_id: (req, file) => `${Date.now()}-${file.originalname.replace(/\.pdf$/i, '').replace(/[^a-zA-Z0-9-_]/g, '_')}.pdf`,
@@ -53,7 +59,7 @@ const pdfStorage = new CloudinaryStorage({
 const videoStorage = new CloudinaryStorage({
     cloudinary,
     params: {
-        folder: 'school-saas/videos',
+        folder: schoolFolder('school-saas/videos'),
         resource_type: 'video',
         allowed_formats: ['mp4', 'webm', 'mov'],
         transformation: [{ quality: 'auto', fetch_format: 'mp4' }],

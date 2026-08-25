@@ -6,6 +6,7 @@ const {
     getPublishedModuleKeysService,
 } = require('./content.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
+const { recordMediaUsage } = require('../../utils/storage.utils');
 
 const getModuleContent = async (req, res) => {
     try {
@@ -70,6 +71,14 @@ const uploadContentImageHandler = async (req, res) => {
         if (!req.file) {
             return sendError(res, 'No image uploaded', 400);
         }
+        await recordMediaUsage({
+            schoolId: req.user.schoolId,
+            moduleKey: req.query.moduleKey,
+            resourceType: 'image',
+            sizeBytes: req.file.size,
+            url: req.file.path,
+            publicId: req.file.filename,
+        });
         return sendSuccess(res, 'Image uploaded', { url: req.file.path });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -81,6 +90,14 @@ const uploadPdfHandler = async (req, res) => {
         if (!req.file) {
             return sendError(res, 'No PDF uploaded', 400);
         }
+        await recordMediaUsage({
+            schoolId: req.user.schoolId,
+            moduleKey: req.query.moduleKey,
+            resourceType: 'pdf',
+            sizeBytes: req.file.size,
+            url: req.file.path,
+            publicId: req.file.filename,
+        });
         return sendSuccess(res, 'PDF uploaded', { url: req.file.path });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -92,6 +109,14 @@ const uploadVideoHandler = async (req, res) => {
         if (!req.file) {
             return sendError(res, 'No video uploaded', 400);
         }
+        await recordMediaUsage({
+            schoolId: req.user.schoolId,
+            moduleKey: req.query.moduleKey,
+            resourceType: 'video',
+            sizeBytes: req.file.size,
+            url: req.file.path,
+            publicId: req.file.filename,
+        });
         return sendSuccess(res, 'Video uploaded', { url: req.file.path });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);

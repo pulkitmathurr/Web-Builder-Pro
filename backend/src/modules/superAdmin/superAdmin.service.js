@@ -2,6 +2,7 @@ const { pool } = require("../../config/db");
 const bcrypt = require("bcryptjs");
 const { v4: uuidv4 } = require("uuid");
 const AppError = require("../../utils/error.utils");
+const { sendMail } = require("../../config/mailer");
 
 // ── Create School ────────────────────────────────────
 const createSchoolService = async (schoolData, superAdminId) => {
@@ -29,9 +30,11 @@ const createSchoolService = async (schoolData, superAdminId) => {
 // ── Get All Schools ──────────────────────────────────
 const getAllSchoolsService = async () => {
     const [schools] = await pool.query(
-        `SELECT s.*, a.name as admin_name, a.email as admin_email
+        `SELECT s.*, a.name as admin_name, a.email as admin_email,
+                p.tenure_years as plan_tenure_years, p.storage_mb as plan_storage_mb
         FROM tbl_schools s
         LEFT JOIN tbl_admins a ON s.id = a.school_id
+        LEFT JOIN tbl_plans p ON s.plan_id = p.id
         ORDER BY s.created_at DESC`
     );
     return schools;
@@ -150,8 +153,8 @@ const createSchoolWithAdminService = async (data, superAdminId, logoUrl = null) 
 
 // ── Delete School ─────────────────────────────────────
 // Removes the school and everything scoped to it (admins, their refresh
-// tokens, and all module content) in one transaction so a failure partway
-// through can't leave orphaned rows behind.
+// tokens, module content, storage ledger rows, and payment records) in one
+// transaction so a failure partway through can't leave orphaned rows behind.
 const deleteSchoolService = async (uuid) => {
     const conn = await pool.getConnection();
     try {
@@ -168,6 +171,8 @@ const deleteSchoolService = async (uuid) => {
         }
         await conn.query("DELETE FROM tbl_admins WHERE school_id = ?", [schoolId]);
         await conn.query("DELETE FROM tbl_module_content WHERE school_id = ?", [schoolId]);
+        await conn.query("DELETE FROM tbl_media_usage WHERE school_id = ?", [schoolId]);
+        await conn.query("DELETE FROM tbl_payments WHERE school_id = ?", [schoolId]);
         await conn.query("DELETE FROM tbl_schools WHERE id = ?", [schoolId]);
 
         await conn.commit();
@@ -212,6 +217,85 @@ const getDashboardStatsService = async () => {
     };
 };
 
+// ── Get Pending Schools (self-signups awaiting approval) ─────────────
+const getPendingSchoolsService = async () => {
+    const [schools] = await pool.query(
+        `SELECT s.id, s.uuid, s.name, s.slug, s.email, s.phone, s.created_at,
+                a.name as admin_name, a.email as admin_email
+        FROM tbl_schools s
+        LEFT JOIN tbl_admins a ON s.id = a.school_id
+        WHERE s.status = 'pending'
+        ORDER BY s.created_at DESC`
+    );
+    return schools;
+};
+
+// ── Approve School ───────────────────────────────────
+const approveSchoolService = async (uuid) => {
+    const [schools] = await pool.query(
+        `SELECT s.id, s.name, a.name as admin_name, a.email as admin_email
+        FROM tbl_schools s LEFT JOIN tbl_admins a ON s.id = a.school_id
+        WHERE s.uuid = ?`,
+        [uuid]
+    );
+    if (schools.length === 0) throw new AppError("School not found", 404);
+    const school = schools[0];
+
+    await pool.query("UPDATE tbl_schools SET status = 'active' WHERE uuid = ?", [uuid]);
+
+    try {
+        await sendMail({
+            to: school.admin_email,
+            subject: "Your Web Builder Pro account is approved",
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; color: #20242C;">
+                    <h2 style="color: #4169E1;">You're approved!</h2>
+                    <p>Hi ${school.admin_name || ""},</p>
+                    <p><strong>${school.name}</strong>'s account has been approved. Log in to choose your plan and go live.</p>
+                    <p style="margin: 28px 0;">
+                        <a href="${process.env.FRONTEND_URL}/login" style="background: #4169E1; color: #fff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                            Log In
+                        </a>
+                    </p>
+                    <p style="color: #9aa3b8; font-size: 12px; margin-top: 32px;">Web Builder Pro</p>
+                </div>
+            `,
+        });
+    } catch (err) {
+        console.error("Failed to send approval email:", err.message);
+    }
+
+    return { message: "School approved" };
+};
+
+// ── Reject School ─────────────────────────────────────
+const rejectSchoolService = async (uuid) => {
+    const [school] = await pool.query("SELECT id FROM tbl_schools WHERE uuid = ?", [uuid]);
+    if (school.length === 0) throw new AppError("School not found", 404);
+
+    await pool.query("UPDATE tbl_schools SET status = 'suspended' WHERE uuid = ?", [uuid]);
+    return { message: "School rejected" };
+};
+
+// ── Assign Plan (backfill existing schools / manual override) ────────
+const assignPlanService = async (uuid, planId) => {
+    const [school] = await pool.query("SELECT id FROM tbl_schools WHERE uuid = ?", [uuid]);
+    if (school.length === 0) throw new AppError("School not found", 404);
+
+    const [plans] = await pool.query("SELECT id, tenure_years FROM tbl_plans WHERE id = ? AND is_active = 1", [planId]);
+    if (plans.length === 0) throw new AppError("Plan not found", 404);
+    const plan = plans[0];
+
+    await pool.query(
+        `UPDATE tbl_schools
+        SET plan_id = ?, plan_start_date = CURDATE(), plan_end_date = DATE_ADD(CURDATE(), INTERVAL ? YEAR)
+        WHERE id = ?`,
+        [plan.id, plan.tenure_years, school[0].id]
+    );
+
+    return { message: "Plan assigned" };
+};
+
 module.exports = {
     createSchoolService,
     getAllSchoolsService,
@@ -222,4 +306,8 @@ module.exports = {
     updateAdminStatusService,
     createSchoolWithAdminService,
     getDashboardStatsService,
+    getPendingSchoolsService,
+    approveSchoolService,
+    rejectSchoolService,
+    assignPlanService,
 };

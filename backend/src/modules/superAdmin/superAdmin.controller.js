@@ -8,6 +8,10 @@ const {
     updateAdminStatusService,
     createSchoolWithAdminService,
     getDashboardStatsService,
+    getPendingSchoolsService,
+    approveSchoolService,
+    rejectSchoolService,
+    assignPlanService,
 } = require('./superAdmin.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
 
@@ -93,6 +97,42 @@ const getDashboardStats = async (req, res) => {
     }
 };
 
+const getPendingSchools = async (req, res) => {
+    try {
+        const schools = await getPendingSchoolsService();
+        return sendSuccess(res, 'Pending schools fetched', schools);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+const approveSchool = async (req, res) => {
+    try {
+        const result = await approveSchoolService(req.params.uuid);
+        return sendSuccess(res, result.message);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+const rejectSchool = async (req, res) => {
+    try {
+        const result = await rejectSchoolService(req.params.uuid);
+        return sendSuccess(res, result.message);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+const assignPlan = async (req, res) => {
+    try {
+        const result = await assignPlanService(req.params.uuid, req.body.planId);
+        return sendSuccess(res, result.message);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 module.exports = {
     createSchool,
     getAllSchools,
@@ -103,4 +143,8 @@ module.exports = {
     updateAdminStatus,
     createSchoolWithAdmin,
     getDashboardStats,
+    getPendingSchools,
+    approveSchool,
+    rejectSchool,
+    assignPlan,
 };

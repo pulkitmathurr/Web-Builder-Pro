@@ -49,6 +49,10 @@ const loginService = async (email, password, role) => {
     if (schoolRows[0].status === "suspended") {
       throw new AppError("Your school account has been suspended", 403);
     }
+
+    if (schoolRows[0].status === "pending") {
+      throw new AppError("Your account is still awaiting Super Admin approval", 403);
+    }
   }
 
   // Step 4 — Generate tokens

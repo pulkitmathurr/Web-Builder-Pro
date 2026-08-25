@@ -106,9 +106,12 @@ const selectModulesService = async (schoolId, modules) => {
 };
 
 // ── Get Selected Modules ─────────────────────────────
+// Also returns hasActivePlan — the AdminLayout gate piggybacks on this same
+// call (already fired on every admin route change) rather than adding a
+// second round-trip just to check plan status.
 const getSelectedModulesService = async (schoolId) => {
     const [schools] = await pool.query(
-        "SELECT selected_modules, is_first_login FROM tbl_schools WHERE id = ?",
+        "SELECT selected_modules, is_first_login, plan_id FROM tbl_schools WHERE id = ?",
         [schoolId]
     );
 
@@ -123,6 +126,42 @@ const getSelectedModulesService = async (schoolId) => {
                 : schools[0].selected_modules
             : [],
         isFirstLogin: schools[0].is_first_login,
+        hasActivePlan: schools[0].plan_id !== null,
+    };
+};
+
+// ── Get Storage Usage ─────────────────────────────────
+const getStorageUsageService = async (schoolId) => {
+    const [rows] = await pool.query(
+        `SELECT s.storage_used_bytes, p.storage_mb
+        FROM tbl_schools s
+        LEFT JOIN tbl_plans p ON s.plan_id = p.id
+        WHERE s.id = ?`,
+        [schoolId]
+    );
+    if (rows.length === 0) throw new AppError("School not found", 404);
+    const { storage_used_bytes, storage_mb } = rows[0];
+    const limitBytes = storage_mb ? storage_mb * 1024 * 1024 : 0;
+    const usedBytes = Number(storage_used_bytes) || 0;
+
+    const [breakdown] = await pool.query(
+        `SELECT COALESCE(module_key, 'other') as moduleKey, SUM(file_size_bytes) as bytes
+        FROM tbl_media_usage
+        WHERE school_id = ?
+        GROUP BY COALESCE(module_key, 'other')
+        ORDER BY bytes DESC`,
+        [schoolId]
+    );
+
+    return {
+        usedBytes,
+        limitBytes,
+        percent: limitBytes > 0 ? Math.min(100, Math.round((usedBytes / limitBytes) * 100)) : 0,
+        breakdown: breakdown.map((row) => ({
+            moduleKey: row.moduleKey,
+            bytes: Number(row.bytes),
+            percent: usedBytes > 0 ? Math.round((Number(row.bytes) / usedBytes) * 100) : 0,
+        })),
     };
 };
 
@@ -216,4 +255,5 @@ module.exports = {
     getPublicSchoolService,
     getSchoolSlugByDomainService,
     getDashboardStatsService,
+    getStorageUsageService,
 };

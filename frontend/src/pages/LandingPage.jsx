@@ -311,7 +311,7 @@ const LandingPage = () => {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <button onClick={() => navigate('/login')} className={`lp-nav-link ${scrolled ? 'lp-nav-link-dark' : 'lp-nav-link-light'}`} style={{ fontSize: '12.5px', fontWeight: 600, color: scrolled ? TEXT_DARK : '#ffffff', background: 'none', border: 'none', cursor: 'pointer' }}>Log in</button>
-                        <button onClick={() => navigate('/login')} className="lp-btn"
+                        <button onClick={() => navigate('/signup')} className="lp-btn"
                             style={{ padding: '7px 16px', background: '#ffffff', color: BLUE_DARK, border: 'none', borderRadius: '8px', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
                             Get Started
                         </button>
@@ -604,7 +604,7 @@ const LandingPage = () => {
                             <p style={{ fontSize: '14.5px', color: TEXT_MUTED_LIGHT, lineHeight: 1.8, marginBottom: '1.75rem' }}>
                                 Every plan comes with a fast, secure, reliable platform — so you can focus on your school, not your website.
                             </p>
-                            <button onClick={() => navigate('/login')} className="lp-btn"
+                            <button onClick={() => navigate('/signup')} className="lp-btn"
                                 style={{ padding: '13px 26px', background: `linear-gradient(135deg,${BLUE},${BLUE_DARK})`, color: '#fff', border: 'none', borderRadius: '11px', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(65,105,225,0.32)' }}>
                                 Get Started
                             </button>

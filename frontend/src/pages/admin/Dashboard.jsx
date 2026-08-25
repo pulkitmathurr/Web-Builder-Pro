@@ -4,6 +4,7 @@ import { getSchoolProfileApi, getSelectedModulesApi } from '../../api/school.api
 import { moduleRegistry } from '../../config/moduleRegistry';
 import useAuthStore from '../../store/authStore';
 import useSchoolStore from '../../store/schoolStore';
+import StorageUsageBar from '../../components/admin/StorageUsageBar';
 
 const hexToRgba = (hex, alpha) => {
     const h = hex.replace('#', '');
@@ -353,6 +354,8 @@ const AdminDashboard = () => {
                         </div>
                     ))}
                 </div>
+
+                <StorageUsageBar />
 
                 {/* Bottom Grid */}
                 <div className="dash-bottom-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1.8fr', gap: '1.25rem' }}>

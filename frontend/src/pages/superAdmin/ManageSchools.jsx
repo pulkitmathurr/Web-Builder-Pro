@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllSchoolsApi, updateSchoolStatusApi, deleteSchoolApi } from '../../api/superAdmin.api';
+import { getAllSchoolsApi, updateSchoolStatusApi, deleteSchoolApi, approveSchoolApi, rejectSchoolApi, assignPlanApi } from '../../api/superAdmin.api';
+import { getActivePlansApi } from '../../api/plans.api';
 import toast from 'react-hot-toast';
 
 const ManageSchools = () => {
@@ -11,6 +12,9 @@ const ManageSchools = () => {
     const [filter, setFilter] = useState('all');
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [deleting, setDeleting] = useState(false);
+    const [planTarget, setPlanTarget] = useState(null);
+    const [plans, setPlans] = useState([]);
+    const [assigning, setAssigning] = useState(false);
 
     useEffect(() => { fetchSchools(); }, []);
 
@@ -32,6 +36,51 @@ const ManageSchools = () => {
             fetchSchools();
         } catch (e) {
             toast.error('Failed to update status');
+        }
+    };
+
+    const handleApprove = async (uuid) => {
+        try {
+            await approveSchoolApi(uuid);
+            toast.success('School approved — they can now log in and pick a plan');
+            fetchSchools();
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Failed to approve');
+        }
+    };
+
+    const handleReject = async (uuid) => {
+        try {
+            await rejectSchoolApi(uuid);
+            toast.success('School rejected');
+            fetchSchools();
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Failed to reject');
+        }
+    };
+
+    const openAssignPlan = async (school) => {
+        setPlanTarget(school);
+        try {
+            const res = await getActivePlansApi();
+            setPlans(res.data || []);
+        } catch (e) {
+            toast.error('Failed to load plans');
+        }
+    };
+
+    const handleAssignPlan = async (planId) => {
+        if (!planTarget) return;
+        setAssigning(true);
+        try {
+            await assignPlanApi(planTarget.uuid, planId);
+            toast.success('Plan assigned');
+            setPlanTarget(null);
+            fetchSchools();
+        } catch (e) {
+            toast.error(e.response?.data?.message || 'Failed to assign plan');
+        } finally {
+            setAssigning(false);
         }
     };
 
@@ -171,8 +220,8 @@ const ManageSchools = () => {
                 <div className="ms-section" style={{ background: '#ffffff', border: '1px solid #eef1f6', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 10px rgba(15,23,42,0.03)' }}>
 
                     {/* Header */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '2.3fr 1.4fr 1fr 0.8fr 1.5fr', padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #eef1f6' }}>
-                        {['School', 'Admin', 'Location', 'Status', 'Actions'].map(h => (
+                    <div style={{ display: 'grid', gridTemplateColumns: '2.1fr 1.3fr 0.9fr 1fr 0.8fr 1.9fr', padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #eef1f6' }}>
+                        {['School', 'Admin', 'Location', 'Plan', 'Status', 'Actions'].map(h => (
                             <span key={h} style={{ fontSize: '10px', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 700 }}>{h}</span>
                         ))}
                     </div>
@@ -202,7 +251,7 @@ const ManageSchools = () => {
                             const sc = statusConfig[school.status] || statusConfig.pending;
                             return (
                                 <div key={school.id} className="school-row"
-                                    style={{ display: 'grid', gridTemplateColumns: '2.3fr 1.4fr 1fr 0.8fr 1.5fr', padding: '16px 20px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none', alignItems: 'center' }}>
+                                    style={{ display: 'grid', gridTemplateColumns: '2.1fr 1.3fr 0.9fr 1fr 0.8fr 1.9fr', padding: '16px 20px', borderBottom: i < filtered.length - 1 ? '1px solid #f1f5f9' : 'none', alignItems: 'center' }}>
 
                                     {/* School */}
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -231,6 +280,17 @@ const ManageSchools = () => {
                                         <p style={{ fontSize: '11px', color: '#94a3b8' }}>{school.state || '—'}</p>
                                     </div>
 
+                                    {/* Plan */}
+                                    <div>
+                                        {school.plan_tenure_years ? (
+                                            <>
+                                                <p style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>{school.plan_tenure_years}yr · {school.plan_storage_mb >= 1024 ? `${school.plan_storage_mb / 1024}GB` : `${school.plan_storage_mb}MB`}</p>
+                                            </>
+                                        ) : (
+                                            <p style={{ fontSize: '11.5px', color: '#cbd5e1' }}>No plan</p>
+                                        )}
+                                    </div>
+
                                     {/* Status */}
                                     <div>
                                         <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '20px', background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, display: 'inline-flex', alignItems: 'center', gap: '5px', fontWeight: 600 }}>
@@ -241,20 +301,42 @@ const ManageSchools = () => {
 
                                     {/* Actions */}
                                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                                        {school.status !== 'active' && (
-                                            <button className="action-btn"
-                                                onClick={() => handleStatusChange(school.uuid, 'active')}
-                                                style={{ padding: '5px 10px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
-                                                Activate
-                                            </button>
+                                        {school.status === 'pending' ? (
+                                            <>
+                                                <button className="action-btn"
+                                                    onClick={() => handleApprove(school.uuid)}
+                                                    style={{ padding: '5px 10px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                                    Approve
+                                                </button>
+                                                <button className="action-btn"
+                                                    onClick={() => handleReject(school.uuid)}
+                                                    style={{ padding: '5px 10px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                                    Reject
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {school.status !== 'active' && (
+                                                    <button className="action-btn"
+                                                        onClick={() => handleStatusChange(school.uuid, 'active')}
+                                                        style={{ padding: '5px 10px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                                        Activate
+                                                    </button>
+                                                )}
+                                                {school.status !== 'suspended' && (
+                                                    <button className="action-btn"
+                                                        onClick={() => handleStatusChange(school.uuid, 'suspended')}
+                                                        style={{ padding: '5px 10px', background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                                        Suspend
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
-                                        {school.status !== 'suspended' && (
-                                            <button className="action-btn"
-                                                onClick={() => handleStatusChange(school.uuid, 'suspended')}
-                                                style={{ padding: '5px 10px', background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
-                                                Suspend
-                                            </button>
-                                        )}
+                                        <button className="action-btn"
+                                            onClick={() => openAssignPlan(school)}
+                                            style={{ padding: '5px 10px', background: '#eef2ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
+                                            {school.plan_tenure_years ? 'Change Plan' : 'Assign Plan'}
+                                        </button>
                                         <button className="action-btn"
                                             onClick={() => setDeleteTarget(school)}
                                             style={{ padding: '5px 10px', background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', fontWeight: 600 }}>
@@ -314,6 +396,43 @@ const ManageSchools = () => {
                                     boxShadow: '0 4px 14px rgba(185,28,28,0.3)',
                                 }}>
                                 {deleting ? 'Deleting...' : 'Delete School'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Assign Plan Modal ── */}
+            {planTarget && (
+                <div onClick={() => !assigning && setPlanTarget(null)}
+                    style={{ position: 'fixed', inset: 0, zIndex: 5000, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                    <div onClick={e => e.stopPropagation()}
+                        style={{ background: '#ffffff', maxWidth: '440px', width: '100%', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 30px 80px rgba(15,23,42,0.35)' }}>
+                        <div style={{ padding: '1.75rem 1.75rem 1.25rem' }}>
+                            <h3 style={{ fontSize: '17px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Assign a plan</h3>
+                            <p style={{ fontSize: '13px', color: '#94a3b8', marginBottom: '18px' }}>
+                                For <strong style={{ color: '#334155' }}>{planTarget.name}</strong> — sets storage limit and plan dates immediately, no payment involved.
+                            </p>
+                            {plans.length === 0 ? (
+                                <p style={{ fontSize: '13px', color: '#94a3b8', textAlign: 'center', padding: '1rem 0' }}>Loading plans...</p>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto' }}>
+                                    {plans.map(p => (
+                                        <button key={p.id} disabled={assigning} onClick={() => handleAssignPlan(p.id)}
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', border: '1px solid #eef1f6', borderRadius: '10px', background: '#f8fafc', cursor: assigning ? 'not-allowed' : 'pointer', textAlign: 'left' }}>
+                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
+                                                {p.tenure_years} Year{p.tenure_years > 1 ? 's' : ''} · {p.storage_mb >= 1024 ? `${p.storage_mb / 1024}GB` : `${p.storage_mb}MB`}
+                                            </span>
+                                            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#4f6ef7' }}>₹{p.price}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ padding: '0 1.75rem 1.5rem' }}>
+                            <button onClick={() => setPlanTarget(null)} disabled={assigning}
+                                style={{ width: '100%', padding: '10px', background: '#f8fafc', color: '#475569', border: '1px solid #eef1f6', borderRadius: '10px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                                Cancel
                             </button>
                         </div>
                     </div>

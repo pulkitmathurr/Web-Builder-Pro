@@ -6,8 +6,10 @@ const {
     getSelectedModulesService,
     getPublicSchoolService,
     getSchoolSlugByDomainService,
+    getStorageUsageService,
 } = require('./school.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
+const { recordMediaUsage } = require('../../utils/storage.utils');
 
 // ── Get School Profile ───────────────────────────────
 const getSchoolProfile = async (req, res) => {
@@ -89,6 +91,7 @@ const uploadHeroVideo = async (req, res) => {
             hero_video_url: videoUrl,
             hero_video_title: title
         });
+        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: null, resourceType: 'video', sizeBytes: req.file.size, url: videoUrl, publicId: req.file.filename });
         return sendSuccess(res, 'Hero video uploaded successfully', { hero_video_url: videoUrl });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -101,6 +104,7 @@ const uploadSchoolLogo = async (req, res) => {
         if (!req.file) return sendError(res, 'No file uploaded', 400);
         const logoUrl = req.file.path;
         await updateSchoolProfileService(req.user.schoolId, { logo_url: logoUrl });
+        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: null, resourceType: 'image', sizeBytes: req.file.size, url: logoUrl, publicId: req.file.filename });
         return sendSuccess(res, 'Logo uploaded successfully', { logo_url: logoUrl });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -113,6 +117,7 @@ const uploadWelcomeBanner = async (req, res) => {
         if (!req.file) return sendError(res, 'No file uploaded', 400);
         const bannerUrl = req.file.path;
         await updateSchoolProfileService(req.user.schoolId, { welcome_banner_url: bannerUrl });
+        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: null, resourceType: 'image', sizeBytes: req.file.size, url: bannerUrl, publicId: req.file.filename });
         return sendSuccess(res, 'Welcome banner uploaded successfully', { welcome_banner_url: bannerUrl });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -125,6 +130,7 @@ const uploadFooterBackground = async (req, res) => {
         if (!req.file) return sendError(res, 'No file uploaded', 400);
         const footerBgUrl = req.file.path;
         await updateSchoolProfileService(req.user.schoolId, { footer_bg_url: footerBgUrl });
+        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: null, resourceType: 'image', sizeBytes: req.file.size, url: footerBgUrl, publicId: req.file.filename });
         return sendSuccess(res, 'Footer background uploaded successfully', { footer_bg_url: footerBgUrl });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -137,6 +143,7 @@ const uploadProspectus = async (req, res) => {
         if (!req.file) return sendError(res, 'No file uploaded', 400);
         const prospectusUrl = req.file.path;
         await updateSchoolProfileService(req.user.schoolId, { prospectus_url: prospectusUrl });
+        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: null, resourceType: 'pdf', sizeBytes: req.file.size, url: prospectusUrl, publicId: req.file.filename });
         return sendSuccess(res, 'Prospectus uploaded successfully', { prospectus_url: prospectusUrl });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -147,6 +154,15 @@ const getDashboardStats = async (req, res) => {
     try {
         const stats = await getDashboardStatsService();
         return sendSuccess(res, 'Dashboard stats fetched', stats);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+const getStorageUsage = async (req, res) => {
+    try {
+        const usage = await getStorageUsageService(req.user.schoolId);
+        return sendSuccess(res, 'Storage usage fetched', usage);
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
     }
@@ -166,4 +182,5 @@ module.exports = {
     uploadFooterBackground,
     uploadProspectus,
     getDashboardStats,
+    getStorageUsage,
 };
