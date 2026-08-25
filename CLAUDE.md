@@ -69,6 +69,21 @@ queries are hand-written SQL in `*.service.js` files.
   See "Generic content system" below for the module keys in use.
 - **`tbl_refresh_tokens`** — tracks issued refresh tokens (`admin_id` or `super_admin_id`,
   `expires_at`, `is_revoked`) so they can be revoked on logout.
+- **`tbl_plans`** — the fixed 3 (tenure_years: 1/2/3) × 3 (storage_mb: 200/400/1024) pricing
+  grid, `price` + `is_active` editable by the Super Admin. Seeded by
+  `database/tbl_plans_and_billing.sql`.
+- **`tbl_payments`** — one row per Razorpay order (`school_id`, `plan_id`,
+  `razorpay_order_id/payment_id/signature`, `status`: `created`/`paid`/`failed`), created by
+  the `billing/` module when a school starts checkout.
+- **`tbl_media_usage`** — append-only storage ledger, one row per Cloudinary upload
+  (`school_id`, `module_key` nullable, `resource_type`, `file_size_bytes`,
+  `cloudinary_public_id`). Backs both the storage-limit check and the dashboard usage
+  breakdown. See "Plans & Billing" below — there's no reclaim on delete/replace yet.
+- **`tbl_schools`** also has `plan_id` (FK → `tbl_plans`, nullable), `plan_start_date`,
+  `plan_end_date`, and `storage_used_bytes` (denormalized running total, kept in sync with
+  `tbl_media_usage` by `backend/src/utils/storage.utils.js#recordMediaUsage` so the usage bar
+  is a cheap single-row read). `created_by` is nullable (self-signups have no creating Super
+  Admin, unlike every prior school-creation path).
 
 ## Architecture
 
@@ -394,6 +409,55 @@ Both show an inline success state ("Enquiry Submitted!" / "Application Submitted
 than as flat top-level items — the navbar was already at capacity (see Known bugs) and grouping
 keeps room for future modules.
 
+### Plans & Billing (self-signup → approval → forced billing)
+
+Different in kind from every content module — this is the platform's commercial/onboarding
+flow, spanning four new backend modules plus a login-time gate, not the generic `content/`
+system.
+
+**Flow**: `/signup` (public, `Signup.jsx` → `POST /api/signup`) collects school + admin details
+only — **no plan/payment at signup**. This creates the school as `status='pending'`
+(`tbl_schools.status` — the existing `active|suspended|pending` ENUM is reused as the approval
+gate, no new column) and fires a "request received" email via `backend/src/config/mailer.js`.
+`auth.service.js`'s login check rejects `status === 'pending'` explicitly. Super Admin sees
+pending requests as a "Pending" filter + Approve/Reject/Assign Plan actions bolted onto the
+existing `ManageSchools.jsx` (not a separate page) — Approve flips `status` to `active` and
+fires a second "you're approved" email; Reject reuses `status='suspended'`. On first login after
+approval, `AdminLayout.jsx`'s `fetchModules()` effect (which already calls
+`getSelectedModulesApi` on every route change for the `is_first_login` → `/admin/modules/select`
+gate) also reads a new `hasActivePlan` field from that same response and force-redirects to
+`/admin/billing` (`Billing.jsx`) if `plan_id IS NULL` — checked *before* the module-selection
+gate. `Billing.jsx` is tenure → storage → Razorpay Checkout.js; `POST /api/billing/create-order`
+then `/api/billing/verify-payment` (HMAC signature check) sets `plan_id`/`plan_start_date`/
+`plan_end_date`, which flips `hasActivePlan` true and unlocks the rest of the admin panel.
+
+**Pricing**: one global ₹ price per of the 9 tenure×storage combos (`plans/` module), edited
+from the Super Admin's `Plans.jsx` page — not negotiated per school. All modules are included
+in every plan; the only differentiators are tenure, storage cap, and price.
+
+**Storage enforcement**: `backend/src/utils/storage.utils.js` exports `checkStorageLimitMiddleware`
+(pre-check using the `Content-Length` header, wired in front of every upload route in both
+`content/` and `school/`) and `recordMediaUsage` (called after a successful upload, in every
+upload handler — inserts into `tbl_media_usage` and bumps `tbl_schools.storage_used_bytes`).
+Cloudinary uploads are segregated per-school (`backend/src/config/cloudinary.js`'s `folder`
+params are now `(req) => ...school-${req.user.schoolId}` instead of static strings) so
+Cloudinary's own usage stats could be cross-checked against the ledger later if needed.
+`GET /api/school/storage-usage` feeds `components/admin/StorageUsageBar.jsx` (dropped into the
+School Admin `Dashboard.jsx`) — overall used/limit bar plus a per-`module_key` breakdown.
+**Known gap**: there's no reclaim/decrement when content is edited/replaced — the ledger only
+grows, since no code path anywhere deletes the old Cloudinary asset on replace (pre-existing gap,
+not introduced by this feature). A school with no `plan_id` is treated as storage-unlimited by
+`checkStorageLimit` — in practice this can't happen for real uploads since a school can't reach
+any content page without an active plan (see the `AdminLayout` gate above); it only matters for
+the handful of pre-existing schools created before this feature shipped (see backlog below).
+
+**Backfilling pre-existing schools**: every school created before this feature has `plan_id
+NULL`, so the `hasActivePlan` gate in `AdminLayout.jsx` applies to them too — without action,
+their next login force-redirects into `/admin/billing` same as a fresh approval. Run the Super
+Admin "Assign Plan" action (same button used for approvals, in `ManageSchools.jsx`) against each
+pre-existing school once, before/at rollout, so no currently-working admin gets unexpectedly
+routed into a forced checkout. See Outstanding backlog.
+
 ## Known bugs / non-bugs
 
 - **Cloudinary `Request Timeout` / `http_code 499`** on upload — a network issue, not a code
@@ -431,6 +495,19 @@ keeps room for future modules.
   against any other environment (staging/production) before the Admission/Career Enquiry
   modules will work there; the rest of the schema is hand-managed the same way.
 - **TC Generation System upgrade** (planned, spec ready) — see TC Information section above.
+- **Plans & Billing — built, not yet fully rolled out**: see the Plans & Billing section above.
+  Remaining before this is live in production:
+  - Apply `database/tbl_plans_and_billing.sql` to any other environment (same hand-applied
+    convention as the rest of the schema).
+  - Set real `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` (currently blank in `.env.example`) —
+    `billing/` gracefully 503s with "Payments aren't configured yet" until these are set, it
+    doesn't crash the server.
+  - Set real ₹ prices for the 9 plan combos from the Super Admin Plans page (seeded at ₹0).
+  - Run "Assign Plan" against every pre-existing school once, before real admins hit the new
+    `hasActivePlan` login gate (see Backfilling note above).
+  - Not built yet: plan expiry/renewal enforcement (`plan_end_date` is stored but nothing
+    blocks access once it lapses), storage reclaim on content replace/delete, and a rejection
+    email (only the signup-received and approval emails are wired).
 
 ## Working style / communication notes
 
