@@ -48,6 +48,16 @@ const FOOTER_LINKS = [
     { key: 'sports',       label: 'Sports',       path: (slug) => `/school/${slug}/sports` },
     { key: 'gallery',      label: 'Gallery',      path: (slug) => `/school/${slug}/gallery/photo` },
     { key: 'achievements', label: 'Achievements', path: (slug) => `/school/${slug}/achievements` },
+    { key: 'announcements', label: 'Announcements',      path: (slug) => `/school/${slug}/announcements` },
+    { key: 'events',        label: 'Events & Activities', path: (slug) => `/school/${slug}/events` },
+    { key: 'calendar',      label: 'Event Calendar',     path: (slug) => `/school/${slug}/calendar` },
+    { key: 'circulars',     label: 'Circulars',          path: (slug) => `/school/${slug}/circulars` },
+    { key: 'results',       label: 'Results',            path: (slug) => `/school/${slug}/results` },
+    // Admission/Career Enquiry have no standalone public page — they open the same
+    // floating enquiry modal (EnquiryWidget.jsx) as the Home hero's CTA buttons do,
+    // via these window events, so `action` is used instead of `path` for these two.
+    { key: 'admission', label: 'Admission Enquiry', action: () => window.dispatchEvent(new Event('open-admission-enquiry')) },
+    { key: 'career',    label: 'Career Enquiry',    action: () => window.dispatchEvent(new Event('open-career-enquiry')) },
 ];
 
 // ── Small accent-bar section heading, matching the reference design's
@@ -121,10 +131,16 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                 @media (max-width: 480px) {
                     .footer-main-grid { grid-template-columns: 1fr !important; }
                 }
+                @media (max-width: 700px) {
+                    .footer-quicklinks { columns: 2 !important; }
+                }
+                @media (max-width: 480px) {
+                    .footer-quicklinks { columns: 1 !important; }
+                }
                 .footer-link:hover { color: #ffffff !important; }
                 .footer-social:hover { color: #fff !important; }
                 .footer-totop:hover { color: #fff !important; }
-                .footer-quicklinks { column-gap: 38px; }
+                .footer-quicklinks { column-gap: 28px; }
             `}</style>
 
             {/* Background — a subtle diagonal navy-toned gradient off the school's own
@@ -141,7 +157,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
 
                 <div className="footer-main-grid" style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(240px,1.3fr) minmax(150px,0.9fr) minmax(210px,1fr) minmax(200px,1fr)',
+                    gridTemplateColumns: 'minmax(240px,1.1fr) minmax(280px,1.5fr) minmax(210px,1fr) minmax(240px,1.2fr)',
                     gap: '2.5rem',
                     alignItems: 'start',
                 }}>
@@ -195,12 +211,13 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                     {quickLinks.length > 0 && (
                         <div>
                             <SectionHeading accent={accent}>Quick Links</SectionHeading>
-                            <div className="footer-quicklinks" style={quickLinks.length > 7 ? { columns: 2 } : undefined}>
+                            <div className="footer-quicklinks" style={quickLinks.length > 6 ? { columns: 3 } : undefined}>
                                 {quickLinks.map(link => {
                                     const isCourses = link.key === 'courses';
                                     const disabled = isCourses && !firstCompleteLevel;
                                     const handleClick = () => {
                                         if (disabled) return;
+                                        if (link.action) return link.action();
                                         navigate(isCourses ? firstCompleteLevel.path(slug) : link.path(slug));
                                     };
                                     return (
@@ -248,7 +265,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                         <div>
                             <SectionHeading accent={accent}>Our Location</SectionHeading>
                             <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
-                                <iframe src={school.map_url} width="100%" height="150" style={{ border: 0, display: 'block' }} loading="lazy" title="School location" />
+                                <iframe src={school.map_url} width="100%" height="230" style={{ border: 0, display: 'block', minWidth: '260px' }} loading="lazy" title="School location" />
                                 <a href={school.map_url} target="_blank" rel="noopener noreferrer"
                                     style={{ position: 'absolute', top: '10px', left: '10px', background: '#ffffff', color: '#1a73e8', fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
                                     Open in Maps

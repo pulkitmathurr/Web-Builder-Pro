@@ -11,6 +11,10 @@ import { parseDate, shortDate } from "../../utils/dateTimeFormat";
 import { getMusicTrack } from "../../constants/musicTracks";
 import { getYoutubeEmbedUrl } from "../../utils/youtube";
 
+// ── Extra px the hero section is pulled up under the fixed Navbar/ticker by — see
+// the comment above the hero container below for why. ──
+const HERO_OVERLAP = 32;
+
 // ── Scroll-triggered fade+slide-up, same pattern used on every other public page ──
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -578,10 +582,13 @@ const SchoolWebsite = () => {
                 <Navbar ref={navRef} school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="home" topOffset={tickerVisible ? tickerHeight : 0} />
 
                 {/* ── Hero — video / banner slideshow background.
-                     marginTop pushes it below the fixed Navbar and ticker (both measured live
-                     via ResizeObserver, not assumed) instead of the image starting behind/under
-                     them or leaving a gap — stays correct in both ticker states. ── */}
-                <div style={{ width: '100%', marginTop: `${(tickerVisible ? tickerHeight : 0) + navHeight}px`, height: `calc(100vh - ${(tickerVisible ? tickerHeight : 0) + navHeight}px)`, minHeight: '500px', position: 'relative', overflow: 'hidden' }}>
+                     Pulled up by HERO_OVERLAP px so it tucks in behind the fixed Navbar/ticker
+                     instead of sitting flush below them — a stray gap was showing between the
+                     Navbar's bottom edge and the hero image on some layouts, so the hero now
+                     starts a little early (hidden under the opaque Navbar, which stacks above
+                     it) rather than relying on an exact flush measurement. Height grows by the
+                     same amount so the bottom edge doesn't move. ── */}
+                <div style={{ width: '100%', marginTop: `${(tickerVisible ? tickerHeight : 0) + navHeight - HERO_OVERLAP}px`, height: `calc(100vh - ${(tickerVisible ? tickerHeight : 0) + navHeight - HERO_OVERLAP}px)`, minHeight: '500px', position: 'relative', overflow: 'hidden' }}>
                     {heroBanners.length > 0 ? (
                         heroBanners.map((b, i) => (
                             <div key={b.id || b.url} aria-hidden={i !== bannerIndex}
