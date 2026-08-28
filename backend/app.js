@@ -1,12 +1,24 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const routes = require('./src/routes/index.routes');
 const { pool } = require('./src/config/db');
 
 const app = express();
+
+// Render/Vercel sit in front of this app as a reverse proxy — without this,
+// express-rate-limit can't see the real client IP (everyone shares one
+// bucket) and throws on the X-Forwarded-For header it can't validate.
+app.set('trust proxy', 1);
+
+app.use(helmet({
+    // Cross-Origin-Resource-Policy defaults to same-origin, which would block
+    // the frontend (different origin) from loading images/files this API serves.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 
 // ── CORS ──────────────────────────────────────────────
 // Origins allowed without a DB lookup: the platform's own hosts (mirrors
@@ -90,22 +102,16 @@ app.use((req, res) => {
 });
 
 // ── Global Error Handler ─────────────────────────────
-// app.use((err, req, res, next) => {
-//     console.error(err.stack);
-//     res.status(err.status || 500).json({ 
-//         success: false, 
-//         message: err.message || 'Internal server error' 
-//     });
-// });
-
-// ── Global Error Handler ─────────────────────────────
+// Fallback only — every controller catches its own errors and responds via
+// sendError with error.statusCode (see response.utils.js). This only fires
+// for errors thrown outside a controller's try/catch (e.g. middleware).
 app.use((err, req, res, next) => {
     console.error('ERROR DETAILS:', err);
     console.error('ERROR MESSAGE:', err?.message);
     console.error('ERROR STACK:', err?.stack);
-    res.status(err.status || 500).json({ 
-        success: false, 
-        message: err.message || 'Internal server error' 
+    res.status(err.statusCode || err.status || 500).json({
+        success: false,
+        message: err.message || 'Internal server error'
     });
 });
 module.exports = app;

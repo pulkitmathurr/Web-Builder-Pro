@@ -7,9 +7,10 @@ const {
     deleteEnquiry,
 } = require('./enquiry.controller');
 const { protect, isAdmin } = require('../../middlewares/auth.middleware');
+const { enquiryLimiter } = require('../../middlewares/rateLimit.middleware');
 
 // ── Public Routes ─────────────────────────────────────
-router.post('/public/:schoolId', submitEnquiry);
+router.post('/public/:schoolId', enquiryLimiter, submitEnquiry);
 
 // ── Protected Routes ──────────────────────────────────
 router.use(protect);
