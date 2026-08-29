@@ -293,21 +293,33 @@ const SchoolLevelPublic = () => {
                                 </div>
                             </div>
 
-                            <div style={{ position: 'relative' }}>
-                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
-                                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
-                                <div style={{ overflow: 'hidden' }}>
-                                    <div className="lvl-gallery-ticker-track">
-                                        {[...gallery, ...gallery].map((img, i) => (
-                                            <div key={`${img}-${i}`} className="lvl-gallery-tile" style={{ position: 'relative', flexShrink: 0, width: '360px', margin: '0 12px', borderRadius: '18px', overflow: 'hidden', aspectRatio: '16 / 9', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
-                                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                                                <div className="lvl-gallery-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
-                                                <div className="lvl-gallery-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
-                                            </div>
-                                        ))}
+                            {gallery.length > 3 ? (
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                    <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                    <div style={{ overflow: 'hidden' }}>
+                                        <div className="lvl-gallery-ticker-track">
+                                            {[...gallery, ...gallery].map((img, i) => (
+                                                <div key={`${img}-${i}`} className="lvl-gallery-tile" style={{ position: 'relative', flexShrink: 0, width: '360px', margin: '0 12px', borderRadius: '18px', overflow: 'hidden', aspectRatio: '16 / 9', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                                    <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                                    <div className="lvl-gallery-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
+                                                    <div className="lvl-gallery-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            ) : (
+                                <div style={{ maxWidth: '1300px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,5rem)', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '24px' }}>
+                                    {gallery.map((img, i) => (
+                                        <Reveal key={`${img}-${i}`} delay={i * 0.1} className="lvl-gallery-tile" style={{ position: 'relative', width: '360px', maxWidth: '100%', borderRadius: '18px', overflow: 'hidden', aspectRatio: '16 / 9', boxShadow: '0 10px 30px rgba(15,23,42,0.14)', border: '1px solid rgba(255,255,255,0.6)' }}>
+                                            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                            <div className="lvl-gallery-tile-overlay" style={{ position: 'absolute', inset: 0, background: `linear-gradient(180deg, transparent 45%, ${tc.dark}cc 100%)`, opacity: 0 }} />
+                                            <div className="lvl-gallery-tile-ring" style={{ position: 'absolute', inset: '10px', border: `1.5px solid ${tc.secondary}`, borderRadius: '11px', opacity: 0 }} />
+                                        </Reveal>
+                                    ))}
+                                </div>
+                            )}
                         </Reveal>
                     </div>
                 )}

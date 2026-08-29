@@ -1,6 +1,8 @@
 // Rich-text/description processing elsewhere in the app substitutes non-breaking hyphens
 // (U+2010–U+2015, U+2212) into plain strings; normalize before Date parsing or ISO dates silently fail.
-const normalizeDashes = (str) => str.replace(/[‐-―−]/g, '-');
+// Exported so callers with a full ISO timestamp (e.g. `createdAt`) can normalize it themselves
+// before `new Date(...)` — parseDate()/formatDate() below assume a bare YYYY-MM-DD date.
+export const normalizeDashes = (str) => str.replace(/[‐-―−]/g, '-');
 
 export const parseDate = (dateStr) => {
     if (!dateStr) return null;

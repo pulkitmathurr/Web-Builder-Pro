@@ -5,6 +5,8 @@ import ImageCropModal from '../../../components/common/ImageCropModal';
 import useSchoolStore from '../../../store/schoolStore';
 import toast from 'react-hot-toast';
 
+const MAX_PHOTOS_PER_FOLDER = 16;
+
 const hexToRgba = (hex, alpha) => {
     const h = hex.replace('#', '');
     const n = parseInt(h, 16);
@@ -193,8 +195,18 @@ const Gallery = () => {
     const startImageUpload = (files) => {
         if (!currentFolderId) { toast.error('Open a folder first to add photos'); return; }
         if (files.length === 0) return;
-        setImageQueue(files.slice(1));
-        setCropTarget({ mode: 'image', src: URL.createObjectURL(files[0]) });
+        const current = currentFolder?.images || [];
+        const room = MAX_PHOTOS_PER_FOLDER - current.length;
+        if (room <= 0) {
+            toast.error(`Maximum ${MAX_PHOTOS_PER_FOLDER} photos allowed per folder`);
+            return;
+        }
+        const toQueue = files.slice(0, room);
+        if (files.length > toQueue.length) {
+            toast.error(`Only ${room} more photo(s) can be added (max ${MAX_PHOTOS_PER_FOLDER} per folder)`);
+        }
+        setImageQueue(toQueue.slice(1));
+        setCropTarget({ mode: 'image', src: URL.createObjectURL(toQueue[0]) });
     };
 
     const addImage = async (file) => {
@@ -496,7 +508,7 @@ const Gallery = () => {
 
                         {activeTree === 'photo' && (
                             <>
-                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Photos in "{currentFolder.name}" <span style={{ color: '#94a3b8', fontWeight: 400 }}>({(currentFolder.images || []).length})</span></p>
+                                <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '1.25rem' }}>Photos in "{currentFolder.name}" <span style={{ color: '#94a3b8', fontWeight: 400 }}>({(currentFolder.images || []).length} / {MAX_PHOTOS_PER_FOLDER})</span></p>
                                 <div className="gallery-photo-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '12px', marginBottom: '1.25rem' }}>
                                     {(currentFolder.images || []).map((img, i) => (
                                         <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -507,16 +519,22 @@ const Gallery = () => {
                                         </div>
                                     ))}
                                 </div>
-                                <div onClick={() => document.getElementById('img-upload').click()}
-                                    style={{ border: '1.5px dashed #e5e7eb', borderRadius: '14px', padding: '1.75rem', textAlign: 'center', cursor: 'pointer', background: '#fafbfc' }}>
-                                    {uploading.images ? <IconSpinner size={22} color={tc.primary} /> : (
-                                        <>
-                                            <IconUpload size={20} color="#94a3b8" />
-                                            <p style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>Click to add photos (multiple allowed)</p>
-                                            <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each photo (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
-                                        </>
-                                    )}
-                                </div>
+                                {(currentFolder.images || []).length >= MAX_PHOTOS_PER_FOLDER ? (
+                                    <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '0.75rem' }}>
+                                        Maximum {MAX_PHOTOS_PER_FOLDER} photos added to this folder — remove one to add another.
+                                    </p>
+                                ) : (
+                                    <div onClick={() => document.getElementById('img-upload').click()}
+                                        style={{ border: '1.5px dashed #e5e7eb', borderRadius: '14px', padding: '1.75rem', textAlign: 'center', cursor: 'pointer', background: '#fafbfc' }}>
+                                        {uploading.images ? <IconSpinner size={22} color={tc.primary} /> : (
+                                            <>
+                                                <IconUpload size={20} color="#94a3b8" />
+                                                <p style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>Click to add photos (multiple allowed)</p>
+                                                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each photo (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 1MB each · Up to {MAX_PHOTOS_PER_FOLDER} photos per folder.</p>
+                                            </>
+                                        )}
+                                    </div>
+                                )}
                                 <input id="img-upload" type="file" accept="image/*" multiple
                                     onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startImageUpload(files); }}
                                     style={{ display: 'none' }} />

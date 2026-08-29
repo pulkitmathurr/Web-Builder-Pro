@@ -175,7 +175,28 @@
       "Bash(C:/xampp/mysql/bin/mysql.exe *)",
       "WebFetch(domain:apskotaedu.co.in)",
       "WebFetch(domain:localhost)",
-      "Bash(tasklist //FI \"WINDOWTITLE eq*\")"
+      "Bash(tasklist //FI \"WINDOWTITLE eq*\")",
+      "Bash(git log *)",
+      "Bash(ls frontend/.env)",
+      "Bash(git check-ignore *)",
+      "PowerShell(Test-NetConnection *)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(grep -q \"^dist\" .gitignore)",
+      "Bash(rm -rf \"C:/Users/mudit/Desktop/school-saas/frontend/dist\")",
+      "Bash(tasklist *)",
+      "Bash(taskkill *)",
+      "Bash(find . -path ./node_modules -prune -o -name \"SKILL.md\" -print)",
+      "Bash(mkdir -p /c/Users/mudit/AppData/Local/Temp/claude/C--Users-mudit-Desktop-school-saas/c1a94760-1e64-42f3-bb91-42ebe140e9c2/scratchpad/chrome-profile)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --remote-debugging-port=9333 --window-size=1349,900 --user-data-dir=/c/Users/mudit/AppData/Local/Temp/claude/C--Users-mudit-Desktop-school-saas/c1a94760-1e64-42f3-bb91-42ebe140e9c2/scratchpad/chrome-profile --no-first-run --no-default-browser-check about:blank)",
+      "Bash(disown)",
+      "Bash(sleep 2)",
+      "Bash(mkdir -p /c/Users/mudit/AppData/Local/Temp/claude/C--Users-mudit-Desktop-school-saas/c1a94760-1e64-42f3-bb91-42ebe140e9c2/scratchpad/chrome-profile2)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --remote-debugging-port=9333 --window-size=1349,1400 --user-data-dir=/c/Users/mudit/AppData/Local/Temp/claude/C--Users-mudit-Desktop-school-saas/c1a94760-1e64-42f3-bb91-42ebe140e9c2/scratchpad/chrome-profile2 --no-first-run --no-default-browser-check about:blank)",
+      "Bash(xargs -n1 node -c)",
+      "Bash(pkill -f \"node server.js\")",
+      "Bash(/c/xampp/mysql/bin/mysqladmin.exe -u root status)",
+      "Bash(find src/modules/billing -type f)",
+      "Bash(grep -rn \"RAZORPAY\" src/)"
     ]
   }
 }

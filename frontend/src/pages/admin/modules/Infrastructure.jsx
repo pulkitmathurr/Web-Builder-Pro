@@ -14,6 +14,7 @@ import useSchoolStore from "../../../store/schoolStore";
 import toast from "react-hot-toast";
 
 const MAX_CATEGORY_IMAGES = 5;
+const MAX_HORIZONTAL_IMAGES = 10;
 
 const hexToRgba = (hex, alpha) => {
   const h = hex.replace("#", "");
@@ -186,11 +187,21 @@ const Infrastructure = () => {
   };
 
   // Horizontal gallery images (carousel below the description) — same queued crop flow,
-  // freeform aspect, no cap.
+  // freeform aspect, capped at MAX_HORIZONTAL_IMAGES per category.
   const startHorizontalUpload = (files) => {
     if (files.length === 0) return;
-    setImageQueue(files.slice(1));
-    setCropTarget({ mode: "horizontal", src: URL.createObjectURL(files[0]) });
+    const cat = getActiveCategoryData();
+    const room = MAX_HORIZONTAL_IMAGES - (cat?.horizontalImages || []).length;
+    if (room <= 0) {
+      toast.error(`Maximum ${MAX_HORIZONTAL_IMAGES} images allowed per category`);
+      return;
+    }
+    const toQueue = files.slice(0, room);
+    if (files.length > toQueue.length) {
+      toast.error(`Only ${room} more image(s) can be added (max ${MAX_HORIZONTAL_IMAGES})`);
+    }
+    setImageQueue(toQueue.slice(1));
+    setCropTarget({ mode: "horizontal", src: URL.createObjectURL(toQueue[0]) });
   };
 
   const onCropConfirmed = async (croppedFile) => {
@@ -750,9 +761,11 @@ const Infrastructure = () => {
 
                 {/* Horizontal Gallery Images (Carousel) */}
                 <div>
-                  <label style={labelStyle}>Horizontal Gallery Images (Carousel)</label>
+                  <label style={labelStyle}>
+                    Horizontal Gallery Images (Carousel) — {(activeData.horizontalImages || []).length} / {MAX_HORIZONTAL_IMAGES}
+                  </label>
                   <p style={{ fontSize: "10.5px", color: "#94a3b8", marginBottom: "10px" }}>
-                    Shown as a sliding carousel below the description — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each.
+                    Shown as a sliding carousel below the description — landscape/wide photos work best. You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each · Up to {MAX_HORIZONTAL_IMAGES} images.
                   </p>
                   <div
                     className="infra-img-grid"
@@ -806,29 +819,35 @@ const Infrastructure = () => {
                       </div>
                     ))}
                   </div>
-                  <div
-                    onClick={() =>
-                      document.getElementById("horizontal-image-input").click()
-                    }
-                    style={{
-                      border: "1.5px dashed #e2e8f0",
-                      borderRadius: "12px",
-                      padding: "1.5rem",
-                      textAlign: "center",
-                      cursor: "pointer",
-                      background: "#fafafa",
-                    }}
-                  >
-                    {uploading.horizontalImage ? (
-                      <p style={{ fontSize: "13px", color: "#64748b" }}>
-                        Uploading...
-                      </p>
-                    ) : (
-                      <p style={{ fontSize: "13px", color: "#64748b" }}>
-                        + Click to add images (multiple allowed)
-                      </p>
-                    )}
-                  </div>
+                  {(activeData.horizontalImages || []).length >= MAX_HORIZONTAL_IMAGES ? (
+                    <p style={{ fontSize: "12px", color: "#94a3b8", textAlign: "center", padding: "0.75rem" }}>
+                      Maximum {MAX_HORIZONTAL_IMAGES} images added — remove one to add another.
+                    </p>
+                  ) : (
+                    <div
+                      onClick={() =>
+                        document.getElementById("horizontal-image-input").click()
+                      }
+                      style={{
+                        border: "1.5px dashed #e2e8f0",
+                        borderRadius: "12px",
+                        padding: "1.5rem",
+                        textAlign: "center",
+                        cursor: "pointer",
+                        background: "#fafafa",
+                      }}
+                    >
+                      {uploading.horizontalImage ? (
+                        <p style={{ fontSize: "13px", color: "#64748b" }}>
+                          Uploading...
+                        </p>
+                      ) : (
+                        <p style={{ fontSize: "13px", color: "#64748b" }}>
+                          + Click to add images (multiple allowed)
+                        </p>
+                      )}
+                    </div>
+                  )}
                   <input
                     id="horizontal-image-input"
                     type="file"

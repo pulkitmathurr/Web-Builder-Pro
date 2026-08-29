@@ -75,7 +75,6 @@ const Footer = ({ school, slug, tc, bgImage }) => {
     const navigate = useNavigate();
     const [coursesContent, setCoursesContent] = useState(null);
     const [publishedKeys, setPublishedKeys] = useState([]);
-    const [tagline, setTagline] = useState('');
 
     useEffect(() => {
         if (!school?.id) return;
@@ -85,9 +84,6 @@ const Footer = ({ school, slug, tc, bgImage }) => {
         getPublishedModulesApi(school.id)
             .then(res => setPublishedKeys(res.data || []))
             .catch(() => setPublishedKeys([]));
-        getPublicModuleContentApi(school.id, 'home')
-            .then(res => setTagline(res.data?.tagline || ''))
-            .catch(() => setTagline(''));
     }, [school?.id]);
 
     // Footer's Courses link routes to whichever fully-filled level page exists — there's no
@@ -162,7 +158,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                     alignItems: 'start',
                 }}>
 
-                    {/* ── Column 1: Brand — badge logo + name/locality, short tagline, socials ── */}
+                    {/* ── Column 1: Brand — badge logo + name/locality, socials ── */}
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
                             {school.logo_url ? (
@@ -184,9 +180,21 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                             </div>
                         </div>
 
-                        {tagline && (
-                            <div className="rte-content" style={{ fontSize: '13px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.7, marginBottom: '18px', maxWidth: '280px' }}
-                                dangerouslySetInnerHTML={{ __html: tagline }} />
+                        {(school.address || school.phone) && (
+                            <div style={{ marginBottom: '16px' }}>
+                                {school.address && (
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
+                                        <span style={{ marginTop: '2px', flexShrink: 0 }}><ContactIcon type="pin" color={accent} /></span>
+                                        <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.6 }}>{school.address}</span>
+                                    </div>
+                                )}
+                                {school.phone && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ flexShrink: 0 }}><ContactIcon type="phone" color={accent} /></span>
+                                        <a href={`tel:${school.phone}`} className="footer-link" style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.62)', textDecoration: 'none' }}>{school.phone}</a>
+                                    </div>
+                                )}
+                            </div>
                         )}
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

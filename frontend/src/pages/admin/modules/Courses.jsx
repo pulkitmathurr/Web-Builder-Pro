@@ -8,6 +8,8 @@ import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import useSchoolStore from '../../../store/schoolStore';
 
+const GALLERY_LIMIT = 10;
+
 const hexToRgba = (hex, alpha) => {
     const h = hex.replace('#', '');
     const n = parseInt(h, 16);
@@ -185,8 +187,18 @@ const Courses = () => {
     // opens in the crop modal.
     const startGalleryUpload = (files) => {
         if (files.length === 0) return;
-        setImageQueue(files.slice(1));
-        setCropTarget({ kind: 'gallery', aspect: null, src: URL.createObjectURL(files[0]) });
+        const current = content[activeLevel].gallery || [];
+        const remaining = GALLERY_LIMIT - current.length;
+        if (remaining <= 0) {
+            toast.error(`Gallery is limited to ${GALLERY_LIMIT} images`);
+            return;
+        }
+        if (files.length > remaining) {
+            toast.error(`Only ${remaining} more image${remaining === 1 ? '' : 's'} can be added (max ${GALLERY_LIMIT})`);
+        }
+        const allowed = files.slice(0, remaining);
+        setImageQueue(allowed.slice(1));
+        setCropTarget({ kind: 'gallery', aspect: null, src: URL.createObjectURL(allowed[0]) });
     };
 
     const onCropConfirmed = async (croppedFile) => {
@@ -475,7 +487,7 @@ const Courses = () => {
                             {/* Gallery Tab */}
                             {activeTab === 'gallery' && (
                                 <div style={{ padding: '2rem' }}>
-                                    <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>{(activeData.gallery || []).length} images added</p>
+                                    <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '1rem' }}>{(activeData.gallery || []).length} / {GALLERY_LIMIT} images added</p>
                                     <div className="crs-gallery-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
                                         {(activeData.gallery || []).map((img, i) => (
                                             <div key={i} style={{ position: 'relative', borderRadius: '6px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -485,17 +497,23 @@ const Courses = () => {
                                             </div>
                                         ))}
                                     </div>
-                                    <div onClick={() => document.getElementById('gallery-input').click()}
-                                        style={{ border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-                                        {uploading.gallery ? (
-                                            <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p>
-                                        ) : (
-                                            <>
-                                                <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add gallery images (multiple allowed)</p>
-                                                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
-                                            </>
-                                        )}
-                                    </div>
+                                    {(activeData.gallery || []).length >= GALLERY_LIMIT ? (
+                                        <div style={{ border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', background: '#fafafa' }}>
+                                            <p style={{ fontSize: '13px', color: '#94a3b8' }}>Gallery limit of {GALLERY_LIMIT} images reached — remove one to add another.</p>
+                                        </div>
+                                    ) : (
+                                        <div onClick={() => document.getElementById('gallery-input').click()}
+                                            style={{ border: '1.5px dashed #cbd5e1', borderRadius: '8px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
+                                            {uploading.gallery ? (
+                                                <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p>
+                                            ) : (
+                                                <>
+                                                    <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add gallery images (multiple allowed)</p>
+                                                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. Square photos work best · JPG, PNG, WEBP · Max 1MB each · Up to {GALLERY_LIMIT} images.</p>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
                                     <input id="gallery-input" type="file" accept="image/*" multiple
                                         onChange={e => {
                                             const files = Array.from(e.target.files);

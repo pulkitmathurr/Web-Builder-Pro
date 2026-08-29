@@ -6,6 +6,7 @@ import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
+import { normalizeDashes } from "../../utils/dateTimeFormat";
 
 // ── Icons (SVG, no emojis) ──
 const IconFolder = ({ size = 22, color = '#8b2252' }) => (
@@ -87,6 +88,50 @@ const GalleryPublic = () => {
     const [currentFolderId, setCurrentFolderId] = useState(null);
     const [lightbox, setLightbox] = useState(null);
     const [videoModal, setVideoModal] = useState(null);
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [dragging, setDragging] = useState(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+
+    const ZOOM_MIN = 1;
+    const ZOOM_MAX = 3;
+    const ZOOM_STEP = 0.5;
+
+    const resetZoom = () => { setZoom(1); setPan({ x: 0, y: 0 }); };
+    const zoomIn = () => setZoom(z => Math.min(ZOOM_MAX, +(z + ZOOM_STEP).toFixed(2)));
+    const zoomOut = () => setZoom(z => {
+        const next = Math.max(ZOOM_MIN, +(z - ZOOM_STEP).toFixed(2));
+        if (next === ZOOM_MIN) setPan({ x: 0, y: 0 });
+        return next;
+    });
+
+    // Drag-to-pan once zoomed in — listens on window (not just the image) so the
+    // pan keeps tracking even if the cursor/finger slips past the image's edge.
+    useEffect(() => {
+        if (!dragging) return;
+        const handleMouseMove = (e) => setPan({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+        const handleTouchMove = (e) => {
+            const t = e.touches[0];
+            if (t) setPan({ x: t.clientX - dragStart.current.x, y: t.clientY - dragStart.current.y });
+        };
+        const stopDragging = () => setDragging(false);
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', stopDragging);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('touchend', stopDragging);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', stopDragging);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', stopDragging);
+        };
+    }, [dragging]);
+
+    const startDrag = (clientX, clientY) => {
+        if (zoom <= 1) return;
+        dragStart.current = { x: clientX - pan.x, y: clientY - pan.y };
+        setDragging(true);
+    };
 
     const activeTab = tab === 'video' ? 'video' : 'photo';
 
@@ -152,7 +197,11 @@ const GalleryPublic = () => {
 
     const formatDate = (d) => {
         if (!d) return '—';
-        return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        // `d` is a full ISO timestamp (folder.createdAt) that's been through
+        // noBreakHyphensDeep() on save, which swaps plain hyphens for non-breaking
+        // ones — normalize first or `new Date(...)` silently returns Invalid Date.
+        const date = new Date(normalizeDashes(d));
+        return isNaN(date) ? '—' : date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     };
 
     const countDescendantMedia = (folderId) => {
@@ -377,7 +426,7 @@ const GalleryPublic = () => {
                                 <div className="gallery-photo-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '16px' }}>
                                     {currentFolder.images.map((img, i) => (
                                         <div key={i} className="photo-tile" style={{ animationDelay: `${i * 0.03}s`, borderRadius: '12px', overflow: 'hidden', aspectRatio: '1', boxShadow: '0 4px 14px rgba(15,23,42,0.07)' }}
-                                            onClick={() => setLightbox({ images: currentFolder.images, index: i })}>
+                                            onClick={() => { setLightbox({ images: currentFolder.images, index: i }); resetZoom(); }}>
                                             <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                             <div className="photo-tile-scrim">
                                                 <svg className="photo-tile-zoom" width="26" height="26" fill="none" stroke="#fff" strokeWidth="2" viewBox="0 0 24 24">
@@ -445,20 +494,37 @@ const GalleryPublic = () => {
                     )}
                 </div>
 
-                {/* ── Photo Lightbox ── */}
+                {/* ── Photo Lightbox — pinch-free zoom via +/- buttons or double-click,
+                     drag-to-pan once zoomed in ── */}
                 {lightbox && (
-                    <div onClick={() => setLightbox(null)}
-                        style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.25s ease' }}>
-                        <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '85%', maxHeight: '80%' }}>
-                            <img src={lightbox.images[lightbox.index]} alt="" style={{ maxWidth: '100%', maxHeight: '80vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }} />
+                    <div onClick={() => { setLightbox(null); resetZoom(); }}
+                        style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.25s ease' }}>
+                        {/* Image itself is capped well short of the viewport height so the zoom
+                            controls/counter below (pinned to the bottom of the screen, not the
+                            image) never get pushed off-screen by a tall/portrait photo. */}
+                        <div onClick={e => e.stopPropagation()} style={{ position: 'relative', maxWidth: '85%', maxHeight: 'calc(100vh - 190px)' }}>
+                            <div style={{ overflow: 'hidden', borderRadius: '8px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', maxHeight: 'calc(100vh - 190px)' }}>
+                                <img src={lightbox.images[lightbox.index]} alt=""
+                                    onMouseDown={e => { e.preventDefault(); startDrag(e.clientX, e.clientY); }}
+                                    onTouchStart={e => { const t = e.touches[0]; if (t) startDrag(t.clientX, t.clientY); }}
+                                    onDoubleClick={() => (zoom > 1 ? resetZoom() : setZoom(2))}
+                                    draggable={false}
+                                    style={{
+                                        maxWidth: '100%', maxHeight: 'calc(100vh - 190px)', objectFit: 'contain',
+                                        display: 'block', transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                                        transition: dragging ? 'none' : 'transform 0.2s ease',
+                                        cursor: zoom > 1 ? (dragging ? 'grabbing' : 'grab') : 'zoom-in',
+                                        touchAction: zoom > 1 ? 'none' : 'auto',
+                                    }} />
+                            </div>
                             {lightbox.images.length > 1 && (
                                 <>
-                                    <button onClick={() => setLightbox(p => ({ ...p, index: p.index === 0 ? p.images.length - 1 : p.index - 1 }))}
+                                    <button onClick={() => { setLightbox(p => ({ ...p, index: p.index === 0 ? p.images.length - 1 : p.index - 1 })); resetZoom(); }}
                                         className="lightbox-nav-btn"
                                         style={{ position: 'absolute', left: '-70px', top: '50%', transform: 'translateY(-50%)', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <IconChevronLeft color="#fff" />
                                     </button>
-                                    <button onClick={() => setLightbox(p => ({ ...p, index: (p.index + 1) % p.images.length }))}
+                                    <button onClick={() => { setLightbox(p => ({ ...p, index: (p.index + 1) % p.images.length })); resetZoom(); }}
                                         className="lightbox-nav-btn"
                                         style={{ position: 'absolute', right: '-70px', top: '50%', transform: 'translateY(-50%)', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <IconChevronRight size={18} color="#fff" />
@@ -466,8 +532,26 @@ const GalleryPublic = () => {
                                 </>
                             )}
                         </div>
-                        <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '1.5rem' }}>{lightbox.index + 1} / {lightbox.images.length}</p>
-                        <button onClick={() => setLightbox(null)}
+
+                        {/* Zoom controls + counter — pinned to the bottom of the viewport (not
+                            flowing after the image) so they stay visible for any image aspect ratio. */}
+                        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, right: 0, bottom: '1.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <button onClick={zoomOut} disabled={zoom <= ZOOM_MIN}
+                                    style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: zoom <= ZOOM_MIN ? 'default' : 'pointer', opacity: zoom <= ZOOM_MIN ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', lineHeight: 1 }}>
+                                    −
+                                </button>
+                                <button onClick={resetZoom} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', minWidth: '42px' }}>
+                                    {Math.round(zoom * 100)}%
+                                </button>
+                                <button onClick={zoomIn} disabled={zoom >= ZOOM_MAX}
+                                    style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: zoom >= ZOOM_MAX ? 'default' : 'pointer', opacity: zoom >= ZOOM_MAX ? 0.4 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', lineHeight: 1 }}>
+                                    +
+                                </button>
+                            </div>
+                            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', margin: 0 }}>{lightbox.index + 1} / {lightbox.images.length}</p>
+                        </div>
+                        <button onClick={() => { setLightbox(null); resetZoom(); }}
                             style={{ position: 'absolute', top: '2rem', right: '2rem', width: '46px', height: '46px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <IconClose />
                         </button>

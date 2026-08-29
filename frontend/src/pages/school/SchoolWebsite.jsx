@@ -542,7 +542,7 @@ const SchoolWebsite = () => {
                     .hero-water-btn { padding: 9px 8px !important; font-size: 9px !important; letter-spacing: 0.02em !important; white-space: nowrap !important; flex: 1 1 0 !important; text-align: center !important; }
                 }
                 @media (max-width: 800px) {
-                    .home-intro-grid { grid-template-columns: 1fr !important; }
+                    .home-intro-float-img { float: none !important; width: 100% !important; max-width: 340px; margin: 0 auto 1.5rem !important; display: flex !important; justify-content: center; }
                 }
                 /* ── Homepage Highlight shield photos — resting 3D tilt (fanned, opposite
                      directions) that flattens and lifts on hover for a tangible card feel. ── */
@@ -638,8 +638,8 @@ const SchoolWebsite = () => {
                 {hasIntroSection && (
                     <section style={{ background: bc.surfaceAlt, padding: 'clamp(2rem,5vw,3.5rem) clamp(1.25rem,6vw,5rem)', position: 'relative' }}>
                         <ShieldClipDefs />
-                        <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(260px,400px) 1fr', gap: 'clamp(1.5rem,4vw,3rem)', alignItems: 'center' }}>
-                            <Reveal>
+                        <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
+                            <Reveal className="home-intro-float-img" style={{ float: 'left', width: 'min(400px, 40%)', marginRight: 'clamp(1.5rem,4vw,3rem)', marginBottom: '1.5rem' }}>
                                 <div className="home-shield-photos" style={{ position: 'relative', width: '100%', aspectRatio: '4 / 5', perspective: '1400px' }}>
                                     {/* Each shield photo is built from nested same-shape layers (gradient
                                          frame → thin hairline → photo) rather than a CSS border/outline,
@@ -680,10 +680,11 @@ const SchoolWebsite = () => {
                                         </h2>
                                     )}
                                     {homeContent.introDescription && (
-                                        <div className="rte-content" style={{ fontSize: '15px', color: '#334155', lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: homeContent.introDescription }} />
+                                        <div className="rte-content" style={{ fontSize: '15px', color: '#334155', lineHeight: 1.9, overflowWrap: 'normal' }} dangerouslySetInnerHTML={{ __html: homeContent.introDescription }} />
                                     )}
                                 </div>
                             </Reveal>
+                            <div style={{ clear: 'both' }} />
                         </div>
                     </section>
                 )}

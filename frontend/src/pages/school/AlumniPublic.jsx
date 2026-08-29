@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { stripHtml } from "../../utils/dateTimeFormat";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -367,6 +368,9 @@ const AlumniPublic = () => {
     if (!content) return <NotPublished tc={tc} slug={slug} label="Alumni" />;
 
     const alumni = (content.alumni || []).filter(a => a.name);
+    // RTE fields save empty content as non-empty HTML (e.g. "<p><br></p>"), so a
+    // plain truthiness check still renders the scroll — check for actual text.
+    const hasDescription = !!stripHtml(content.description);
 
     return (
         <>
@@ -425,14 +429,14 @@ const AlumniPublic = () => {
                 </div>
 
                 {/* ── Description — sealed under a draggable pin, unrolls like a scroll ── */}
-                {content.description && (
+                {hasDescription && (
                     <div style={{ padding: '2.75rem clamp(1.25rem,6vw,3rem) 1rem', background: bc.surface }}>
                         <LegacyScroll description={content.description} tc={tc} />
                     </div>
                 )}
 
                 {/* ── Alumni list — vertical list, alternating photo position, ornamental dividers ── */}
-                <div style={{ padding: content.description ? '2rem clamp(1.25rem,6vw,3rem) 4rem' : '4rem clamp(1.25rem,6vw,3rem)' }}>
+                <div style={{ padding: hasDescription ? '2rem clamp(1.25rem,6vw,3rem) 4rem' : '4rem clamp(1.25rem,6vw,3rem)' }}>
                     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
                         {alumni.map((al, i) => (
                             <div key={al.id}>

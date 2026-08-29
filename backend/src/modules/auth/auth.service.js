@@ -134,7 +134,18 @@ const refreshTokenService = async (refreshToken) => {
   };
 
   if (role === "admin") {
-    payload.schoolId = parseInt(tokenData.admin_id);
+    // tokenData.admin_id is the admin's own row id, not their school — look up
+    // the real school_id rather than reusing admin_id (a prior bug did this,
+    // scoping every request after a silent refresh to the wrong school/no
+    // school at all whenever admin_id and school_id happened to differ).
+    const [adminRows] = await pool.query(
+      `SELECT school_id FROM tbl_admins WHERE id = ?`,
+      [tokenData.admin_id],
+    );
+    if (adminRows.length === 0) {
+      throw new AppError("Admin account not found", 401);
+    }
+    payload.schoolId = parseInt(adminRows[0].school_id);
   }
 
   const newAccessToken = generateAccessToken(payload);

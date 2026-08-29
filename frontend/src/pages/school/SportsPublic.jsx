@@ -75,18 +75,29 @@ const SportsAtGallery = ({ images, layout, tc, onImageClick }) => {
 
     return (
         <div style={{ width: '100%' }}>
-            <div className="sports-collage-grid" style={{
-                display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols}, 1fr)`,
-                ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows}, var(--collage-rh, ${layoutDef.rowHeight}px))`, '--collage-rh': `${layoutDef.rowHeight}px` }),
-                gap: '14px', width: '100%'
-            }}>
-                {heroImages.map((img, i) => img && (
-                    <div key={i} onClick={() => onImageClick(img)}
-                        style={{ ...(layoutDef.square ? { aspectRatio: '1' } : slots[i]), borderRadius: '18px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(0,0,0,0.08)', cursor: 'zoom-in' }}>
-                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-                ))}
-            </div>
+            {layoutDef.scattered ? (
+                <div className="sports-scattered-collage" style={{ position: 'relative', width: '100%', maxWidth: '560px', margin: '0 auto', aspectRatio: layoutDef.aspectRatio }}>
+                    {heroImages.map((img, i) => img && (
+                        <div key={i} onClick={() => onImageClick(img)} className="sports-scattered-frame"
+                            style={{ position: 'absolute', ...slots[i].box, transform: `rotate(${slots[i].rotate}deg)`, zIndex: slots[i].z, border: '10px solid #1a1a1a', borderRadius: '3px', overflow: 'hidden', boxShadow: '0 12px 28px rgba(0,0,0,0.28)', cursor: 'zoom-in', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
+                            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="sports-collage-grid" style={{
+                    display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols}, 1fr)`,
+                    gridTemplateRows: `repeat(${layoutDef.rows}, var(--collage-rh, ${layoutDef.rowHeight}px))`, '--collage-rh': `${layoutDef.rowHeight}px`,
+                    gap: '14px', width: '100%'
+                }}>
+                    {heroImages.map((img, i) => img && (
+                        <div key={i} onClick={() => onImageClick(img)}
+                            style={{ ...slots[i], border: '10px solid #1a1a1a', borderRadius: '3px', overflow: 'hidden', boxShadow: '0 10px 26px rgba(0,0,0,0.22)', cursor: 'zoom-in' }}>
+                            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {restImages.length > 0 && (
                 <div className="sports-rest-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginTop: '14px' }}>
@@ -244,6 +255,30 @@ const PhotoCarousel = ({ images, tc }) => {
     );
 };
 
+// ── Forward/backward pager shown under a 3-per-page grid, only once there are
+// more than 3 items — used by both Certifications and Making Us Proud. ──
+const GridPager = ({ page, totalPages, onPrev, onNext, tc }) => {
+    if (totalPages <= 1) return null;
+    const btnStyle = (disabled) => ({
+        width: '38px', height: '38px', borderRadius: '50%', background: '#ffffff',
+        border: `1.5px solid ${tc.primary}35`, color: tc.primary,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: disabled ? 'default' : 'pointer', opacity: disabled ? 0.35 : 1,
+        boxShadow: '0 4px 14px rgba(15,23,42,0.08)', transition: 'transform 0.2s ease, opacity 0.2s ease',
+    });
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '18px', marginTop: '1.75rem' }}>
+            <button onClick={onPrev} disabled={page === 0} style={btnStyle(page === 0)}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+            <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em' }}>{page + 1} / {totalPages}</span>
+            <button onClick={onNext} disabled={page === totalPages - 1} style={btnStyle(page === totalPages - 1)}>
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </button>
+        </div>
+    );
+};
+
 const SportsPublic = () => {
     const { slug, pageSlug } = useParams();
     const navigate = useNavigate();
@@ -253,6 +288,8 @@ const SportsPublic = () => {
     const [scrollY, setScrollY] = useState(0);
     const [pdfPreview, setPdfPreview] = useState(null);
     const [lightbox, setLightbox] = useState(null);
+    const [certPage, setCertPage] = useState(0);
+    const [proudPage, setProudPage] = useState(0);
 
     const activePageKey = pageSlug || 'sportsAt';
 
@@ -302,6 +339,16 @@ const SportsPublic = () => {
     const proud = (pageData.proud || []).filter(p => p.photo || p.name);
     const yearlyAwards = (pageData.yearlyAwards || []).filter(y => y.year && y.pdfUrl);
     const events = pageData.events || [];
+
+    // Both grids show 3 cards at a time, with forward/backward paging once there are more.
+    const CARDS_PER_PAGE = 3;
+    const certTotalPages = Math.max(1, Math.ceil(certifications.length / CARDS_PER_PAGE));
+    const certSafePage = Math.min(certPage, certTotalPages - 1);
+    const visibleCertifications = certifications.slice(certSafePage * CARDS_PER_PAGE, certSafePage * CARDS_PER_PAGE + CARDS_PER_PAGE);
+
+    const proudTotalPages = Math.max(1, Math.ceil(proud.length / CARDS_PER_PAGE));
+    const proudSafePage = Math.min(proudPage, proudTotalPages - 1);
+    const visibleProud = proud.slice(proudSafePage * CARDS_PER_PAGE, proudSafePage * CARDS_PER_PAGE + CARDS_PER_PAGE);
 
     return (
         <>
@@ -426,6 +473,12 @@ const SportsPublic = () => {
                     .sports-collage-grid { --collage-rh: 130px !important; }
                     .awards-carousel { height: 320px !important; }
 
+                    /* ── 4-photo scattered/overlapping collage — the rotated, overlapping black
+                       frames only work at desktop widths; on mobile it collapses to a plain,
+                       non-overlapping 2×2 grid so nothing gets clipped or hard to tap. ── */
+                    .sports-scattered-collage { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; aspect-ratio: auto !important; gap: 8px !important; max-width: 100% !important; }
+                    .sports-scattered-frame { position: static !important; transform: none !important; aspect-ratio: 1 !important; border-width: 6px !important; }
+
                     /* ── Certifications — 2-per-row compact cards instead of stacking 1-per-row ── */
                     .sports-cert-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
                     .cert-card { border-radius: 12px !important; }
@@ -491,16 +544,23 @@ const SportsPublic = () => {
                             </Reveal>
 
                             {/* Sports at School — masonry gallery */}
-                            {activePageKey === 'sportsAt' && (
-                                <Reveal delay={0.1}>
-                                    <SportsAtGallery
-                                        images={pageData.images}
-                                        layout={pageData.collageLayout || DEFAULT_COLLAGE_LAYOUT}
-                                        tc={tc}
-                                        onImageClick={(img) => setLightbox({ image: img })}
-                                    />
-                                </Reveal>
-                            )}
+                            {activePageKey === 'sportsAt' && (() => {
+                                const sportsAtLayout = pageData.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+                                // Each layout (4/5/7 photos) keeps its own independent photo set. Older
+                                // saves (before layouts were split apart) only have a flat `images`
+                                // array — fall back to that so pre-existing collages still render.
+                                const sportsAtImages = pageData.collageImages?.[sportsAtLayout] ?? pageData.images ?? [];
+                                return (
+                                    <Reveal delay={0.1}>
+                                        <SportsAtGallery
+                                            images={sportsAtImages}
+                                            layout={sportsAtLayout}
+                                            tc={tc}
+                                            onImageClick={(img) => setLightbox({ image: img })}
+                                        />
+                                    </Reveal>
+                                );
+                            })()}
 
                             {/* Sports Offered — same list pattern as Sporting Events, using the same EventStyleCard */}
                             {activePageKey === 'sportsOffered' && (
@@ -554,7 +614,7 @@ const SportsPublic = () => {
                                             <div style={{ textAlign: 'center' }}>
                                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Certifications</p>
                                                 <div className="sports-cert-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '22px', textAlign: 'left' }}>
-                                                    {certifications.map((cert) => (
+                                                    {visibleCertifications.map((cert) => (
                                                         <div key={cert.id} className="cert-card" onClick={() => setLightbox({ image: cert.image, title: cert.title, info: cert.info })}
                                                             style={{ cursor: cert.image ? 'zoom-in' : 'default' }}>
                                                             {cert.image && (
@@ -574,6 +634,10 @@ const SportsPublic = () => {
                                                         </div>
                                                     ))}
                                                 </div>
+                                                <GridPager page={certSafePage} totalPages={certTotalPages}
+                                                    onPrev={() => setCertPage(p => Math.max(0, p - 1))}
+                                                    onNext={() => setCertPage(p => Math.min(certTotalPages - 1, p + 1))}
+                                                    tc={tc} />
                                             </div>
                                         </Reveal>
                                     )}
@@ -584,15 +648,15 @@ const SportsPublic = () => {
                                             <div style={{ textAlign: 'center' }}>
                                                 <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1.5rem' }}>Making Us Proud</p>
                                                 <div className="sports-3col-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px', textAlign: 'left' }}>
-                                                    {proud.map((stu) => (
+                                                    {visibleProud.map((stu) => (
                                                         <div key={stu.id} className="proud-card">
                                                             {/* Photo with name/achievement overlaid on a dark scrim — editorial "player card" look */}
                                                             <div className="proud-card-photo">
                                                                 {stu.photo && <img src={stu.photo} alt="" />}
                                                                 <div className="proud-card-scrim"></div>
                                                                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '1.25rem 1.4rem 1.1rem', zIndex: 1 }}>
-                                                                    {stu.name && <p style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', textShadow: '0 2px 10px rgba(0,0,0,0.85)' }}>{stu.name}</p>}
-                                                                    {stu.achievement && <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.88)', fontWeight: 600, letterSpacing: '0.03em', lineHeight: 1.5, textShadow: '0 1px 6px rgba(0,0,0,0.8)' }}>{stu.achievement}</p>}
+                                                                    {stu.name && <p style={{ fontSize: '16px', fontWeight: 800, color: '#ffffff', letterSpacing: '0.02em', textTransform: 'uppercase', marginBottom: '5px', textShadow: '0 2px 10px rgba(0,0,0,0.85)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{stu.name}</p>}
+                                                                    {stu.achievement && <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.88)', fontWeight: 600, letterSpacing: '0.03em', lineHeight: 1.5, textShadow: '0 1px 6px rgba(0,0,0,0.8)', overflowWrap: 'break-word', wordBreak: 'break-word' }}>{stu.achievement}</p>}
                                                                 </div>
                                                             </div>
                                                             {/* Colored footer bar — themed to the school's colors */}
@@ -606,6 +670,10 @@ const SportsPublic = () => {
                                                         </div>
                                                     ))}
                                                 </div>
+                                                <GridPager page={proudSafePage} totalPages={proudTotalPages}
+                                                    onPrev={() => setProudPage(p => Math.max(0, p - 1))}
+                                                    onNext={() => setProudPage(p => Math.min(proudTotalPages - 1, p + 1))}
+                                                    tc={tc} />
                                             </div>
                                         </Reveal>
                                     )}

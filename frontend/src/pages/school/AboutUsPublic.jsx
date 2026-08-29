@@ -405,25 +405,44 @@ const AboutUsPublic = () => {
                         <Reveal>
                             <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', marginBottom: '1rem', textAlign: 'center', fontWeight: 700 }}>What Drives Us</p>
                         </Reveal>
-                        <div style={{ position: 'relative' }}>
-                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${tc.light},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
-                            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${tc.light},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                        {tickerItems.length > 3 ? (
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${tc.light},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${tc.light},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
 
-                            <div className="ticker-track">
-                                {[...tickerItems, ...tickerItems].map((item, i) => (
-                                    <div key={i} style={{
-                                        flexShrink: 0, width: '380px', margin: '0 10px',
-                                        background: bc.card, borderRadius: '14px', padding: '1.25rem 1.5rem',
-                                        boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
-                                    }}>
-                                        <div style={{ width: '32px', height: '3px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, borderRadius: '2px', marginBottom: '12px' }}></div>
-                                        <h4 style={{ fontFamily: item.headingFont ? getFontFamily(item.headingFont) : undefined, fontSize: '19px', fontWeight: 800, color: item.headingColor || '#0f172a', letterSpacing: '0.02em', marginBottom: '8px', overflowWrap: 'normal', fontStyle: item.headingItalic ? 'italic' : 'normal' }}>{item.heading}</h4>
-                                        <div className="rte-content" style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.65 }}
-                                            dangerouslySetInnerHTML={{ __html: item.text }} />
-                                    </div>
+                                <div className="ticker-track">
+                                    {[...tickerItems, ...tickerItems].map((item, i) => (
+                                        <div key={i} style={{
+                                            flexShrink: 0, width: '380px', margin: '0 10px',
+                                            background: bc.card, borderRadius: '14px', padding: '1.25rem 1.5rem',
+                                            boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
+                                        }}>
+                                            <div style={{ width: '32px', height: '3px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, borderRadius: '2px', marginBottom: '12px' }}></div>
+                                            <h4 style={{ fontFamily: item.headingFont ? getFontFamily(item.headingFont) : undefined, fontSize: '19px', fontWeight: 800, color: item.headingColor || '#0f172a', letterSpacing: '0.02em', marginBottom: '8px', overflowWrap: 'normal', fontStyle: item.headingItalic ? 'italic' : 'normal' }}>{item.heading}</h4>
+                                            <div className="rte-content" style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.65 }}
+                                                dangerouslySetInnerHTML={{ __html: item.text }} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,3rem)', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '20px' }}>
+                                {tickerItems.map((item, i) => (
+                                    <Reveal key={i} delay={i * 0.1} style={{ width: '380px', maxWidth: '100%' }}>
+                                        <div style={{
+                                            height: '100%',
+                                            background: bc.card, borderRadius: '14px', padding: '1.25rem 1.5rem',
+                                            boxShadow: '0 8px 30px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9',
+                                        }}>
+                                            <div style={{ width: '32px', height: '3px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, borderRadius: '2px', marginBottom: '12px' }}></div>
+                                            <h4 style={{ fontFamily: item.headingFont ? getFontFamily(item.headingFont) : undefined, fontSize: '19px', fontWeight: 800, color: item.headingColor || '#0f172a', letterSpacing: '0.02em', marginBottom: '8px', overflowWrap: 'normal', fontStyle: item.headingItalic ? 'italic' : 'normal' }}>{item.heading}</h4>
+                                            <div className="rte-content" style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.65 }}
+                                                dangerouslySetInnerHTML={{ __html: item.text }} />
+                                        </div>
+                                    </Reveal>
                                 ))}
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 
@@ -482,7 +501,9 @@ const AboutUsPublic = () => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div style={{ marginTop: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    <div style={historyGallery.length === 1
+                                        ? { marginTop: '2.5rem', maxWidth: '440px', marginLeft: 'auto', marginRight: 'auto' }
+                                        : { marginTop: '2.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
                                         {historyGallery.map((img, i) => (
                                             <Reveal key={i} delay={i * 0.08}>
                                                 <div onClick={() => setLightbox({ index: i })}
@@ -621,44 +642,82 @@ const AboutUsPublic = () => {
                                 </div>
                             </Reveal>
                         </div>
-                        <div style={{ position: 'relative' }}>
-                            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
-                            <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                        {awards.length > 3 ? (
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
+                                <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(270deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
 
-                            <div className="award-ticker-track">
-                                {[...awards, ...awards].map((item, i) => (
-                                    <div key={i} className="award-card" style={{ flexShrink: 0, width: '300px', margin: '0 11px', display: 'flex', flexDirection: 'column' }}>
-                                        <div className="award-card-top-bar" style={{ background: `linear-gradient(90deg,${tc.primary},${tc.secondary})` }}></div>
-                                        <div className="award-card-photo">
-                                            {item.image ? (
-                                                <img src={item.image} alt={item.name || item.heading} />
-                                            ) : (
-                                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <svg width="40" height="40" fill="none" stroke={tc.primary} strokeWidth="1.4" viewBox="0 0 24 24" style={{ opacity: 0.45 }}><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                <div className="award-ticker-track">
+                                    {[...awards, ...awards].map((item, i) => (
+                                        <div key={i} className="award-card" style={{ flexShrink: 0, width: '300px', margin: '0 11px', display: 'flex', flexDirection: 'column' }}>
+                                            <div className="award-card-top-bar" style={{ background: `linear-gradient(90deg,${tc.primary},${tc.secondary})` }}></div>
+                                            <div className="award-card-photo">
+                                                {item.image ? (
+                                                    <img src={item.image} alt={item.name || item.heading} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg width="40" height="40" fill="none" stroke={tc.primary} strokeWidth="1.4" viewBox="0 0 24 24" style={{ opacity: 0.45 }}><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                                    </div>
+                                                )}
+                                                <div className="award-card-scrim"></div>
+                                                <div className="award-card-seal">
+                                                    <svg width="18" height="18" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
                                                 </div>
-                                            )}
-                                            <div className="award-card-scrim"></div>
-                                            <div className="award-card-seal">
-                                                <svg width="18" height="18" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                            </div>
+                                            <div className="award-card-body">
+                                                <span className="award-badge-pill">
+                                                    <svg width="11" height="11" fill="none" stroke={tc.primary} strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                                    <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '9.5px', color: tc.primary, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 800 }}>Award</span>
+                                                </span>
+                                                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(14px,3.6vw,17px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.35 }}>{item.heading}</p>
+                                                {(item.name || item.designation) && (
+                                                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(15,23,42,0.08)' }}>
+                                                        {item.name && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(11.5px,2.8vw,12.5px)', fontWeight: 700, color: '#334155', letterSpacing: '0', lineHeight: 1.3 }}>{item.name}</p>}
+                                                        {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(10px,2.4vw,11px)', color: '#94a3b8', fontWeight: 500, marginTop: '2px' }}>{item.designation}</p>}
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
-                                        <div className="award-card-body">
-                                            <span className="award-badge-pill">
-                                                <svg width="11" height="11" fill="none" stroke={tc.primary} strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
-                                                <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '9.5px', color: tc.primary, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 800 }}>Award</span>
-                                            </span>
-                                            <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(14px,3.6vw,17px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.35 }}>{item.heading}</p>
-                                            {(item.name || item.designation) && (
-                                                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(15,23,42,0.08)' }}>
-                                                    {item.name && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(11.5px,2.8vw,12.5px)', fontWeight: 700, color: '#334155', letterSpacing: '0', lineHeight: 1.3 }}>{item.name}</p>}
-                                                    {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(10px,2.4vw,11px)', color: '#94a3b8', fontWeight: 500, marginTop: '2px' }}>{item.designation}</p>}
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 clamp(1.25rem,6vw,5rem)', display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '22px' }}>
+                                {awards.map((item, i) => (
+                                    <Reveal key={i} delay={i * 0.1} style={{ width: '300px', maxWidth: '100%' }}>
+                                        <div className="award-card" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                                            <div className="award-card-top-bar" style={{ background: `linear-gradient(90deg,${tc.primary},${tc.secondary})` }}></div>
+                                            <div className="award-card-photo">
+                                                {item.image ? (
+                                                    <img src={item.image} alt={item.name || item.heading} />
+                                                ) : (
+                                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <svg width="40" height="40" fill="none" stroke={tc.primary} strokeWidth="1.4" viewBox="0 0 24 24" style={{ opacity: 0.45 }}><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                                    </div>
+                                                )}
+                                                <div className="award-card-scrim"></div>
+                                                <div className="award-card-seal">
+                                                    <svg width="18" height="18" fill="none" stroke="#ffffff" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
                                                 </div>
-                                            )}
+                                            </div>
+                                            <div className="award-card-body">
+                                                <span className="award-badge-pill">
+                                                    <svg width="11" height="11" fill="none" stroke={tc.primary} strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="6" /><path strokeLinecap="round" strokeLinejoin="round" d="M8.21 13.89L7 23l5-3 5 3-1.21-9.12" /></svg>
+                                                    <span style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: '9.5px', color: tc.primary, letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 800 }}>Award</span>
+                                                </span>
+                                                <p style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(14px,3.6vw,17px)', fontWeight: 700, color: '#0f172a', letterSpacing: '0', lineHeight: 1.35 }}>{item.heading}</p>
+                                                {(item.name || item.designation) && (
+                                                    <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(15,23,42,0.08)' }}>
+                                                        {item.name && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(11.5px,2.8vw,12.5px)', fontWeight: 700, color: '#334155', letterSpacing: '0', lineHeight: 1.3 }}>{item.name}</p>}
+                                                        {item.designation && <p style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 'clamp(10px,2.4vw,11px)', color: '#94a3b8', fontWeight: 500, marginTop: '2px' }}>{item.designation}</p>}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
+                                    </Reveal>
                                 ))}
                             </div>
-                        </div>
+                        )}
                     </div>
                 )}
 

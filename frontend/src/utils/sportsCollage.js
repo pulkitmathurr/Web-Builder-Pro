@@ -4,10 +4,13 @@
 // freeform (same crop tool as Infrastructure's vertical images — no locked ratio).
 // Three selectable layouts: 4, 5, or 7 photos.
 //
-// Layouts with `square: true` (currently just the 4-photo layout) render as a
-// plain auto-flowing grid where every cell is forced to a 1:1 aspect-ratio, so
-// they stay perfectly square regardless of container width — no slot placement
-// or row-height math needed.
+// Layouts with `scattered: true` (currently just the 4-photo layout) render as
+// an overlapping, black-framed "scrapbook" collage — each slot is absolutely
+// positioned inside a fixed-`aspectRatio` container via percentage `box`
+// coordinates, plus a `rotate` (deg) and `z` stacking order. On narrow screens
+// this collapses to a plain non-overlapping 2×2 grid (see the
+// `.sports-scattered-*` mobile media query in both renderers) since rotated,
+// overlapping frames don't reflow well at small sizes.
 //
 // Other layouts place each slot with explicit gridColumn/gridRow line numbers
 // against the layout's `cols` count, with `rowHeight` (repeat(rows, `${rowHeight}px`))
@@ -22,16 +25,18 @@ export const SHAPE_LABELS = {
 };
 
 export const COLLAGE_LAYOUTS = {
-    // Simple even 2×2 grid — every photo takes exactly one square quadrant.
+    // Overlapping "scrapbook" collage — 4 black-framed photos at staggered sizes/
+    // positions with a slight independent rotation each, instead of a plain even
+    // grid. `box` values are percentages of the scattered container (which keeps
+    // `aspectRatio` fixed so the staggered layout never distorts).
     4: {
-        cols: 2,
-        rows: 2,
-        square: true,
+        scattered: true,
+        aspectRatio: '4 / 4.6',
         slots: [
-            { shape: 'square' },
-            { shape: 'square' },
-            { shape: 'square' },
-            { shape: 'square' },
+            { shape: 'tall', rotate: -3, z: 2, box: { left: '2%', top: '3%', width: '49%', height: '53%' } },
+            { shape: 'tall', rotate: 2, z: 1, box: { left: '53%', top: '0%', width: '45%', height: '63%' } },
+            { shape: 'tall', rotate: 2, z: 1, box: { left: '0%', top: '55%', width: '45%', height: '45%' } },
+            { shape: 'landscape', rotate: -2, z: 3, box: { left: '41%', top: '61%', width: '57%', height: '39%' } },
         ],
     },
     5: {

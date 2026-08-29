@@ -27,8 +27,27 @@ const PAGES = [
 
 const defaultPageData = { heading: '', description: '', images: [] };
 
+const MAX_SPORT_EVENT_IMAGES = 5;
+
+// Each collage layout (4/5/7 photos) keeps its own independent slot of photos —
+// switching layouts must never show one layout's photos inside another's slots.
+const emptyCollageImages = () => ({ 4: [], 5: [], 7: [] });
+
+// Old saves stored a single flat `images` array shared across whichever layout
+// was active at the time — migrate that into the new per-layout shape the first
+// time this content is loaded, instead of dropping it.
+const migrateSportsAt = (data) => {
+    const layout = data.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+    if (data.collageImages) {
+        return { heading: '', description: '', ...data, collageLayout: layout, collageImages: { ...emptyCollageImages(), ...data.collageImages } };
+    }
+    const collageImages = emptyCollageImages();
+    if (Array.isArray(data.images)) collageImages[layout] = data.images;
+    return { heading: '', description: '', ...data, collageLayout: layout, collageImages };
+};
+
 const defaultContent = {
-    sportsAt: { ...defaultPageData, collageLayout: DEFAULT_COLLAGE_LAYOUT },
+    sportsAt: { heading: '', description: '', collageLayout: DEFAULT_COLLAGE_LAYOUT, collageImages: emptyCollageImages() },
     sportsOffered: { heading: '', description: '', offeredSports: [] },
     sportingEvents: { heading: '', description: '', events: [] },
     awards: { heading: '', description: '', images: [], certifications: [], proud: [], yearlyAwards: [] },
@@ -58,7 +77,7 @@ const Sports = () => {
                     if (k === 'sportingEvents') merged[k] = { ...defaultContent.sportingEvents, ...res.data.content[k] };
                     else if (k === 'sportsOffered') merged[k] = { ...defaultContent.sportsOffered, ...res.data.content[k] };
                     else if (k === 'awards') merged[k] = { ...defaultContent.awards, ...res.data.content[k] };
-                    else if (k === 'sportsAt') merged[k] = { ...defaultContent.sportsAt, ...res.data.content[k] };
+                    else if (k === 'sportsAt') merged[k] = migrateSportsAt(res.data.content[k]);
                     else merged[k] = { ...defaultPageData, ...res.data.content[k] };
                 });
                 setContent(merged);
@@ -117,8 +136,42 @@ const Sports = () => {
 
     // Each file is cropped one at a time (freeform, adjustable from every side) before
     // upload. Once confirmed, the next queued file automatically opens in the crop modal.
+    // Sport/Event image carousels are capped at MAX_SPORT_EVENT_IMAGES each.
     const startCropQueue = (files, target) => {
         if (files.length === 0) return;
+        if (target.mode === 'sport' || target.mode === 'event') {
+            const listKey = target.mode === 'sport' ? 'offeredSports' : 'events';
+            const list = content[activePage][listKey] || [];
+            const item = list.find(x => x.id === target.id);
+            const current = item?.images || [];
+            const room = MAX_SPORT_EVENT_IMAGES - current.length;
+            if (room <= 0) {
+                toast.error(`Maximum ${MAX_SPORT_EVENT_IMAGES} images allowed`);
+                return;
+            }
+            const toQueue = files.slice(0, room);
+            if (files.length > toQueue.length) {
+                toast.error(`Only ${room} more image(s) can be added (max ${MAX_SPORT_EVENT_IMAGES})`);
+            }
+            setImageQueue(toQueue.slice(1));
+            setCropTarget({ ...target, src: URL.createObjectURL(toQueue[0]) });
+            return;
+        }
+        if (target.mode === 'grid' && target.max != null) {
+            const current = content[activePage][target.field] || [];
+            const room = target.max - current.length;
+            if (room <= 0) {
+                toast.error(`Maximum ${target.max} images allowed`);
+                return;
+            }
+            const toQueue = files.slice(0, room);
+            if (files.length > toQueue.length) {
+                toast.error(`Only ${room} more image(s) can be added (max ${target.max})`);
+            }
+            setImageQueue(toQueue.slice(1));
+            setCropTarget({ ...target, src: URL.createObjectURL(toQueue[0]) });
+            return;
+        }
         setImageQueue(files.slice(1));
         setCropTarget({ ...target, src: URL.createObjectURL(files[0]) });
     };
@@ -128,8 +181,10 @@ const Sports = () => {
         setCropTarget(null);
         const key = target.mode === 'grid' ? target.field
             : target.mode === 'collageSlot' ? `collage-${target.idx}`
+            : target.mode === 'collageExtra' ? 'collage-extra'
             : target.mode === 'sport' ? `sport-${target.id}`
             : target.mode === 'event' ? `event-${target.id}`
+            : target.mode === 'proud' ? `proud-${target.id}`
             : `cert-${target.id}`;
         setUploading(prev => ({ ...prev, [key]: true }));
         try {
@@ -138,10 +193,17 @@ const Sports = () => {
                 const current = content[activePage][target.field] || [];
                 updateField(target.field, [...current, res.data.url]);
             } else if (target.mode === 'collageSlot') {
-                const current = [...(content[activePage].images || [])];
+                const layout = content.sportsAt.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+                const collageImages = content.sportsAt.collageImages || emptyCollageImages();
+                const current = [...(collageImages[layout] || [])];
                 while (current.length <= target.idx) current.push('');
                 current[target.idx] = res.data.url;
-                updateField('images', current);
+                updateField('collageImages', { ...collageImages, [layout]: current });
+            } else if (target.mode === 'collageExtra') {
+                const layout = content.sportsAt.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+                const collageImages = content.sportsAt.collageImages || emptyCollageImages();
+                const current = [...(collageImages[layout] || [])];
+                updateField('collageImages', { ...collageImages, [layout]: [...current, res.data.url] });
             } else if (target.mode === 'sport') {
                 const list = content[activePage].offeredSports || [];
                 const i = list.findIndex(s => s.id === target.id);
@@ -166,6 +228,14 @@ const Sports = () => {
                     updated[i] = { ...updated[i], image: res.data.url };
                     updateField('certifications', updated);
                 }
+            } else if (target.mode === 'proud') {
+                const list = content[activePage].proud || [];
+                const i = list.findIndex(s => s.id === target.id);
+                if (i !== -1) {
+                    const updated = [...list];
+                    updated[i] = { ...updated[i], photo: res.data.url };
+                    updateField('proud', updated);
+                }
             }
         } catch (e) {
             toast.error('Failed to upload');
@@ -187,9 +257,11 @@ const Sports = () => {
     // Collage slots are addressed by fixed position (slot 3's photo must stay slot 3's
     // photo) so clearing one blanks it in place instead of shifting the others up.
     const clearCollageSlot = (idx) => {
-        const current = [...(content[activePage].images || [])];
+        const layout = content.sportsAt.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+        const collageImages = content.sportsAt.collageImages || emptyCollageImages();
+        const current = [...(collageImages[layout] || [])];
         if (idx < current.length) current[idx] = '';
-        updateField('images', current);
+        updateField('collageImages', { ...collageImages, [layout]: current });
     };
 
     const inputStyle = {
@@ -204,39 +276,50 @@ const Sports = () => {
         marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em'
     };
 
-    const ImageGrid = ({ field = 'images', label = 'Images' }) => (
-        <div>
-            <label style={labelStyle}>{label}</label>
-            <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
-                {(content[activePage][field] || []).map((img, i) => (
-                    <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
-                        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <button onClick={() => removeImage(i, field)}
-                            style={{ position: 'absolute', top: '6px', right: '6px', width: '24px', height: '24px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+    const ImageGrid = ({ field = 'images', label = 'Images', max = null }) => {
+        const count = (content[activePage][field] || []).length;
+        const atLimit = max != null && count >= max;
+        return (
+            <div>
+                <label style={labelStyle}>{label}{max != null ? ` — ${count} / ${max}` : ''}</label>
+                <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '1.25rem' }}>
+                    {(content[activePage][field] || []).map((img, i) => (
+                        <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', aspectRatio: '1' }}>
+                            <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <button onClick={() => removeImage(i, field)}
+                                style={{ position: 'absolute', top: '6px', right: '6px', width: '24px', height: '24px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                        </div>
+                    ))}
+                </div>
+                {atLimit ? (
+                    <p style={{ fontSize: '12px', color: '#94a3b8', textAlign: 'center', padding: '0.75rem' }}>
+                        Maximum {max} images added — remove one to add another.
+                    </p>
+                ) : (
+                    <div onClick={() => document.getElementById(`grid-${field}`).click()}
+                        style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
+                        {uploading[field] ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : (
+                            <>
+                                <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add images (multiple allowed)</p>
+                                <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each{max != null ? ` · Up to ${max} images` : ''}.</p>
+                            </>
+                        )}
                     </div>
-                ))}
-            </div>
-            <div onClick={() => document.getElementById(`grid-${field}`).click()}
-                style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-                {uploading[field] ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : (
-                    <>
-                        <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add images (multiple allowed)</p>
-                        <p style={{ fontSize: '10.5px', color: '#94a3b8', marginTop: '4px' }}>You'll get a crop tool for each image (freely adjustable from every side) before it's added. JPG, PNG, WEBP · Max 1MB each.</p>
-                    </>
                 )}
+                <input id={`grid-${field}`} type="file" accept="image/*" multiple
+                    onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startCropQueue(files, { mode: 'grid', field, max }); }}
+                    style={{ display: 'none' }} />
             </div>
-            <input id={`grid-${field}`} type="file" accept="image/*" multiple
-                onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startCropQueue(files, { mode: 'grid', field }); }}
-                style={{ display: 'none' }} />
-        </div>
-    );
+        );
+    };
 
     // ── Sports at School collage builder — lets the admin pick the 4/5/7-photo
     // layout and upload straight into a specific slot, so they always know whether
     // that slot renders vertical (tall) or horizontal (wide) before cropping. ──
     const CollageBuilder = () => {
-        const images = content.sportsAt.images || [];
         const layout = content.sportsAt.collageLayout || DEFAULT_COLLAGE_LAYOUT;
+        const collageImages = content.sportsAt.collageImages || emptyCollageImages();
+        const images = collageImages[layout] || [];
         const layoutDef = COLLAGE_LAYOUTS[layout];
         const slots = layoutDef.slots;
         const extraImages = images.slice(slots.length);
@@ -244,7 +327,7 @@ const Sports = () => {
         const removeExtraImage = (extraIdx) => {
             const current = [...images];
             current.splice(slots.length + extraIdx, 1);
-            updateField('images', current);
+            updateField('collageImages', { ...collageImages, [layout]: current });
         };
 
         return (
@@ -265,46 +348,86 @@ const Sports = () => {
                 {/* maxWidth matches the public Sports page's collage container (1140px) so each
                     slot's column width — and therefore its rendered aspect ratio — lines up with
                     how it will actually look live, not just its row-height in isolation. */}
-                <div className="sports-collage-grid" style={{ maxWidth: '1140px', display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, ...(layoutDef.square ? {} : { gridTemplateRows: `repeat(${layoutDef.rows},${layoutDef.rowHeight}px)` }), gap: '14px', marginBottom: '1.25rem' }}>
-                    {slots.map((slot, i) => {
-                        const url = images[i];
-                        const uploadKey = `collage-${i}`;
-                        return (
-                            <div key={i}
-                                onClick={() => document.getElementById(`collage-slot-${i}`).click()}
-                                style={{ ...(layoutDef.square ? { aspectRatio: '1' } : { gridColumn: slot.gridColumn, gridRow: slot.gridRow }), position: 'relative', borderRadius: '18px', overflow: 'hidden', border: url ? '1px solid #e2e8f0' : '1.5px dashed #cbd5e1', background: url ? 'transparent' : '#fafafa', cursor: 'pointer' }}>
-                                {uploading[uploadKey] ? (
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                                    </div>
-                                ) : url ? (
-                                    <>
-                                        <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                                        <div style={{ position: 'absolute', top: '6px', left: '6px', padding: '2px 8px', background: 'rgba(0,0,0,0.55)', borderRadius: '6px', fontSize: '10px', color: '#fff', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</div>
-                                        <button onClick={e => { e.stopPropagation(); clearCollageSlot(i); }}
-                                            style={{ position: 'absolute', top: '6px', right: '6px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
-                                    </>
-                                ) : (
-                                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px', textAlign: 'center' }}>
-                                        <span style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</span>
-                                        <span style={{ fontSize: '10px', color: '#cbd5e1' }}>+ Upload</span>
-                                    </div>
-                                )}
-                                <input id={`collage-slot-${i}`} type="file" accept="image/*" onClick={e => e.stopPropagation()}
-                                    onChange={e => {
-                                        const f = e.target.files[0];
-                                        e.target.value = '';
-                                        if (f) startCropQueue([f], { mode: 'collageSlot', idx: i, aspect: null });
-                                    }}
-                                    style={{ display: 'none' }} />
-                            </div>
-                        );
-                    })}
-                </div>
+                {layoutDef.scattered ? (
+                    <div className="sports-scattered-collage" style={{ position: 'relative', width: '100%', maxWidth: '520px', aspectRatio: layoutDef.aspectRatio, marginBottom: '1.25rem' }}>
+                        {slots.map((slot, i) => {
+                            const url = images[i];
+                            const uploadKey = `collage-${i}`;
+                            return (
+                                <div key={i}
+                                    onClick={() => document.getElementById(`collage-slot-${i}`).click()}
+                                    className="sports-scattered-frame"
+                                    style={{ position: 'absolute', ...slot.box, transform: `rotate(${slot.rotate}deg)`, zIndex: slot.z, border: '10px solid #1a1a1a', borderRadius: '3px', overflow: 'hidden', boxShadow: '0 12px 28px rgba(0,0,0,0.28)', background: url ? '#000' : '#fafafa', cursor: 'pointer', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
+                                    {uploading[uploadKey] ? (
+                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                        </div>
+                                    ) : url ? (
+                                        <>
+                                            <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                            <div style={{ position: 'absolute', top: '6px', left: '6px', padding: '2px 8px', background: 'rgba(0,0,0,0.55)', borderRadius: '6px', fontSize: '10px', color: '#fff', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</div>
+                                            <button onClick={e => { e.stopPropagation(); clearCollageSlot(i); }}
+                                                style={{ position: 'absolute', top: '6px', right: '6px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                        </>
+                                    ) : (
+                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px', textAlign: 'center' }}>
+                                            <span style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</span>
+                                            <span style={{ fontSize: '10px', color: '#cbd5e1' }}>+ Upload</span>
+                                        </div>
+                                    )}
+                                    <input id={`collage-slot-${i}`} type="file" accept="image/*" onClick={e => e.stopPropagation()}
+                                        onChange={e => {
+                                            const f = e.target.files[0];
+                                            e.target.value = '';
+                                            if (f) startCropQueue([f], { mode: 'collageSlot', idx: i, aspect: null });
+                                        }}
+                                        style={{ display: 'none' }} />
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div className="sports-collage-grid" style={{ maxWidth: '1140px', display: 'grid', gridTemplateColumns: `repeat(${layoutDef.cols},1fr)`, gridTemplateRows: `repeat(${layoutDef.rows},${layoutDef.rowHeight}px)`, gap: '14px', marginBottom: '1.25rem' }}>
+                        {slots.map((slot, i) => {
+                            const url = images[i];
+                            const uploadKey = `collage-${i}`;
+                            return (
+                                <div key={i}
+                                    onClick={() => document.getElementById(`collage-slot-${i}`).click()}
+                                    style={{ gridColumn: slot.gridColumn, gridRow: slot.gridRow, position: 'relative', borderRadius: '3px', overflow: 'hidden', border: '10px solid #1a1a1a', boxShadow: url ? '0 8px 20px rgba(0,0,0,0.22)' : 'none', background: url ? '#000' : '#fafafa', cursor: 'pointer' }}>
+                                    {uploading[uploadKey] ? (
+                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div style={{ width: '20px', height: '20px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                                        </div>
+                                    ) : url ? (
+                                        <>
+                                            <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                                            <div style={{ position: 'absolute', top: '6px', left: '6px', padding: '2px 8px', background: 'rgba(0,0,0,0.55)', borderRadius: '6px', fontSize: '10px', color: '#fff', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</div>
+                                            <button onClick={e => { e.stopPropagation(); clearCollageSlot(i); }}
+                                                style={{ position: 'absolute', top: '6px', right: '6px', width: '22px', height: '22px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                        </>
+                                    ) : (
+                                        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', padding: '6px', textAlign: 'center' }}>
+                                            <span style={{ fontSize: '10.5px', color: '#94a3b8', fontWeight: 600 }}>{SHAPE_LABELS[slot.shape]}</span>
+                                            <span style={{ fontSize: '10px', color: '#cbd5e1' }}>+ Upload</span>
+                                        </div>
+                                    )}
+                                    <input id={`collage-slot-${i}`} type="file" accept="image/*" onClick={e => e.stopPropagation()}
+                                        onChange={e => {
+                                            const f = e.target.files[0];
+                                            e.target.value = '';
+                                            if (f) startCropQueue([f], { mode: 'collageSlot', idx: i, aspect: null });
+                                        }}
+                                        style={{ display: 'none' }} />
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
 
                 <ImageSizeHint>
                     You'll get a crop tool for each photo (freely adjustable from every side) before it's added.
-                    {layout === '4' && ' All 4 slots are square (1:1) — use a centered subject.'}
+                    {layout === '4' && ' Frames are portrait/landscape shaped (not square) — see the preview above for each slot\'s exact shape.'}
                     {layout === '5' && ' Tall slots ≈ 2:3 portrait, the wide slot ≈ 8:3 landscape, landscape slots ≈ 4:3.'}
                     {layout === '7' && ' The extra-tall slot ≈ 9:20 portrait, tall slots ≈ 2:3 portrait, the wide slot ≈ 8:3 landscape, landscape slots ≈ 4:3.'}
                     {' '}Upload photos with enough resolution to fill their slot without stretching (roughly 1000px+ on the longer side).
@@ -327,10 +450,10 @@ const Sports = () => {
                         </div>
                         <div onClick={() => document.getElementById('collage-extra-input').click()}
                             style={{ border: '1.5px dashed #e2e8f0', borderRadius: '12px', padding: '1.5rem', textAlign: 'center', cursor: 'pointer', background: '#fafafa' }}>
-                            {uploading.images ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add extra images (multiple allowed)</p>}
+                            {uploading['collage-extra'] ? <p style={{ fontSize: '13px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', color: '#64748b' }}>+ Click to add extra images (multiple allowed)</p>}
                         </div>
                         <input id="collage-extra-input" type="file" accept="image/*" multiple
-                            onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startCropQueue(files, { mode: 'grid', field: 'images' }); }}
+                            onChange={e => { const files = Array.from(e.target.files); e.target.value = ''; if (files.length > 0) startCropQueue(files, { mode: 'collageExtra' }); }}
                             style={{ display: 'none' }} />
                     </>
                 )}
@@ -392,6 +515,12 @@ const Sports = () => {
                        labeled with the intended shape so the admin knows how to crop each photo ── */
                     .sports-collage-grid { grid-template-columns: repeat(2, 1fr) !important; grid-template-rows: none !important; gap: 8px !important; }
                     .sports-collage-grid > div { grid-column: auto !important; grid-row: auto !important; aspect-ratio: 1 !important; }
+
+                    /* ── 4-photo scattered/overlapping collage — the rotated, overlapping black
+                       frames only work at desktop widths; on mobile it collapses to a plain,
+                       non-overlapping 2×2 grid so nothing gets clipped or hard to tap. ── */
+                    .sports-scattered-collage { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; aspect-ratio: auto !important; gap: 8px !important; max-width: 100% !important; }
+                    .sports-scattered-frame { position: static !important; transform: none !important; aspect-ratio: 1 !important; border-width: 6px !important; }
                 }
             `}</style>
 
@@ -589,7 +718,7 @@ const Sports = () => {
                                     placeholder="Overview of our sports achievements..." minHeight="120px"
                                     maxWidth="1170px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
                             </div>
-                            <ImageGrid field="images" label="Photo Carousel Images" />
+                            <ImageGrid field="images" label="Photo Carousel Images" max={8} />
                         </div>
 
                         {/* Certifications */}
@@ -635,16 +764,7 @@ const Sports = () => {
                                             updateField('proud', updated);
                                         }}
                                         onRemove={() => updateField('proud', pageData.proud.filter((_, idx) => idx !== i))}
-                                        onUpload={async (file) => {
-                                            setUploading(prev => ({ ...prev, [`proud-${stu.id}`]: true }));
-                                            try {
-                                                const res = await uploadContentImageApi(file);
-                                                const updated = [...pageData.proud];
-                                                updated[i] = { ...updated[i], photo: res.data.url };
-                                                updateField('proud', updated);
-                                            } catch (e) { toast.error('Failed'); }
-                                            finally { setUploading(prev => ({ ...prev, [`proud-${stu.id}`]: false })); }
-                                        }}
+                                        onAddImage={(file) => startCropQueue([file], { mode: 'proud', id: stu.id })}
                                         uploading={uploading[`proud-${stu.id}`]}
                                     />
                                 ))}
@@ -716,8 +836,8 @@ const EventCard = ({ event, index, length, onMove, onUpdate, onRemove, onAddImag
                         maxWidth="734px" fontSize="14.5px" fontFamily="'Inter', system-ui, sans-serif" />
                 </div>
                 <div>
-                    <label style={labelStyle}>Event Images (carousel)</label>
-                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
+                    <label style={labelStyle}>Event Images (carousel) — {(event.images || []).length} / {MAX_SPORT_EVENT_IMAGES}</label>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each · Up to {MAX_SPORT_EVENT_IMAGES} images.</p>
                     <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(event.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -726,10 +846,16 @@ const EventCard = ({ event, index, length, onMove, onUpdate, onRemove, onAddImag
                             </div>
                         ))}
                     </div>
-                    <div className="sports-add-btn" onClick={() => document.getElementById(`ev-img-${event.id}`).click()}
-                        style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
-                        {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
-                    </div>
+                    {(event.images || []).length >= MAX_SPORT_EVENT_IMAGES ? (
+                        <p style={{ fontSize: '11.5px', color: '#94a3b8', textAlign: 'center', padding: '0.6rem' }}>
+                            Maximum {MAX_SPORT_EVENT_IMAGES} images added — remove one to add another.
+                        </p>
+                    ) : (
+                        <div className="sports-add-btn" onClick={() => document.getElementById(`ev-img-${event.id}`).click()}
+                            style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
+                            {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
+                        </div>
+                    )}
                     <input id={`ev-img-${event.id}`} type="file" accept="image/*" multiple
                         onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) onAddImages(files); }}
                         style={{ display: 'none' }} />
@@ -765,8 +891,8 @@ const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAdd
                         maxWidth="734px" fontSize="14.5px" fontFamily="'Inter', system-ui, sans-serif" />
                 </div>
                 <div>
-                    <label style={labelStyle}>Sport Images (carousel)</label>
-                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each.</p>
+                    <label style={labelStyle}>Sport Images (carousel) — {(sport.images || []).length} / {MAX_SPORT_EVENT_IMAGES}</label>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each · Up to {MAX_SPORT_EVENT_IMAGES} images.</p>
                     <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
                         {(sport.images || []).map((img, i) => (
                             <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
@@ -775,10 +901,16 @@ const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAdd
                             </div>
                         ))}
                     </div>
-                    <div className="sports-add-btn" onClick={() => document.getElementById(`sport-img-${sport.id}`).click()}
-                        style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
-                        {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
-                    </div>
+                    {(sport.images || []).length >= MAX_SPORT_EVENT_IMAGES ? (
+                        <p style={{ fontSize: '11.5px', color: '#94a3b8', textAlign: 'center', padding: '0.6rem' }}>
+                            Maximum {MAX_SPORT_EVENT_IMAGES} images added — remove one to add another.
+                        </p>
+                    ) : (
+                        <div className="sports-add-btn" onClick={() => document.getElementById(`sport-img-${sport.id}`).click()}
+                            style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
+                            {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
+                        </div>
+                    )}
                     <input id={`sport-img-${sport.id}`} type="file" accept="image/*" multiple
                         onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) onAddImages(files); }}
                         style={{ display: 'none' }} />
@@ -813,9 +945,14 @@ const CertCard = ({ cert, index, length, onMove, onUpdate, onRemove, onUpload, u
 };
 
 // ── Making Us Proud Card ──
-const ProudCard = ({ student, index, length, onMove, onUpdate, onRemove, onUpload, uploading }) => {
+// Photo upload routes through the parent's shared cropTarget/ImageCropModal flow
+// (onAddImage) rather than rendering its own modal in-place — a modal rendered
+// this deep inside `.sports-section` (which has a `transform`-based CSS
+// animation, still applying `translateY(0)` via fill-mode: forwards even after
+// it finishes) becomes a containing block for `position: fixed`, so a locally
+// rendered modal opens pinned to that section's box instead of the viewport.
+const ProudCard = ({ student, index, length, onMove, onUpdate, onRemove, onAddImage, uploading }) => {
     const { tc } = useSchoolStore();
-    const [cropSrc, setCropSrc] = useState(null);
     const inputStyle = { width: '100%', padding: '8px 10px', border: '1px solid #e5e9f0', borderRadius: '8px', fontSize: '12px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
     return (
         <div style={{ border: '0.5px solid #f1f5f9', borderRadius: '12px', overflow: 'hidden' }}>
@@ -828,7 +965,7 @@ const ProudCard = ({ student, index, length, onMove, onUpdate, onRemove, onUploa
                 onChange={e => {
                     const f = e.target.files[0];
                     e.target.value = '';
-                    if (f) setCropSrc(URL.createObjectURL(f));
+                    if (f) onAddImage(f);
                 }}
                 style={{ display: 'none' }} />
             <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -839,14 +976,6 @@ const ProudCard = ({ student, index, length, onMove, onUpdate, onRemove, onUploa
                     <button onClick={onRemove} style={{ fontSize: '11px', color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer' }}>Remove</button>
                 </div>
             </div>
-            {cropSrc && (
-                <ImageCropModal
-                    imageSrc={cropSrc}
-                    aspect={null}
-                    onCancel={() => setCropSrc(null)}
-                    onCropComplete={(croppedFile) => { setCropSrc(null); onUpload(croppedFile); }}
-                />
-            )}
         </div>
     );
 };
