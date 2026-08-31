@@ -8,6 +8,7 @@ import NotPublished from "../../components/public/NotPublished";
 import AdmissionEnquiryForm from "../../components/public/AdmissionEnquiryForm";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily, getHeadingSizeCss } from "../../constants/fonts";
+import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -170,6 +171,8 @@ const AdmissionProcedurePublic = () => {
                 .rte-content .ql-size-small { font-size: 0.85em; }
                 .rte-content .ql-size-large { font-size: 1.2em; }
                 .rte-content .ql-size-huge { font-size: 1.5em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
                 .ap-map-link:hover { filter: brightness(1.04); }
                 @media (max-width: 860px) {
                     .ap-contact-grid { grid-template-columns: 1fr !important; }

@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const BookIcon = ({ color }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -82,6 +83,8 @@ const BookListPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.85em; }
                 .rte-content .ql-size-large { font-size: 1.2em; }
                 .rte-content .ql-size-huge { font-size: 1.5em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }

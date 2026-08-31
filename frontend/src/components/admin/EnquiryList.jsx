@@ -251,8 +251,8 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
                                                     </p>
                                                 ) : null)}
                                                 {en.message && (
-                                                    <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7, background: '#f8fafc', border: '1px solid #eef1f6', borderRadius: '8px', padding: '12px 14px', marginTop: '8px' }}>
-                                                        {en.message}
+                                                    <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.7, background: '#f8fafc', border: '1px solid #eef1f6', borderRadius: '8px', padding: '12px 14px', marginTop: '8px', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
+                                                        <strong style={{ color: '#334155' }}>Message from sender:</strong> {en.message}
                                                     </p>
                                                 )}
                                             </div>

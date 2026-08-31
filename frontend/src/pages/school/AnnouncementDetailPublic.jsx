@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { TAG_COLORS } from "./AnnouncementsPublic";
 import { formatDate, formatTime, readingTime } from "../../utils/dateTimeFormat";
 import { normalizeImages, getImageUrl, getImageOrientation } from "../../utils/imageOrientation";
+import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const ChevronLeftIcon = ({ color, size = 14 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
@@ -222,6 +223,7 @@ const AnnouncementDetailPublic = () => {
                 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
                 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }

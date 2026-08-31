@@ -59,6 +59,8 @@ const AdminSettings = () => {
     const [footerBgCropSrc, setFooterBgCropSrc] = useState(null);
     const [uploadingFooterBg, setUploadingFooterBg] = useState(false);
     const [removingFooterBg, setRemovingFooterBg] = useState(false);
+    const [footerAboutText, setFooterAboutText] = useState('');
+    const [savingFooterAboutText, setSavingFooterAboutText] = useState(false);
 
     const [musicData, setMusicData] = useState({ bg_music_enabled: false, bg_music_track: '' });
     const [selectingTrack, setSelectingTrack] = useState(false);
@@ -75,6 +77,10 @@ const AdminSettings = () => {
     const [prospectusFile, setProspectusFile] = useState(null);
     const [uploadingProspectus, setUploadingProspectus] = useState(false);
     const [removingProspectus, setRemovingProspectus] = useState(false);
+
+    const [schoolAppLabel, setSchoolAppLabel] = useState('');
+    const [schoolAppUrl, setSchoolAppUrl] = useState('');
+    const [savingSchoolApp, setSavingSchoolApp] = useState(false);
 
     const tabsScrollRef = useRef(null);
     const scrollTabs = (dir) => tabsScrollRef.current?.scrollBy({ left: dir * 240, behavior: 'smooth' });
@@ -108,6 +114,7 @@ const AdminSettings = () => {
                 welcome_banner_link: school.welcome_banner_link || '',
             });
             setFooterBgUrl(school.footer_bg_url || '');
+            setFooterAboutText(school.footer_about_text || '');
             setMusicData({
                 bg_music_enabled: !!school.bg_music_enabled,
                 bg_music_track: school.bg_music_track || '',
@@ -118,6 +125,8 @@ const AdminSettings = () => {
             setBadges(Array.isArray(parsedBadges) ? parsedBadges : []);
             setCustomDomain(school.custom_domain || '');
             setProspectusUrl(school.prospectus_url || '');
+            setSchoolAppLabel(school.school_app_label || '');
+            setSchoolAppUrl(school.school_app_url || '');
         } catch (e) {
             toast.error('Failed to load profile');
         } finally {
@@ -171,6 +180,40 @@ const AdminSettings = () => {
             setSavingDomain(false);
         }
     };
+
+    const handleFooterAboutTextSave = async () => {
+        const text = footerAboutText.trim();
+        setSavingFooterAboutText(true);
+        try {
+            await updateSchoolProfileApi({ footer_about_text: text || null });
+            setFooterAboutText(text);
+            toast.success(text ? 'Footer text saved!' : 'Footer text removed');
+        } catch (e) {
+            toast.error('Failed to save footer text');
+        } finally {
+            setSavingFooterAboutText(false);
+        }
+    };
+
+    const saveSchoolApp = async (label, url) => {
+        if (url && !/^https?:\/\/.+/i.test(url)) {
+            toast.error('Enter a valid link starting with http:// or https://');
+            return;
+        }
+        setSavingSchoolApp(true);
+        try {
+            await updateSchoolProfileApi({ school_app_label: label || null, school_app_url: url || null });
+            setSchoolAppLabel(label);
+            setSchoolAppUrl(url);
+            toast.success(url ? 'School App button saved!' : 'School App button removed');
+        } catch (e) {
+            toast.error('Failed to save School App button');
+        } finally {
+            setSavingSchoolApp(false);
+        }
+    };
+    const handleSchoolAppSave = () => saveSchoolApp(schoolAppLabel.trim(), schoolAppUrl.trim());
+    const handleSchoolAppClear = () => saveSchoolApp('', '');
 
     const handleProspectusChange = (e) => {
         const file = e.target.files[0];
@@ -530,8 +573,10 @@ const AdminSettings = () => {
         { key: 'footerBg', label: 'Footer Background', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/><path strokeLinecap="round" strokeLinejoin="round" d="M4 15l4-4a2 2 0 012.8 0L16 16m-3-3l1.6-1.6a2 2 0 012.8 0L20 14"/></svg> },
         { key: 'bgMusic', label: 'Background Music', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 18V5l12-2v13M9 18a3 3 0 11-6 0 3 3 0 016 0zm12-2a3 3 0 11-6 0 3 3 0 016 0z"/></svg> },
         { key: 'affiliationBadges', label: 'Affiliation Badges', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 15a4 4 0 100-8 4 4 0 000 8z"/><path strokeLinecap="round" strokeLinejoin="round" d="M8.5 13.5L7 21l5-2.5L17 21l-1.5-7.5"/></svg> },
-        { key: 'customDomain', label: 'Custom Domain', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M3.6 9h16.8M3.6 15h16.8M11.5 3a17 17 0 000 18M12.5 3a17 17 0 010 18"/></svg> },
+        // 'customDomain' tab hidden for now (built, working, just not offered yet) — re-add
+        // this entry to bring it back: { key: 'customDomain', label: 'Custom Domain', icon: ... }
         { key: 'prospectus', label: 'Prospectus', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg> },
+        { key: 'schoolApp', label: 'School App', icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M11 18h2"/></svg> },
     ];
 
     if (loading) {
@@ -1180,6 +1225,18 @@ const AdminSettings = () => {
                                     style={{ padding: '11px', background: uploadingFooterBg || !footerBgFile ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: uploadingFooterBg || !footerBgFile ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: !footerBgFile ? 'none' : `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
                                     {uploadingFooterBg ? <><svg style={{ animation: 'spin 1s linear infinite', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Uploading...</> : <><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>Upload Background</>}
                                 </button>
+
+                                <div style={{ borderTop: '0.5px solid #f1f5f9', paddingTop: '16px', marginTop: '4px' }}>
+                                    <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', marginBottom: '4px' }}>Footer About Text</p>
+                                    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>Shown below your logo in the footer, in place of the address/phone (which already appear in the Contact Us section) — keep it short, e.g. a one-line tagline about your school.</p>
+                                    <textarea value={footerAboutText} onChange={e => setFooterAboutText(e.target.value)} maxLength={280} rows={3}
+                                        placeholder="Enter a short line about your school for the footer"
+                                        style={{ width: '100%', maxWidth: '280px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', background: '#f8fafc' }} />
+                                    <button onClick={handleFooterAboutTextSave} disabled={savingFooterAboutText}
+                                        style={{ marginTop: '10px', padding: '9px 18px', background: savingFooterAboutText ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: 600, cursor: savingFooterAboutText ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                        {savingFooterAboutText ? 'Saving...' : 'Save Footer Text'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -1200,6 +1257,9 @@ const AdminSettings = () => {
                                     )}
                                     <div style={{ position: 'relative', zIndex: 1 }}>
                                         <p style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: '#ffffff', marginBottom: '6px' }}>{profileData.name || 'School Name'}</p>
+                                        {footerAboutText && (
+                                            <p style={{ fontSize: '11.5px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.6, marginBottom: '8px', maxWidth: '280px' }}>{footerAboutText}</p>
+                                        )}
                                         <p style={{ fontSize: '10.5px', color: 'rgba(255,255,255,0.45)' }}>© {new Date().getFullYear()} · Powered by Web Builder Pro</p>
                                     </div>
                                 </div>
@@ -1528,6 +1588,49 @@ const AdminSettings = () => {
                                     {uploadingProspectus ? <><svg style={{ animation: 'spin 1s linear infinite', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Uploading...</> : 'Upload Prospectus'}
                                 </button>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ── School App — an optional 4th floating right-edge tab, alongside
+                     Admission/Career Enquiry and Prospectus, that links out to wherever the
+                     school's own app is hosted (Play Store, App Store, or any other page). ── */}
+                {activeTab === 'schoolApp' && (
+                    <div className="settings-section" style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', maxWidth: '640px' }}>
+                        <div style={{ padding: '1.25rem 1.75rem', borderBottom: '0.5px solid #f8fafc', background: 'linear-gradient(135deg,#f8fafc,#f1f5f9)', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ width: '38px', height: '38px', background: `linear-gradient(135deg,${tc.primary},${tc.secondary})`, borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                <svg width="18" height="18" fill="none" stroke="white" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M11 18h2"/></svg>
+                            </div>
+                            <div>
+                                <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>School App</p>
+                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>Optional — shows a floating tab on your public site, next to Admission/Career Enquiry and Prospectus, linking to your school's own app (Play Store, App Store, or anywhere else it's hosted)</p>
+                            </div>
+                        </div>
+                        <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Button Name</label>
+                                <input className="settings-input" type="text" value={schoolAppLabel} onChange={e => setSchoolAppLabel(e.target.value)}
+                                    placeholder="Enter button name, e.g. Get Our App"
+                                    style={{ width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Download Link</label>
+                                <input className="settings-input" type="text" value={schoolAppUrl} onChange={e => setSchoolAppUrl(e.target.value)}
+                                    placeholder="Paste your Play Store / App Store / download link"
+                                    style={{ width: '100%', padding: '11px 14px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13.5px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc' }} />
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button onClick={handleSchoolAppSave} disabled={savingSchoolApp}
+                                    style={{ padding: '11px 20px', background: savingSchoolApp ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: savingSchoolApp ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
+                                    {savingSchoolApp ? 'Saving...' : 'Save'}
+                                </button>
+                                {schoolAppUrl && (
+                                    <button type="button" onClick={handleSchoolAppClear} disabled={savingSchoolApp}
+                                        style={{ padding: '11px 18px', background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', fontSize: '13px', fontWeight: 600, color: '#ef4444', cursor: savingSchoolApp ? 'not-allowed' : 'pointer' }}>
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}

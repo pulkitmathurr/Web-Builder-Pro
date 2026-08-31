@@ -119,6 +119,7 @@ export const NAVBAR_ITEMS = [
             { label: 'Sports at School', path: (slug) => `/school/${slug}/sports/sportsAt` },
             { label: 'Sports Offered',   path: (slug) => `/school/${slug}/sports/sportsOffered` },
             { label: 'Sporting Events',  path: (slug) => `/school/${slug}/sports/sportingEvents` },
+            { label: 'Clubs & Activities', path: (slug) => `/school/${slug}/sports/clubsActivities` },
             { label: 'Awards & Achievements', path: (slug) => `/school/${slug}/sports/awards` },
         ],
     },

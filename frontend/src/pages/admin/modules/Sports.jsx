@@ -22,6 +22,7 @@ const PAGES = [
     { key: 'sportsAt', label: 'Sports at School' },
     { key: 'sportsOffered', label: 'Sports Offered' },
     { key: 'sportingEvents', label: 'Sporting Events' },
+    { key: 'clubsActivities', label: 'Clubs & Activities' },
     { key: 'awards', label: 'Sports Awards & Achievements' },
 ];
 
@@ -50,6 +51,7 @@ const defaultContent = {
     sportsAt: { heading: '', description: '', collageLayout: DEFAULT_COLLAGE_LAYOUT, collageImages: emptyCollageImages() },
     sportsOffered: { heading: '', description: '', offeredSports: [] },
     sportingEvents: { heading: '', description: '', events: [] },
+    clubsActivities: { heading: '', description: '', clubs: [] },
     awards: { heading: '', description: '', images: [], certifications: [], proud: [], yearlyAwards: [] },
 };
 
@@ -77,6 +79,7 @@ const Sports = () => {
                     if (k === 'sportingEvents') merged[k] = { ...defaultContent.sportingEvents, ...res.data.content[k] };
                     else if (k === 'sportsOffered') merged[k] = { ...defaultContent.sportsOffered, ...res.data.content[k] };
                     else if (k === 'awards') merged[k] = { ...defaultContent.awards, ...res.data.content[k] };
+                    else if (k === 'clubsActivities') merged[k] = { ...defaultContent.clubsActivities, ...res.data.content[k] };
                     else if (k === 'sportsAt') merged[k] = migrateSportsAt(res.data.content[k]);
                     else merged[k] = { ...defaultPageData, ...res.data.content[k] };
                 });
@@ -139,8 +142,8 @@ const Sports = () => {
     // Sport/Event image carousels are capped at MAX_SPORT_EVENT_IMAGES each.
     const startCropQueue = (files, target) => {
         if (files.length === 0) return;
-        if (target.mode === 'sport' || target.mode === 'event') {
-            const listKey = target.mode === 'sport' ? 'offeredSports' : 'events';
+        if (target.mode === 'sport' || target.mode === 'event' || target.mode === 'club') {
+            const listKey = target.mode === 'sport' ? 'offeredSports' : target.mode === 'event' ? 'events' : 'clubs';
             const list = content[activePage][listKey] || [];
             const item = list.find(x => x.id === target.id);
             const current = item?.images || [];
@@ -184,6 +187,7 @@ const Sports = () => {
             : target.mode === 'collageExtra' ? 'collage-extra'
             : target.mode === 'sport' ? `sport-${target.id}`
             : target.mode === 'event' ? `event-${target.id}`
+            : target.mode === 'club' ? `club-${target.id}`
             : target.mode === 'proud' ? `proud-${target.id}`
             : `cert-${target.id}`;
         setUploading(prev => ({ ...prev, [key]: true }));
@@ -219,6 +223,14 @@ const Sports = () => {
                     const updated = [...list];
                     updated[i] = { ...updated[i], images: [...(updated[i].images || []), res.data.url] };
                     updateField('events', updated);
+                }
+            } else if (target.mode === 'club') {
+                const list = content[activePage].clubs || [];
+                const i = list.findIndex(c => c.id === target.id);
+                if (i !== -1) {
+                    const updated = [...list];
+                    updated[i] = { ...updated[i], images: [...(updated[i].images || []), res.data.url] };
+                    updateField('clubs', updated);
                 }
             } else if (target.mode === 'cert') {
                 const list = content[activePage].certifications || [];
@@ -645,6 +657,57 @@ const Sports = () => {
                     </div>
                 )}
 
+                {/* ── Clubs & Activities — same list pattern as Sports Offered ── */}
+                {activePage === 'clubsActivities' && (
+                    <div className="sports-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                                <div>
+                                <label style={labelStyle}>Heading</label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input className="sports-input" type="text" value={pageData.heading} onChange={e => updateField('heading', e.target.value)}
+                                        placeholder="Enter Heading" style={{ ...inputStyle, fontStyle: pageData.headingItalic ? 'italic' : 'normal' }} />
+                                    <ItalicToggle active={!!pageData.headingItalic} onToggle={() => updateField('headingItalic', !pageData.headingItalic)} />
+                                </div>
+                                <HeadingStyleField
+                                    color={pageData.headingColor} onColorChange={val => updateField('headingColor', val)}
+                                    font={pageData.headingFont} onFontChange={val => updateField('headingFont', val)}
+                                />
+                            </div>
+                            <div>
+                                <label style={labelStyle}>Description</label>
+                                <RichTextEditor value={pageData.description} onChange={val => updateField('description', val)}
+                                    placeholder="Overview of clubs and activities offered at our school..." minHeight="120px"
+                                    maxWidth="1170px" fontSize="15px" fontFamily="'Inter', system-ui, sans-serif" />
+                            </div>
+                        </div>
+
+                        <button type="button" className="sports-add-btn" onClick={() => updateField('clubs', [{ id: `club-${Date.now()}`, heading: '', description: '', images: [] }, ...(pageData.clubs || [])])}
+                            style={{ padding: '13px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
+                            + Add Club / Activity
+                        </button>
+
+                        {/* Clubs list */}
+                        {(pageData.clubs || []).map((cl, idx) => (
+                            <ClubCard key={cl.id} club={cl} index={idx} length={(pageData.clubs || []).length}
+                                onMove={(i, dir) => updateField('clubs', moveItem(pageData.clubs, i, dir))}
+                                onUpdate={(field, val) => {
+                                    const updated = [...pageData.clubs];
+                                    updated[idx] = { ...updated[idx], [field]: val };
+                                    updateField('clubs', updated);
+                                }}
+                                onRemove={() => updateField('clubs', pageData.clubs.filter((_, i) => i !== idx))}
+                                onAddImages={(files) => startCropQueue(files, { mode: 'club', id: cl.id })}
+                                onRemoveImage={(imgIdx) => {
+                                    const updated = [...pageData.clubs];
+                                    updated[idx] = { ...updated[idx], images: updated[idx].images.filter((_, i) => i !== imgIdx) };
+                                    updateField('clubs', updated);
+                                }}
+                                uploading={uploading[`club-${cl.id}`]}
+                            />
+                        ))}
+                    </div>
+                )}
+
                 {/* ── Sporting Events ── */}
                 {activePage === 'sportingEvents' && (
                     <div className="sports-section" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -912,6 +975,61 @@ const SportItemCard = ({ sport, index, length, onMove, onUpdate, onRemove, onAdd
                         </div>
                     )}
                     <input id={`sport-img-${sport.id}`} type="file" accept="image/*" multiple
+                        onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) onAddImages(files); }}
+                        style={{ display: 'none' }} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ── Club Card Component (used for Clubs & Activities) — identical pattern to SportItemCard/EventCard, relabeled ──
+const ClubCard = ({ club, index, length, onMove, onUpdate, onRemove, onAddImages, onRemoveImage, uploading }) => {
+    const { tc } = useSchoolStore();
+    const inputStyle = { width: '100%', padding: '10px 13px', border: '1px solid #e5e9f0', borderRadius: '10px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', background: '#f8fafc', transition: 'border 0.2s, box-shadow 0.2s, background 0.2s' };
+    const labelStyle = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' };
+
+    return (
+        <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>Club / Activity #{index + 1}</p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <ReorderButtons index={index} length={length} onMove={onMove} vertical={false} />
+                    <button onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
+                </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                    <label style={labelStyle}>Club / Activity Name</label>
+                    <input className="sports-input" type="text" value={club.heading} onChange={e => onUpdate('heading', e.target.value)} placeholder="Enter Heading" style={inputStyle} />
+                </div>
+                <div>
+                    <label style={labelStyle}>Description</label>
+                    <RichTextEditor value={club.description} onChange={val => onUpdate('description', val)} placeholder="Describe this club or activity, its purpose, schedule, achievements..." minHeight="80px"
+                        maxWidth="734px" fontSize="14.5px" fontFamily="'Inter', system-ui, sans-serif" />
+                </div>
+                <div>
+                    <label style={labelStyle}>Images (carousel) — {(club.images || []).length} / {MAX_SPORT_EVENT_IMAGES}</label>
+                    <p style={{ fontSize: '10.5px', color: '#94a3b8', marginBottom: '8px' }}>Square photos work best · JPG, PNG, WEBP · Max 1MB each · Up to {MAX_SPORT_EVENT_IMAGES} images.</p>
+                    <div className="sports-grid-2col" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '10px' }}>
+                        {(club.images || []).map((img, i) => (
+                            <div key={i} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1' }}>
+                                <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                <button onClick={() => onRemoveImage(i)} style={{ position: 'absolute', top: '4px', right: '4px', width: '20px', height: '20px', background: 'rgba(0,0,0,0.6)', color: '#fff', border: 'none', borderRadius: '50%', cursor: 'pointer', fontSize: '12px' }}>×</button>
+                            </div>
+                        ))}
+                    </div>
+                    {(club.images || []).length >= MAX_SPORT_EVENT_IMAGES ? (
+                        <p style={{ fontSize: '11.5px', color: '#94a3b8', textAlign: 'center', padding: '0.6rem' }}>
+                            Maximum {MAX_SPORT_EVENT_IMAGES} images added — remove one to add another.
+                        </p>
+                    ) : (
+                        <div className="sports-add-btn" onClick={() => document.getElementById(`club-img-${club.id}`).click()}
+                            style={{ border: `1.5px dashed ${tc.primary}55`, borderRadius: '10px', padding: '1rem', textAlign: 'center', cursor: 'pointer', background: '#ffffff' }}>
+                            {uploading ? <p style={{ fontSize: '12px', color: '#64748b' }}>Uploading...</p> : <p style={{ fontSize: '13px', fontWeight: 600, color: tc.primary }}>+ Add images</p>}
+                        </div>
+                    )}
+                    <input id={`club-img-${club.id}`} type="file" accept="image/*" multiple
                         onChange={e => { const files = Array.from(e.target.files); if (files.length > 0) onAddImages(files); }}
                         style={{ display: 'none' }} />
                 </div>

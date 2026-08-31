@@ -6,6 +6,7 @@ import Navbar from "../../components/public/Navbar";
 import Footer from "../../components/public/Footer";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 import { SHIELD_PATH_D, SHIELD_ASPECT } from "../../constants/shieldShape";
 import { parseDate, shortDate } from "../../utils/dateTimeFormat";
 import { getMusicTrack } from "../../constants/musicTracks";
@@ -316,7 +317,7 @@ const SchoolWebsite = () => {
                 if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
                 return (parseDate(b.date) || 0) - (parseDate(a.date) || 0);
             })
-            .slice(0, 5)
+            .slice(0, 4)
         : [];
     const tickerVisible = tickerItems.length > 0;
 
@@ -534,6 +535,7 @@ const SchoolWebsite = () => {
 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
 .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem; }
 @media (max-width: 960px) { .testimonials-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 640px) { .testimonials-grid { grid-template-columns: 1fr; } }

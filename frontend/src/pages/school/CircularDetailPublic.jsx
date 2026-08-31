@@ -8,6 +8,7 @@ import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { CIRCULAR_TAG_COLORS } from "./CircularsPublic";
 import { formatDate } from "../../utils/dateTimeFormat";
+import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const DocumentIcon = ({ color, size = 13 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -98,6 +99,8 @@ const CircularDetailPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.8em; }
                 .rte-content .ql-size-large { font-size: 1.35em; }
                 .rte-content .ql-size-huge { font-size: 2em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }

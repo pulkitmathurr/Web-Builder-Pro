@@ -22,6 +22,7 @@ const StorageUsageBar = () => {
     const { tc } = useSchoolStore();
     const [usage, setUsage] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [expanded, setExpanded] = useState(false);
 
     useEffect(() => {
         getStorageUsageApi()
@@ -36,15 +37,25 @@ const StorageUsageBar = () => {
 
     return (
         <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.5rem', border: '1px solid #f1f5f9', boxShadow: '0 2px 12px rgba(0,0,0,0.05)', marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+            <div onClick={() => setExpanded(v => !v)} role="button" tabIndex={0}
+                onKeyDown={e => { if (e.key === 'Enter') setExpanded(v => !v); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px', cursor: 'pointer' }}>
                 <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Storage Used</p>
-                <p style={{ fontSize: '13px', fontWeight: 700, color: isNearLimit ? '#dc2626' : '#0f172a' }}>
-                    {formatBytes(usage.usedBytes)} of {formatBytes(usage.limitBytes)} ({usage.percent}%)
-                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: isNearLimit ? '#dc2626' : '#0f172a' }}>
+                        {formatBytes(usage.usedBytes)} of {formatBytes(usage.limitBytes)} ({usage.percent}%)
+                    </p>
+                    {usage.breakdown.length > 0 && (
+                        <svg width="14" height="14" fill="none" stroke="#94a3b8" strokeWidth="2.2" viewBox="0 0 24 24"
+                            style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease' }}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
+                        </svg>
+                    )}
+                </div>
             </div>
 
             {/* Overall bar */}
-            <div style={{ height: '10px', borderRadius: '999px', background: '#f1f5f9', overflow: 'hidden', marginBottom: usage.breakdown.length > 0 ? '16px' : 0 }}>
+            <div style={{ height: '10px', borderRadius: '999px', background: '#f1f5f9', overflow: 'hidden', marginBottom: expanded && usage.breakdown.length > 0 ? '16px' : 0 }}>
                 <div style={{
                     height: '100%', width: `${usage.percent}%`, borderRadius: '999px',
                     background: isNearLimit ? 'linear-gradient(90deg, #f59e0b, #dc2626)' : `linear-gradient(90deg, ${tc.primary}, ${tc.secondary})`,
@@ -52,8 +63,8 @@ const StorageUsageBar = () => {
                 }} />
             </div>
 
-            {/* Per-module breakdown */}
-            {usage.breakdown.length > 0 && (
+            {/* Per-module breakdown — collapsed by default, expand via the header row above */}
+            {expanded && usage.breakdown.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {usage.breakdown.map((row, i) => {
                         const mod = getModuleByKey(row.moduleKey);

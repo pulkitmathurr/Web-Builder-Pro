@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 import { relativeLabel, shortDate, stripHtml } from "../../utils/dateTimeFormat";
 
 const useScrollReveal = () => {
@@ -170,6 +171,8 @@ const CircularsPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
                 .circular-row:hover { background: #f8fafc !important; }
                 .circular-row:hover .circular-row-arrow { transform: translateX(3px); color: ${tc.primary} !important; }
                 .circular-row:hover .circular-row-icon { transform: scale(1.08); }

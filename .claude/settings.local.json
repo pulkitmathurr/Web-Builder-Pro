@@ -196,7 +196,17 @@
       "Bash(pkill -f \"node server.js\")",
       "Bash(/c/xampp/mysql/bin/mysqladmin.exe -u root status)",
       "Bash(find src/modules/billing -type f)",
-      "Bash(grep -rn \"RAZORPAY\" src/)"
+      "Bash(grep -rn \"RAZORPAY\" src/)",
+      "Bash(rm *)",
+      "Bash(mkdir *)",
+      "WebSearch",
+      "WebFetch(domain:gklsan.medium.com)",
+      "WebFetch(domain:support.cloudinary.com)",
+      "WebFetch(domain:dev.to)",
+      "Bash(where mysql *)",
+      "Bash(timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done')",
+      "Bash(mkdir -p /tmp/pwcheck)",
+      "Bash(pkill -f \"vite\")"
     ]
   }
 }

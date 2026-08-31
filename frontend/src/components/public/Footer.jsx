@@ -136,7 +136,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                 .footer-link:hover { color: #ffffff !important; }
                 .footer-social:hover { color: #fff !important; }
                 .footer-totop:hover { color: #fff !important; }
-                .footer-quicklinks { column-gap: 28px; }
+                .footer-quicklinks { column-gap: 28px; column-rule: 1px solid rgba(255,255,255,0.14); }
             `}</style>
 
             {/* Background — a subtle diagonal navy-toned gradient off the school's own
@@ -180,21 +180,10 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                             </div>
                         </div>
 
-                        {(school.address || school.phone) && (
-                            <div style={{ marginBottom: '16px' }}>
-                                {school.address && (
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px' }}>
-                                        <span style={{ marginTop: '2px', flexShrink: 0 }}><ContactIcon type="pin" color={accent} /></span>
-                                        <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.6 }}>{school.address}</span>
-                                    </div>
-                                )}
-                                {school.phone && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <span style={{ flexShrink: 0 }}><ContactIcon type="phone" color={accent} /></span>
-                                        <a href={`tel:${school.phone}`} className="footer-link" style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.62)', textDecoration: 'none' }}>{school.phone}</a>
-                                    </div>
-                                )}
-                            </div>
+                        {school.footer_about_text && (
+                            <p style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.62)', lineHeight: 1.7, marginBottom: '16px' }}>
+                                {school.footer_about_text}
+                            </p>
                         )}
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>

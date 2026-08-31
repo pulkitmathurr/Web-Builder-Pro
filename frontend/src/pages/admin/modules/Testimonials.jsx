@@ -218,9 +218,6 @@ const Testimonials = () => {
                                 style={{ padding: '10px 20px', borderRadius: '10px', border: activeTab === t.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === t.key ? tc.light : '#ffffff', color: activeTab === t.key ? tc.primary : '#64748b', fontWeight: activeTab === t.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', boxShadow: activeTab === t.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none' }}>
                                 <span style={{ color: activeTab === t.key ? tc.primary : '#94a3b8' }}>{t.icon}</span>
                                 {t.label}
-                                <span style={{ fontSize: '11px', color: activeTab === t.key ? tc.primary : '#cbd5e1', fontWeight: 700 }}>
-                                    {(t.key === 'text' ? content.testimonials : content.videoTestimonials).length}
-                                </span>
                             </button>
                         ))}
                     </div>

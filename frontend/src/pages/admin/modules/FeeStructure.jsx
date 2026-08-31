@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi } from '../../../api/content.api';
 import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
 import useSchoolStore from '../../../store/schoolStore';
+import RichTextEditor from '../../../components/common/RichTextEditor';
 import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import toast from 'react-hot-toast';
@@ -39,7 +40,7 @@ const FEE_TABS = [
 ];
 
 const defaultContent = {
-    classes: [], optionalFeeTables: [], transportTables: [],
+    classes: [], optionalFeeTables: [], transportTables: [], description: '',
     optionalSubjectsHeading: '', optionalSubjectsHeadingColor: '', optionalSubjectsHeadingFont: '', optionalSubjectsHeadingItalic: false,
 };
 
@@ -372,6 +373,15 @@ const FeeStructure = () => {
 
                 {/* ── Main Layout ── */}
                 {activeTab === 'classes' && (
+                <>
+                {/* ── Instructions — optional note shown above Class-wise Fee Breakdown on the public page ── */}
+                <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem 1.75rem', marginBottom: '1.25rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748b', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Instructions (optional)</label>
+                    <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>Shown above the Class-wise Fee Breakdown on your public site — use it for notes like payment deadlines, late fee policy, or where to pay.</p>
+                    <RichTextEditor value={content.description || ''} onChange={val => setContent(prev => ({ ...prev, description: val }))}
+                        placeholder="e.g. Fees must be paid by the 10th of every month. Late payments incur a fine of..." minHeight="110px"
+                        maxWidth="100%" fontSize="14px" fontFamily="'Inter', system-ui, sans-serif" />
+                </div>
                 <div className="fs-section" style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: '1.25rem', alignItems: 'flex-start' }}>
 
                     {/* ── Left — Class List ── */}
@@ -555,6 +565,7 @@ const FeeStructure = () => {
                         </div>
                     )}
                 </div>
+                </>
                 )}
 
                 {/* ── Optional Fee Tables ── */}

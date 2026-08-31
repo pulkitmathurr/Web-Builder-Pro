@@ -295,13 +295,15 @@ const EnquiryWidget = () => {
         admissionOn && { key: 'admission', label: 'Enquire Now', onClick: () => window.dispatchEvent(new Event('open-admission-enquiry')) },
         careerOn && { key: 'career', label: 'Career Enquiry', onClick: () => window.dispatchEvent(new Event('open-career-enquiry')) },
         school.prospectus_url && { key: 'prospectus', label: 'Prospectus', href: school.prospectus_url },
+        school.school_app_url && { key: 'schoolApp', label: school.school_app_label || 'Get Our App', href: school.school_app_url },
     ].filter(Boolean);
 
     const tabTopPercent = (index, total) => {
         if (total <= 1) return 50;
         if (total === 2) return index === 0 ? 40 : 60;
         if (total === 3) return [26, 50, 74][index];
-        return 25 + (index * 50) / (total - 1);
+        if (total === 4) return [20, 40, 60, 80][index];
+        return 20 + (index * 60) / (total - 1);
     };
 
     return (

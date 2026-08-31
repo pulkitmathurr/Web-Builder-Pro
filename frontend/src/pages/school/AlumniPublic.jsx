@@ -8,6 +8,7 @@ import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
 import { stripHtml } from "../../utils/dateTimeFormat";
+import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -397,6 +398,7 @@ const AlumniPublic = () => {
                 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
                 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
                 .legacy-text p:first-of-type::first-letter {
                     font-family: 'Playfair Display', Georgia, serif;
                     font-style: normal; font-weight: 800; font-size: 3.6em; line-height: 0.75;

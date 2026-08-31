@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 import { cloudinaryAttachmentUrl } from "../../utils/cloudinaryUrl";
 
 const useScrollReveal = () => {
@@ -208,6 +209,7 @@ const PublicDisclosurePublic = () => {
                 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
                 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }

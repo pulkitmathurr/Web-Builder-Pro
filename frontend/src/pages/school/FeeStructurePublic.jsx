@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_CONTENT_CSS } from "../../constants/rteContentStyles";
 
 const CLASS_ORDER = [
     'Nursery', 'LKG', 'UKG',
@@ -185,6 +186,7 @@ const FeeStructurePublic = () => {
                 @media (max-width: 640px) {
                     .fee-2col-grid { grid-template-columns: 1fr !important; }
                 }
+                ${RTE_CONTENT_CSS}
             `}</style>
 
             <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
@@ -205,6 +207,16 @@ const FeeStructurePublic = () => {
                         <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
                     </div>
                 </div>
+
+                {/* ── Instructions — optional admin-authored note shown above the fee tables ── */}
+                {content.description && (
+                    <div style={{ padding: '2rem clamp(1.25rem,6vw,5rem) 0', background: bc.surface }}>
+                        <Reveal>
+                            <div className="rte-content" style={{ maxWidth: '1300px', margin: '0 auto', fontSize: '14.5px', color: '#475569', lineHeight: 1.8 }}
+                                dangerouslySetInnerHTML={{ __html: content.description }} />
+                        </Reveal>
+                    </div>
+                )}
 
                 {/* ── Combined Academic Fee Table — all classes side by side ── */}
                 {sortedClasses.length > 0 && (

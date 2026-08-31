@@ -35,8 +35,8 @@ const updateSchoolProfileService = async (schoolId, data) => {
         'map_url', 'facebook', 'instagram', 'youtube', 'twitter', 'linkedin',
         'hero_video_url', 'hero_video_title', 'logo_url', 'intro_message', 'intro_message_enabled',
         'welcome_banner_enabled', 'welcome_banner_url', 'welcome_banner_link',
-        'footer_bg_url', 'bg_music_enabled', 'bg_music_track', 'affiliation_badges', 'custom_domain',
-        'prospectus_url'
+        'footer_bg_url', 'footer_about_text', 'bg_music_enabled', 'bg_music_track', 'affiliation_badges', 'custom_domain',
+        'prospectus_url', 'school_app_label', 'school_app_url'
     ];
 
     const fieldsToUpdate = allowedFields.filter((field) =>
@@ -176,8 +176,8 @@ const getPublicSchoolService = async (slug) => {
             s.facebook, s.instagram, s.youtube, s.twitter, s.linkedin,
             s.hero_video_url, s.hero_video_title, s.intro_message, s.intro_message_enabled,
             s.welcome_banner_enabled, s.welcome_banner_url, s.welcome_banner_link,
-            s.footer_bg_url, s.bg_music_enabled, s.bg_music_track, s.affiliation_badges,
-            s.prospectus_url
+            s.footer_bg_url, s.footer_about_text, s.bg_music_enabled, s.bg_music_track, s.affiliation_badges,
+            s.prospectus_url, s.school_app_label, s.school_app_url
         FROM tbl_schools s
         WHERE s.slug = ? AND s.status = 'active'`,
         [slug]

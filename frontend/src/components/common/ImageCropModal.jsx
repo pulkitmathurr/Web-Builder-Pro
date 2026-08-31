@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { SHIELD_PATH_D } from '../../constants/shieldShape';
@@ -70,7 +71,13 @@ const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete, a
         if (file) onCropComplete(file);
     };
 
-    return (
+    // Rendered via a portal straight to document.body — if this were left in normal
+    // DOM flow, an ancestor with a persisted CSS `transform` (e.g. a card's entrance
+    // animation using `animation: ... both`, whose final keyframe leaves `transform`
+    // non-`none`) would create a new containing block for this `position: fixed`
+    // overlay, making it center on that ancestor's box instead of the viewport —
+    // which is exactly why the modal used to open off-screen, requiring a scroll up.
+    return createPortal((
         <div style={{
             position: 'fixed', inset: 0, zIndex: 5000,
             background: 'rgba(0,0,0,0.75)',
@@ -134,7 +141,7 @@ const ImageCropModal = ({ imageSrc, aspect = 16 / 9, onCancel, onCropComplete, a
                 </div>
             </div>
         </div>
-    );
+    ), document.body);
 };
 
 export default ImageCropModal;

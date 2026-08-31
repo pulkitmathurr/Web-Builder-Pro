@@ -3,128 +3,209 @@ import { useNavigate, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { submitSignupApi } from "../../api/signup.api";
 import logo from '../../assets/webbuilder-removebg-preview.png';
+import signupHeroImg from '../../assets/signupImage.png';
 
 const BLUE = '#4169E1';
 const BLUE_DARK = '#2541A8';
-const GREY = '#3B3B3B';
-const TEXT_MUTED = '#5B6270';
-const TEXT_DARK = '#20242C';
+const NAVY = '#0b1330';
+const TEXT_MUTED = '#8b93a7';
+const TEXT_DARK = '#171a23';
 
-const Field = ({ label, children }) => (
-    <div>
-        <label style={{ display: "block", fontSize: "11px", fontWeight: 700, color: TEXT_MUTED, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "7px" }}>
-            {label}
-        </label>
-        {children}
-    </div>
-);
-
-const inputStyle = { width: "100%", padding: "12px 14px", borderRadius: "12px", border: "1.5px solid #e5e9f5", background: "#ffffff", color: TEXT_DARK, fontSize: "14px", outline: "none", boxSizing: "border-box" };
+const inputStyle = {
+  width: "100%", padding: "14px 18px", borderRadius: "13px", border: "1.5px solid transparent",
+  background: "#f4f5f9", color: TEXT_DARK, fontSize: "14px", outline: "none", boxSizing: "border-box",
+  transition: "all 0.2s", fontFamily: "'Inter', system-ui, sans-serif",
+};
 
 const Signup = () => {
-    const navigate = useNavigate();
-    const [formData, setFormData] = useState({ schoolName: "", adminName: "", email: "", phone: "", password: "" });
-    const [loading, setLoading] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ schoolName: "", adminName: "", email: "", phone: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setLoading(true);
-        try {
-            await submitSignupApi(formData);
-            setSubmitted(true);
-        } catch (error) {
-            toast.error(error.response?.data?.message || "Signup failed");
-        } finally {
-            setLoading(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await submitSignupApi(formData);
+      setSubmitted(true);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+      <style>{`
+        html, body, #root { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes signupOrbDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(18px,-16px) scale(1.08); } }
+        @keyframes signupSwirlSpin { to { transform: rotate(360deg); } }
+        @keyframes signupFadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes signupCardIn { from { opacity: 0; transform: translateY(24px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes signupCheckPop { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes signupRingPulse { 0% { transform: scale(0.75); opacity: 0.8; } 100% { transform: scale(1.7); opacity: 0; } }
+        @keyframes signupCheckDraw { to { stroke-dashoffset: 0; } }
+
+        .signup-input:focus { border-color: ${BLUE} !important; background: #ffffff !important; box-shadow: 0 0 0 3px rgba(65,105,225,0.12); }
+
+        .signup-submit-btn { position: relative; overflow: hidden; }
+        .signup-submit-btn::after {
+          content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+          background: linear-gradient(120deg, transparent, rgba(255,255,255,0.45), transparent);
+          transform: skewX(-20deg); transition: left 0.65s ease; pointer-events: none;
         }
-    };
+        .signup-submit-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(65,105,225,0.4) !important; }
+        .signup-submit-btn:not(:disabled):hover::after { left: 130%; }
+        .signup-submit-btn:not(:disabled):active { transform: scale(0.98); }
 
-    return (
-        <>
-            <link
-                href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
-                rel="stylesheet"
-            />
-            <style>{`
-                html, body, #root { margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important; }
-                @keyframes spin { to { transform: rotate(360deg); } }
-                @keyframes signupOrbDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(14px,-12px) scale(1.07); } }
-                .signup-input:focus { border-color: ${BLUE} !important; box-shadow: 0 0 0 3px rgba(65,105,225,0.12); }
-                .signup-submit-btn:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(65,105,225,0.25), 0 12px 28px rgba(65,105,225,0.42) !important; }
-            `}</style>
+        .signup-anim-1 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.05s both; }
+        .signup-anim-2 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.12s both; }
+        .signup-anim-3 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.18s both; }
+        .signup-anim-4 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.24s both; }
+        .signup-anim-5 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.3s both; }
+        .signup-anim-6 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.36s both; }
+        .signup-anim-7 { animation: signupFadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.42s both; }
 
-            <div style={{
-                minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-                background: `radial-gradient(rgba(255,255,255,0.09) 1px, transparent 1px) 0 0 / 24px 24px, linear-gradient(160deg, ${BLUE_DARK} 0%, ${BLUE} 55%, ${BLUE_DARK} 100%)`,
-                fontFamily: "'Inter', system-ui, sans-serif", padding: "2rem 1rem", position: "relative", overflow: "hidden",
-            }}>
-                <div style={{ position: "absolute", width: "320px", height: "320px", borderRadius: "50%", background: "rgba(255,255,255,0.14)", top: "-100px", left: "-80px", animation: "signupOrbDrift 11s ease-in-out infinite" }}></div>
-                <div style={{ position: "absolute", width: "200px", height: "200px", borderRadius: "50%", background: "rgba(20,26,46,0.3)", bottom: "-60px", right: "-60px", animation: "signupOrbDrift 9s ease-in-out infinite reverse" }}></div>
+        .signup-card { animation: signupCardIn 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+        .signup-success-badge { animation: signupCheckPop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+        .signup-success-ring { animation: signupRingPulse 1s ease-out 0.1s both; }
+        .signup-success-check { stroke-dasharray: 28; stroke-dashoffset: 28; animation: signupCheckDraw 0.35s ease-out 0.4s forwards; }
 
-                <div style={{
-                    position: "relative", zIndex: 1, width: "100%", maxWidth: "460px",
-                    background: "#ffffff", borderRadius: "24px", boxShadow: "0 24px 60px rgba(37,65,168,0.28), 0 2px 14px rgba(0,0,0,0.05)",
-                    padding: "2.5rem 2.25rem",
-                }}>
-                    <img src={logo} alt="Web Builder Pro" style={{ width: "220px", height: "auto", objectFit: "contain", marginBottom: "0.5rem", marginLeft: "-12px" }} />
+        .signup-swirl-layer { animation: signupSwirlSpin 34s linear infinite; }
+        .signup-swirl-layer-rev { animation: signupSwirlSpin 26s linear infinite reverse; }
 
-                    {submitted ? (
-                        <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
-                            <div style={{ width: "56px", height: "56px", margin: "0 auto 18px", borderRadius: "16px", background: "linear-gradient(135deg,#f0fdf4,#dcfce7)", border: "1px solid #bbf7d0", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                <svg width="26" height="26" fill="none" stroke="#16a34a" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                            </div>
-                            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 800, color: TEXT_DARK, marginBottom: "10px" }}>Request submitted!</h2>
-                            <p style={{ color: TEXT_MUTED, fontSize: "14px", lineHeight: 1.6, marginBottom: "24px" }}>
-                                We've emailed you a confirmation. Our team will review your request and approve your account shortly — you'll get another email the moment that happens, with a link to log in and choose your plan.
-                            </p>
-                            <button onClick={() => navigate('/login')} style={{ padding: "12px 28px", background: `linear-gradient(150deg, ${BLUE}, ${BLUE_DARK})`, color: "#fff", border: "none", borderRadius: "12px", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>
-                                Back to Login
-                            </button>
-                        </div>
-                    ) : (
-                        <>
-                            <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: "30px", fontWeight: 800, color: TEXT_DARK, marginBottom: "6px", lineHeight: 1.15 }}>
-                                Get Started
-                            </h1>
-                            <p style={{ color: TEXT_MUTED, fontSize: "13.5px", marginBottom: "1.75rem", lineHeight: 1.4 }}>
-                                Tell us about your school — a Web Builder Pro admin will review and approve your account.
-                            </p>
+        @media (max-width: 860px) {
+          .signup-outer { padding: 0 !important; align-items: stretch !important; }
+          .signup-card { border-radius: 0 !important; min-height: 100vh !important; grid-template-columns: 1fr !important; }
+          .signup-left-panel { border-radius: 0 !important; margin: 0 !important; inset: auto !important; position: relative !important; width: 100% !important; height: clamp(200px, 30vh, 280px) !important; padding: 1.75rem !important; }
+          .signup-right-panel { border-radius: 0 !important; padding: 2.25rem 1.5rem 2.5rem !important; }
+          .signup-left-heading { font-size: clamp(24px, 6vw, 32px) !important; }
+        }
+        @media (max-width: 420px) {
+          .signup-right-panel { padding-inline: 1.15rem !important; }
+        }
+      `}</style>
 
-                            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                                <Field label="School Name">
-                                    <input type="text" name="schoolName" value={formData.schoolName} onChange={handleChange} placeholder="Enter your school name" required className="signup-input" style={inputStyle} />
-                                </Field>
-                                <Field label="Your Name">
-                                    <input type="text" name="adminName" value={formData.adminName} onChange={handleChange} placeholder="Enter your full name" required className="signup-input" style={inputStyle} />
-                                </Field>
-                                <Field label="Email Address">
-                                    <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Enter your email" required className="signup-input" style={inputStyle} />
-                                </Field>
-                                <Field label="Phone Number">
-                                    <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter your phone number" className="signup-input" style={inputStyle} />
-                                </Field>
-                                <Field label="Password">
-                                    <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Create a password" required minLength={6} className="signup-input" style={inputStyle} />
-                                </Field>
+      <div className="signup-outer" style={{
+        minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+        background: `radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px) 0 0 / 26px 26px, linear-gradient(160deg, ${NAVY} 0%, #111a3d 55%, ${NAVY} 100%)`,
+        fontFamily: "'Inter', system-ui, sans-serif", padding: "2.5rem 1.5rem", boxSizing: "border-box",
+      }}>
 
-                                <button type="submit" disabled={loading} className="signup-submit-btn"
-                                    style={{ width: "100%", padding: "13px", background: loading ? "#a9b8ea" : `linear-gradient(150deg, ${BLUE}, ${BLUE_DARK} 65%, ${GREY})`, color: "#fff", border: "none", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", marginTop: "4px", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 16px rgba(65,105,225,0.3)", transition: "all 0.2s" }}>
-                                    {loading ? "Submitting..." : "Submit Request"}
-                                </button>
-                            </form>
+        <div className="signup-card" style={{
+          position: "relative", width: "100%", maxWidth: "980px",
+          display: "grid", gridTemplateColumns: "44fr 56fr",
+          borderRadius: "30px", overflow: "hidden",
+          boxShadow: "0 40px 90px rgba(0,0,0,0.45), 0 4px 20px rgba(0,0,0,0.2)",
+          background: "#ffffff",
+        }}>
 
-                            <p style={{ textAlign: "center", color: "#9aa3b8", fontSize: "12.5px", marginTop: "1.5rem" }}>
-                                Already have an account? <Link to="/login" style={{ color: BLUE, fontWeight: 600, textDecoration: "none" }}>Log in</Link>
-                            </p>
-                        </>
-                    )}
-                </div>
+          {/* ── Left panel — school campus photo (signupImage.png), with a dark gradient
+               scrim for text legibility, peeking out slightly beyond the white panel via a
+               negative margin for the "layered card" effect. ── */}
+          <div className="signup-left-panel" style={{
+            position: "relative", overflow: "hidden",
+            backgroundImage: `linear-gradient(180deg, rgba(11,19,48,0.55) 0%, rgba(11,19,48,0.35) 45%, rgba(6,10,28,0.92) 100%), url(${signupHeroImg})`,
+            backgroundSize: "cover", backgroundPosition: "center",
+            display: "flex", flexDirection: "column", justifyContent: "space-between",
+            padding: "2.25rem 2rem", margin: "-14px 0 -14px -14px", borderRadius: "34px",
+            boxShadow: "0 20px 50px rgba(0,0,0,0.35)", zIndex: 2,
+          }}>
+            <img src={logo} alt="Web Builder Pro" className="signup-anim-1" style={{ position: "relative", zIndex: 1, height: "clamp(46px, 6vh, 60px)", objectFit: "contain", filter: "brightness(0) invert(1)", opacity: 0.92, alignSelf: "flex-start" }} />
+
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <h1 className="signup-left-heading signup-anim-2" style={{ fontFamily: "'Playfair Display', serif", color: "#ffffff", fontSize: "clamp(30px, 3.6vw, 42px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.01em", marginBottom: "14px" }}>
+                Bring Your<br />School Online
+              </h1>
+              <p className="signup-anim-3" style={{ color: "rgba(255,255,255,0.68)", fontSize: "15px", lineHeight: 1.6, maxWidth: "300px" }}>
+                Sign up and get a public website, admin panel, and dashboard — approved and ready to launch.
+              </p>
             </div>
-        </>
-    );
+
+            <p className="signup-anim-4" style={{ position: "relative", zIndex: 1, color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>
+              © 2026 Web Builder Pro
+            </p>
+          </div>
+
+          {/* ── Right panel — the actual form ── */}
+          <div className="signup-right-panel" style={{
+            position: "relative", zIndex: 1, background: "#ffffff",
+            padding: "2.75rem 3rem 2.5rem", display: "flex", flexDirection: "column", justifyContent: "center",
+          }}>
+            {submitted ? (
+              <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
+                <div style={{ position: "relative", width: "72px", height: "72px", margin: "0 auto 1.25rem" }}>
+                  <div className="signup-success-ring" style={{ position: "absolute", inset: 0, borderRadius: "50%", border: "3px solid #22c55e" }}></div>
+                  <div className="signup-success-badge" style={{ position: "relative", width: "72px", height: "72px", borderRadius: "50%", background: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 10px 26px rgba(34,197,94,0.35)" }}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                      <path className="signup-success-check" d="M4 12.5l5 5L20 6.5" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", fontWeight: 800, color: TEXT_DARK, marginBottom: "10px" }}>Request submitted!</h2>
+                <p style={{ color: TEXT_MUTED, fontSize: "14px", lineHeight: 1.6, marginBottom: "24px" }}>
+                  We've emailed you a confirmation. Our team will review your request and approve your account shortly — you'll get another email the moment that happens, with a link to log in and choose your plan.
+                </p>
+                <button onClick={() => navigate('/login')} style={{ padding: "12px 28px", background: `linear-gradient(135deg, ${BLUE}, ${BLUE_DARK})`, color: "#fff", border: "none", borderRadius: "13px", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>
+                  Back to Login
+                </button>
+              </div>
+            ) : (
+              <>
+                <h1 className="signup-anim-1" style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(26px, 3vw, 32px)", fontWeight: 800, color: TEXT_DARK, textAlign: "center", marginBottom: "6px" }}>
+                  Sign Up
+                </h1>
+                <p className="signup-anim-1" style={{ textAlign: "center", color: TEXT_MUTED, fontSize: "13px", marginBottom: "1.75rem" }}>
+                  Tell us about your school to get started
+                </p>
+
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <input className="signup-anim-2 signup-input" type="text" name="schoolName" value={formData.schoolName} onChange={handleChange} placeholder="School name" required style={inputStyle} />
+                  <input className="signup-anim-3 signup-input" type="text" name="adminName" value={formData.adminName} onChange={handleChange} placeholder="Your full name" required style={inputStyle} />
+                  <div className="signup-anim-4" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <input className="signup-input" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email address" required style={inputStyle} />
+                    <input className="signup-input" type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone number" style={inputStyle} />
+                  </div>
+                  <input className="signup-anim-5 signup-input" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Create a password" required minLength={6} style={inputStyle} />
+
+                  <button type="submit" disabled={loading} className="signup-anim-6 signup-submit-btn"
+                    style={{ width: "100%", padding: "15px", background: loading ? "#a9b8ea" : `linear-gradient(135deg, ${BLUE}, ${BLUE_DARK})`, color: "#fff", border: "none", borderRadius: "13px", fontSize: "14.5px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "8px", boxShadow: "0 10px 26px rgba(65,105,225,0.32)", transition: "all 0.2s" }}>
+                    {loading ? (
+                      <>
+                        <svg style={{ animation: "spin 1s linear infinite", width: "17px", height: "17px" }} viewBox="0 0 24 24" fill="none">
+                          <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                        </svg>
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        Get Started
+                        <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.4" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                      </>
+                    )}
+                  </button>
+                </form>
+
+                <p className="signup-anim-7" style={{ textAlign: "center", color: "#9aa3b8", fontSize: "12.5px", marginTop: "1.5rem" }}>
+                  Already have an account? <Link to="/login" style={{ color: BLUE, fontWeight: 600, textDecoration: "none" }}>Log in</Link>
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  );
 };
 
 export default Signup;

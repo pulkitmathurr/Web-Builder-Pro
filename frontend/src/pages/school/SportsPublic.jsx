@@ -8,11 +8,13 @@ import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
 import { COLLAGE_LAYOUTS, DEFAULT_COLLAGE_LAYOUT } from "../../utils/sportsCollage";
+import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const PAGES = [
     { key: 'sportsAt', label: 'Sports at School' },
     { key: 'sportsOffered', label: 'Sports Offered' },
     { key: 'sportingEvents', label: 'Sporting Events' },
+    { key: 'clubsActivities', label: 'Clubs & Activities' },
     { key: 'awards', label: 'Sports Awards & Achievements' },
 ];
 
@@ -436,6 +438,7 @@ const SportsPublic = () => {
                 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
                 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: #f8fafc; }
                 ::-webkit-scrollbar-thumb { background: ${tc.primary}50; border-radius: 3px; }
@@ -589,6 +592,24 @@ const SportsPublic = () => {
                                                 heading={ev.heading}
                                                 description={ev.description}
                                                 images={ev.images}
+                                                tc={tc}
+                                                bc={bc}
+                                                onImageClick={(img) => setLightbox({ image: img })}
+                                            />
+                                        </Reveal>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Clubs & Activities — same list pattern as Sports Offered / Sporting Events */}
+                            {activePageKey === 'clubsActivities' && (
+                                <div className="sports-list-col" style={{ display: 'flex', flexDirection: 'column', gap: '4rem', marginTop: '1rem' }}>
+                                    {(pageData.clubs || []).map((cl, i) => (
+                                        <Reveal key={cl.id} delay={i * 0.1}>
+                                            <EventStyleCard
+                                                heading={cl.heading}
+                                                description={cl.description}
+                                                images={cl.images}
                                                 tc={tc}
                                                 bc={bc}
                                                 onImageClick={(img) => setLightbox({ image: img })}

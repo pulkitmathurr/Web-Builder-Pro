@@ -28,3 +28,18 @@ export const assertHeroVideoSizeOk = (file) => {
         throw new Error(`Video exceeds ${MAX_HERO_VIDEO_SIZE_MB}MB limit`);
     }
 };
+
+// ── Events & Activities page video cap (both event-level and highlight-level
+// video slots share VideoSlotsEditor) — client-side only, since the backend's
+// upload-video route (uploadVideo, 50MB) is shared by every other module that
+// still allows bigger uploads (Gallery, Sports, etc.), so this doesn't touch them. ──
+export const MAX_EVENTS_VIDEO_SIZE_MB = 5;
+const MAX_EVENTS_VIDEO_SIZE_BYTES = MAX_EVENTS_VIDEO_SIZE_MB * 1024 * 1024;
+
+export const assertEventsVideoSizeOk = (file) => {
+    if (file && file.size > MAX_EVENTS_VIDEO_SIZE_BYTES) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+        toast.error(`Video size is too big (${sizeMb}MB) — please compress it to under ${MAX_EVENTS_VIDEO_SIZE_MB}MB and try again`);
+        throw new Error(`Video exceeds ${MAX_EVENTS_VIDEO_SIZE_MB}MB limit`);
+    }
+};

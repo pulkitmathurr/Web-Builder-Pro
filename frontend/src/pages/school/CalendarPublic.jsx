@@ -8,6 +8,7 @@ import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
 import { parseDate, toDateKey, formatDate } from "../../utils/dateTimeFormat";
+import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -173,6 +174,8 @@ const CalendarPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
 
                 .cal-nav-btn:hover { background: ${tc.primary}16 !important; border-color: ${tc.primary}55 !important; }
                 .cal-today-btn:hover { background: ${tc.primary}16 !important; }
@@ -328,6 +331,9 @@ const CalendarPublic = () => {
                                                     }}>
                                                     {soloColor && (
                                                         <span style={{ position: 'absolute', top: '7px', right: '7px', width: '13px', height: '13px', borderRadius: '50%', background: '#ffffff', boxShadow: '0 1px 3px rgba(15,23,42,0.18)' }}></span>
+                                                    )}
+                                                    {isToday && (
+                                                        <span style={{ position: 'absolute', bottom: '6px', right: '7px', fontSize: '8px', fontWeight: 800, color: '#ffffff', background: tc.primary, padding: '1.5px 5px', borderRadius: '999px', letterSpacing: '0.03em', textTransform: 'uppercase' }}>Today</span>
                                                     )}
                                                     <span className="cal-day-num" style={{
                                                         fontSize: '14px', fontWeight: 800,

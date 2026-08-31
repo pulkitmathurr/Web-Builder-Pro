@@ -13,6 +13,7 @@ import Navbar from '../../components/public/Navbar';
 import Footer from '../../components/public/Footer';
 import { getThemeColors, getBaseColors, isModuleEnabled } from '../../constants/publicNav';
 import NotPublished from '../../components/public/NotPublished';
+import { RTE_LIST_CSS } from '../../constants/rteContentStyles';
 import { getFontFamily } from '../../constants/fonts';
 import { getPublicSchoolApi } from '../../api/school.api';
 import { getPublicModuleContentApi } from '../../api/content.api';
@@ -173,6 +174,7 @@ const TCInformationPublic = () => {
                 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
                 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
 
                 @keyframes stepIn {
                     from { opacity: 0; transform: translateX(28px); }

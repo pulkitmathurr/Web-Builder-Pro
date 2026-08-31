@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 import { parseDate, formatDate, stripHtml } from "../../utils/dateTimeFormat";
 
 const useScrollReveal = () => {
@@ -219,6 +220,8 @@ const EventsPublic = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
                 .event-card:hover { transform: translateY(-5px); box-shadow: 0 18px 34px rgba(15,23,42,0.12); border-color: transparent; }
                 .event-card-img { transition: transform 0.55s cubic-bezier(0.16,1,0.3,1); }
                 .event-card:hover .event-card-img { transform: scale(1.06); }

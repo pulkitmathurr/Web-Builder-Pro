@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const useScrollReveal = () => {
     const ref = useRef(null);
@@ -225,6 +226,7 @@ const TestimonialsPublic = () => {
                 .rte-content .ql-font-playfair { font-family: 'Playfair Display', Georgia, serif; }
                 .rte-content .ql-font-raleway { font-family: 'Raleway', sans-serif; }
                 .rte-content .ql-font-merriweather { font-family: 'Merriweather', Georgia, serif; }
+                ${RTE_LIST_CSS}
                 .testimonials-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.75rem; }
                 @media (max-width: 960px) { .testimonials-grid { grid-template-columns: repeat(2, 1fr); } }
                 @media (max-width: 640px) { .testimonials-grid { grid-template-columns: 1fr; } }
@@ -265,8 +267,8 @@ const TestimonialsPublic = () => {
                     <div style={{ padding: '2.5rem clamp(1.25rem,6vw,3rem) 0', display: 'flex', justifyContent: 'center' }}>
                         <div style={{ display: 'inline-flex', background: bc.card, border: '1px solid #e5e9f0', borderRadius: '11px', padding: '4px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                             {[
-                                { key: 'text', label: 'Text Testimonials', count: testimonials.length },
-                                { key: 'video', label: 'Video Testimonials', count: videoTestimonials.length },
+                                { key: 'text', label: 'Text Testimonials' },
+                                { key: 'video', label: 'Video Testimonials' },
                             ].map(t => {
                                 const active = effectiveTab === t.key;
                                 return (
@@ -280,10 +282,6 @@ const TestimonialsPublic = () => {
                                             boxShadow: active ? '0 4px 12px rgba(0,0,0,0.15)' : 'none',
                                         }}>
                                         {t.label}
-                                        <span style={{
-                                            fontSize: '10.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '999px',
-                                            background: active ? 'rgba(255,255,255,0.22)' : '#eef1f6', color: active ? '#ffffff' : '#94a3b8',
-                                        }}>{t.count}</span>
                                     </button>
                                 );
                             })}

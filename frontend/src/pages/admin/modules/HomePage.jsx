@@ -10,6 +10,7 @@ import { FONT_OPTIONS, getFontFamily } from '../../../constants/fonts';
 import { SHIELD_PATH_D, SHIELD_ASPECT } from '../../../constants/shieldShape';
 import { moveItem } from '../../../utils/reorder';
 import { getYoutubeEmbedUrl } from '../../../utils/youtube';
+import { RTE_FONT_CSS, RTE_LIST_CSS } from '../../../constants/rteContentStyles';
 
 const CAMPUS_IMAGES_MAX = 10;
 const HERO_BANNERS_MAX = 5;
@@ -551,6 +552,8 @@ const HomePage = () => {
                 .rte-content .ql-size-small { font-size: 0.75em; }
                 .rte-content .ql-size-large { font-size: 1.5em; }
                 .rte-content .ql-size-huge { font-size: 2.5em; }
+                ${RTE_FONT_CSS}
+                ${RTE_LIST_CSS}
             `}</style>
 
             <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
