@@ -128,10 +128,11 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                     .footer-main-grid { grid-template-columns: 1fr !important; }
                 }
                 @media (max-width: 700px) {
-                    .footer-quicklinks { columns: 2 !important; }
+                    .footer-quicklinks { columns: 3 !important; column-gap: 14px !important; }
                 }
                 @media (max-width: 480px) {
-                    .footer-quicklinks { columns: 1 !important; }
+                    .footer-quicklinks { columns: 3 !important; column-gap: 10px !important; }
+                    .footer-quicklinks .footer-link { font-size: 11.5px !important; margin-bottom: 12px !important; }
                 }
                 .footer-link:hover { color: #ffffff !important; }
                 .footer-social:hover { color: #fff !important; }
