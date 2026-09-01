@@ -30,9 +30,9 @@ export const assertHeroVideoSizeOk = (file) => {
 };
 
 // ── Events & Activities page video cap (both event-level and highlight-level
-// video slots share VideoSlotsEditor) — client-side only, since the backend's
-// upload-video route (uploadVideo, 50MB) is shared by every other module that
-// still allows bigger uploads (Gallery, Sports, etc.), so this doesn't touch them. ──
+// video slots share VideoSlotsEditor) — client-side only. The backend's shared
+// upload-video route (uploadVideo) is also capped at 5MB now, so this just
+// gives a fast, clear client-side message instead of a round-trip 413. ──
 export const MAX_EVENTS_VIDEO_SIZE_MB = 5;
 const MAX_EVENTS_VIDEO_SIZE_BYTES = MAX_EVENTS_VIDEO_SIZE_MB * 1024 * 1024;
 

@@ -288,7 +288,7 @@ const AdmissionProcedure = () => {
                                         Remove PDF
                                     </button>
                                 )}
-                                <ImageSizeHint>Under 10MB. Parents download this directly to fill and submit.</ImageSizeHint>
+                                <ImageSizeHint>Under 3MB. Parents download this directly to fill and submit.</ImageSizeHint>
                             </div>
                             <div>
                                 <label style={labelStyle}>Or Link URL (optional)</label>

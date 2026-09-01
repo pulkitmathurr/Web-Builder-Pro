@@ -1231,7 +1231,7 @@ const AdminSettings = () => {
                                     <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '10px' }}>Shown below your logo in the footer, in place of the address/phone (which already appear in the Contact Us section) — keep it short, e.g. a one-line tagline about your school.</p>
                                     <textarea value={footerAboutText} onChange={e => setFooterAboutText(e.target.value)} maxLength={280} rows={3}
                                         placeholder="Enter a short line about your school for the footer"
-                                        style={{ width: '100%', maxWidth: '280px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', background: '#f8fafc' }} />
+                                        style={{ display: 'block', width: '100%', maxWidth: '280px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: '13px', color: '#0f172a', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', resize: 'vertical', background: '#f8fafc' }} />
                                     <button onClick={handleFooterAboutTextSave} disabled={savingFooterAboutText}
                                         style={{ marginTop: '10px', padding: '9px 18px', background: savingFooterAboutText ? hexToRgba(tc.primary, 0.3) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: 600, cursor: savingFooterAboutText ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}` }}>
                                         {savingFooterAboutText ? 'Saving...' : 'Save Footer Text'}
@@ -1576,7 +1576,7 @@ const AdminSettings = () => {
                                     ) : (
                                         <>
                                             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Click to upload your school prospectus</p>
-                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>PDF only · Max 10MB</p>
+                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>PDF only · Max 3MB</p>
                                         </>
                                     )}
                                 </div>

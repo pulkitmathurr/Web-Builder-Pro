@@ -78,12 +78,12 @@ const uploadContentImage = multer({
 
 const uploadPdf = multer({
     storage: pdfStorage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+    limits: { fileSize: 3 * 1024 * 1024 }, // 3MB max
 });
 
 const uploadVideo = multer({
     storage: videoStorage,
-    limits: { fileSize: 50 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 },
 });
 
 // Home page hero video only — same Cloudinary storage as uploadVideo, but capped

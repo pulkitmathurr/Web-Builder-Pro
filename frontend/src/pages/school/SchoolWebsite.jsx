@@ -638,7 +638,7 @@ const SchoolWebsite = () => {
                      block, admin-managed from Home Page settings. Hidden entirely until the
                      admin fills in at least one field. ── */}
                 {hasIntroSection && (
-                    <section style={{ background: bc.surfaceAlt, padding: 'clamp(2rem,5vw,3.5rem) clamp(1.25rem,6vw,5rem)', position: 'relative' }}>
+                    <section style={{ background: bc.surfaceAlt, padding: 'clamp(1rem,2.5vw,1.75rem) clamp(1.25rem,6vw,5rem)', position: 'relative' }}>
                         <ShieldClipDefs />
                         <div className="home-intro-grid" style={{ maxWidth: '1200px', margin: '0 auto' }}>
                             <Reveal className="home-intro-float-img" style={{ float: 'left', width: 'min(400px, 40%)', marginRight: 'clamp(1.5rem,4vw,3rem)', marginBottom: '1.5rem' }}>
@@ -694,9 +694,9 @@ const SchoolWebsite = () => {
                 {/* ── School Tour — optional embedded YouTube video, admin-managed from Home
                      Page settings. Hidden entirely until the admin adds a valid YouTube link. ── */}
                 {tourEmbedUrl && (
-                    <section style={{ background: bc.surface, padding: 'clamp(2.5rem,6vw,4rem) clamp(1.25rem,6vw,5rem)' }}>
+                    <section style={{ background: bc.surface, padding: 'clamp(1.25rem,3vw,2rem) clamp(1.25rem,6vw,5rem)' }}>
                         <div style={{ maxWidth: '900px', margin: '0 auto', textAlign: 'center' }}>
-                            <Reveal style={{ marginBottom: '1.75rem' }}>
+                            <Reveal style={{ marginBottom: '1rem' }}>
                                 <h2 style={{
                                     fontFamily: "'Playfair Display', Georgia, serif",
                                     fontSize: 'clamp(26px,3.8vw,40px)', fontWeight: 800, color: tc.primary, letterSpacing: '-0.4px',
@@ -718,12 +718,12 @@ const SchoolWebsite = () => {
                 {/* ── Campus Glimpses — optional photo grid, admin-managed from Home Page
                      settings. Hidden entirely until the admin uploads at least one photo. ── */}
                 {campusImages.length > 0 && (
-                    <section style={{ background: `linear-gradient(180deg, ${bc.surface}, ${bc.card})`, padding: 'clamp(2.5rem,6vw,4rem) clamp(1.25rem,6vw,5rem)', position: 'relative', overflow: 'hidden' }}>
+                    <section style={{ background: `linear-gradient(180deg, ${bc.surface}, ${bc.card})`, padding: 'clamp(1.25rem,3vw,2rem) clamp(1.25rem,6vw,5rem)', position: 'relative', overflow: 'hidden' }}>
                         <div className="cg-orb" style={{ position: 'absolute', width: '420px', height: '420px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.primary}26 0%, transparent 70%)`, top: '-160px', left: '-120px', pointerEvents: 'none' }} />
                         <div className="cg-orb" style={{ position: 'absolute', width: '360px', height: '360px', borderRadius: '50%', background: `radial-gradient(circle, ${tc.secondary}22 0%, transparent 70%)`, bottom: '-140px', right: '-100px', pointerEvents: 'none', animationDelay: '-4s' }} />
 
                         <div style={{ maxWidth: '1280px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-                            <Reveal style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                            <Reveal style={{ textAlign: 'center', marginBottom: '1.1rem' }}>
                                 <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: tc.secondary, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: '12px' }}>
                                     School Life
                                 </span>
@@ -763,9 +763,9 @@ const SchoolWebsite = () => {
                      admin-managed from Home Page settings. Hidden entirely until the
                      admin adds at least one testimonial. ── */}
                 {testimonials.length > 0 && (
-                    <section style={{ background: bc.surface, padding: 'clamp(2.5rem,6vw,4.5rem) clamp(1.25rem,6vw,5rem)' }}>
+                    <section style={{ background: bc.surface, padding: 'clamp(1.25rem,3vw,2.25rem) clamp(1.25rem,6vw,5rem)' }}>
                         <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
-                            <Reveal style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                            <Reveal style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
                                 <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 700, color: tc.secondary, letterSpacing: '0.22em', textTransform: 'uppercase', marginBottom: '12px' }}>
                                     Testimonials
                                 </span>

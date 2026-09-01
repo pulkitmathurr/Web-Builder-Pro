@@ -687,7 +687,7 @@ const HomePage = () => {
                                         <>
                                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}><VideoIcon /></div>
                                             <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Click to upload hero video</p>
-                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>MP4, WEBM, MOV · Max 50MB</p>
+                                            <p style={{ fontSize: '11px', color: '#94a3b8' }}>MP4, WEBM, MOV · Max 5MB</p>
                                         </>
                                     )}
                                 </div>

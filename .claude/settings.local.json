@@ -206,7 +206,8 @@
       "Bash(where mysql *)",
       "Bash(timeout 30 bash -c 'until curl -sf http://localhost:5173 >/dev/null; do sleep 1; done')",
       "Bash(mkdir -p /tmp/pwcheck)",
-      "Bash(pkill -f \"vite\")"
+      "Bash(pkill -f \"vite\")",
+      "Bash(npm -v)"
     ]
   }
 }

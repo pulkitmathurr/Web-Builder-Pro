@@ -283,7 +283,7 @@ const CircularCard = ({ circular, onUpdate, onRemove, onUploadPdf, uploading, de
                                 Remove PDF
                             </button>
                         )}
-                        <ImageSizeHint>Under 10MB. Parents open/download this directly, so keep it a clean, readable scan or export.</ImageSizeHint>
+                        <ImageSizeHint>Under 3MB. Parents open/download this directly, so keep it a clean, readable scan or export.</ImageSizeHint>
                     </div>
                     <div>
                         <label style={labelStyle}>Or Link URL (optional)</label>

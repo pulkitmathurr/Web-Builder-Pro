@@ -8,12 +8,14 @@
 -- This is the ONE script to run against a fresh/behind production DB — it now
 -- covers every change under database/*.sql (previously this file only covered
 -- tbl_schools cosmetic columns + tbl_enquiries; it was missing the Forgot
--- Password and Plans & Billing tables added afterwards — those are folded in
--- below so nothing gets missed a second time):
+-- Password and Plans & Billing tables added afterwards, and later the Footer
+-- About Text / School App columns — those are folded in below so nothing gets
+-- missed a second time):
 --   tbl_schools: intro_message_enabled, footer_bg_url, bg_music_enabled,
 --                bg_music_track, affiliation_badges, custom_domain,
 --                prospectus_url, whatsapp_number, plan_id, plan_start_date,
---                plan_end_date, storage_used_bytes, created_by (nullable)
+--                plan_end_date, storage_used_bytes, created_by (nullable),
+--                footer_about_text, school_app_label, school_app_url
 --   tbl_enquiries: full table (Admission/Career enquiry modules)
 --   tbl_password_resets: full table (Forgot/Reset Password flow)
 --   tbl_plans, tbl_payments, tbl_media_usage: full tables (Plans & Billing)
@@ -55,6 +57,9 @@ CALL _add_column_if_missing('tbl_schools', 'affiliation_badges', '`affiliation_b
 CALL _add_column_if_missing('tbl_schools', 'custom_domain', '`custom_domain` VARCHAR(255) NULL AFTER `affiliation_badges`');
 CALL _add_column_if_missing('tbl_schools', 'prospectus_url', '`prospectus_url` VARCHAR(500) NULL AFTER `custom_domain`');
 CALL _add_column_if_missing('tbl_schools', 'whatsapp_number', '`whatsapp_number` VARCHAR(20) NULL AFTER `phone2`');
+CALL _add_column_if_missing('tbl_schools', 'footer_about_text', '`footer_about_text` VARCHAR(500) NULL AFTER `footer_bg_url`');
+CALL _add_column_if_missing('tbl_schools', 'school_app_label', '`school_app_label` VARCHAR(100) NULL AFTER `prospectus_url`');
+CALL _add_column_if_missing('tbl_schools', 'school_app_url', '`school_app_url` VARCHAR(500) NULL AFTER `school_app_label`');
 
 -- ── tbl_enquiries (Admission / Career) ───────────────────────────────────
 CREATE TABLE IF NOT EXISTS tbl_enquiries (

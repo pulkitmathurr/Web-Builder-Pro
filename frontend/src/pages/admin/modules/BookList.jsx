@@ -260,7 +260,7 @@ const BookList = () => {
                         )}
                     </div>
                     {content.rows.length > 0 && (
-                        <ImageSizeHint>PDF under 10MB. Parents open this directly in a new tab to view — it isn't force-downloaded.</ImageSizeHint>
+                        <ImageSizeHint>PDF under 3MB. Parents open this directly in a new tab to view — it isn't force-downloaded.</ImageSizeHint>
                     )}
                 </div>
             </div>
