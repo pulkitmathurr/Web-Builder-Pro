@@ -10,6 +10,7 @@ import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
 const LEVEL_MAP = {
+    'pre-primary-school': { key: 'preprimary', label: 'Pre Primary School' },
     'primary-school': { key: 'primary', label: 'Primary School' },
     'middle-school': { key: 'middle', label: 'Middle School' },
     'high-school': { key: 'high', label: 'High School' },

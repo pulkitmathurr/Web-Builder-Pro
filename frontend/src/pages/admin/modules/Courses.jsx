@@ -18,6 +18,10 @@ const hexToRgba = (hex, alpha) => {
 
 const LEVELS = [
     {
+        key: 'preprimary', label: 'Pre Primary School',
+        icon: <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+    },
+    {
         key: 'primary', label: 'Primary School',
         icon: <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>,
     },
@@ -53,6 +57,7 @@ const defaultLevelData = {
 };
 
 const defaultContent = {
+    preprimary: { ...defaultLevelData },
     primary: { ...defaultLevelData },
     middle: { ...defaultLevelData },
     high: { ...defaultLevelData },
@@ -314,7 +319,7 @@ const Courses = () => {
                     .crs-status-badge span { font-size: 9.5px !important; }
                     .crs-hero-actions button { padding: 6px 12px !important; font-size: 11px !important; }
 
-                    /* ── School-level toggle cards — 2-per-row instead of 4 tiny squeezed tiles ── */
+                    /* ── School-level toggle cards — 2-per-row instead of 5 tiny squeezed tiles ── */
                     .crs-levels-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
 
                     /* ── Level tabs + Section tabs — horizontal swipeable strips ── */
@@ -363,7 +368,7 @@ const Courses = () => {
                 </div>
 
                 {/* Level Toggles */}
-                <div className="crs-levels-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '12px', marginBottom: '1.75rem' }}>
+                <div className="crs-levels-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: '12px', marginBottom: '1.75rem' }}>
                     {LEVELS.map(lv => {
                         const enabled = content[lv.key]?.enabled;
                         return (

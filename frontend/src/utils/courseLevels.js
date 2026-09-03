@@ -1,7 +1,8 @@
-// Shared between Navbar and Footer — both need to know which of the 4 fixed
+// Shared between Navbar and Footer — both need to know which of the 5 fixed
 // school levels (see admin `Courses.jsx` LEVELS / public `SchoolLevelPublic.jsx` LEVEL_MAP)
 // have any real content, to decide what shows up in navigation.
 export const COURSE_LEVELS = [
+    { key: 'preprimary', label: 'Pre Primary School', path: (slug) => `/school/${slug}/pre-primary-school` },
     { key: 'primary', label: 'Primary School', path: (slug) => `/school/${slug}/primary-school` },
     { key: 'middle',  label: 'Middle School',  path: (slug) => `/school/${slug}/middle-school` },
     { key: 'high',    label: 'High School',    path: (slug) => `/school/${slug}/high-school` },

@@ -242,7 +242,7 @@ Routes are wired centrally in `backend/src/routes/index.routes.js` (mounted unde
 | 1 | `home` | `HomePage.jsx` | part of `SchoolWebsite.jsx` | Hero, About, Stats, Highlights |
 | 2 | `about` | `AboutUs.jsx` | `AboutUsPublic.jsx` | Vision/Mission ticker, History, Leadership Message, Core Values, Gallery |
 | 3 | `fee` | `FeeStructure.jsx` | `FeeStructurePublic.jsx` | Class-wise dynamic fee table |
-| 4 | `courses` | `Courses.jsx` | `CoursesPublic.jsx` + `SchoolLevelPublic.jsx` | 4 fixed school levels |
+| 4 | `courses` | `Courses.jsx` | `CoursesPublic.jsx` + `SchoolLevelPublic.jsx` | 5 fixed school levels (Pre Primary, Primary, Middle, High, Senior) |
 | 5 | `faculty` | `Faculty.jsx` | `FacultyPublic.jsx` | Grouped by level, 4-card carousel, rotating banner |
 | 6 | `infrastructure` | `Infrastructure.jsx` | `InfrastructurePublic.jsx` | Custom categories with sidebar switcher |
 | 7 | `sports` | `Sports.jsx` | `SportsPublic.jsx` | 4 sub-pages, events, certifications, "Making Us Proud", yearly award PDFs |
