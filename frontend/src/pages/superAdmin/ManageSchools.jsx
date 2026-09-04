@@ -284,7 +284,8 @@ const ManageSchools = () => {
                                     <div>
                                         {school.plan_tenure_years ? (
                                             <>
-                                                <p style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>{school.plan_tenure_years}yr · {school.plan_storage_mb >= 1024 ? `${school.plan_storage_mb / 1024}GB` : `${school.plan_storage_mb}MB`}</p>
+                                                <p style={{ fontSize: '12px', fontWeight: 600, color: '#0f172a', marginBottom: '1px' }}>{school.plan_name || `${school.plan_tenure_years}yr plan`}</p>
+                                                <p style={{ fontSize: '11px', color: '#94a3b8' }}>{school.plan_tenure_years}yr · {school.plan_storage_mb >= 1024 && school.plan_storage_mb % 1024 === 0 ? `${school.plan_storage_mb / 1024}GB` : `${school.plan_storage_mb}MB`}</p>
                                             </>
                                         ) : (
                                             <p style={{ fontSize: '11.5px', color: '#cbd5e1' }}>No plan</p>
@@ -419,11 +420,14 @@ const ManageSchools = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto' }}>
                                     {plans.map(p => (
                                         <button key={p.id} disabled={assigning} onClick={() => handleAssignPlan(p.id)}
-                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', border: '1px solid #eef1f6', borderRadius: '10px', background: '#f8fafc', cursor: assigning ? 'not-allowed' : 'pointer', textAlign: 'left' }}>
-                                            <span style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a' }}>
-                                                {p.tenure_years} Year{p.tenure_years > 1 ? 's' : ''} · {p.storage_mb >= 1024 ? `${p.storage_mb / 1024}GB` : `${p.storage_mb}MB`}
+                                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '12px 14px', border: '1px solid #eef1f6', borderRadius: '10px', background: '#f8fafc', cursor: assigning ? 'not-allowed' : 'pointer', textAlign: 'left' }}>
+                                            <span style={{ minWidth: 0 }}>
+                                                <span style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', display: 'block' }}>{p.name || `${p.tenure_years}yr plan`}</span>
+                                                <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                                                    {p.tenure_years} Year{p.tenure_years > 1 ? 's' : ''} · {p.storage_mb >= 1024 && p.storage_mb % 1024 === 0 ? `${p.storage_mb / 1024}GB` : `${p.storage_mb}MB`}
+                                                </span>
                                             </span>
-                                            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#4f6ef7' }}>₹{p.price}</span>
+                                            <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#4f6ef7', flexShrink: 0 }}>₹{Number(p.price).toLocaleString('en-IN')}</span>
                                         </button>
                                     ))}
                                 </div>

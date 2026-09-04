@@ -69,9 +69,17 @@ queries are hand-written SQL in `*.service.js` files.
   See "Generic content system" below for the module keys in use.
 - **`tbl_refresh_tokens`** — tracks issued refresh tokens (`admin_id` or `super_admin_id`,
   `expires_at`, `is_revoked`) so they can be revoked on logout.
-- **`tbl_plans`** — the fixed 3 (tenure_years: 1/2/3) × 3 (storage_mb: 200/400/1024) pricing
-  grid, `price` + `is_active` editable by the Super Admin. Seeded by
-  `database/tbl_plans_and_billing.sql`.
+- **`tbl_plans`** — free-form plan list the Super Admin fully designs from the Plans page
+  (`name`, `tenure_years`, `storage_mb`, `price`, `description`, `features` JSON string[],
+  `is_active`, `sort_order`) — create/edit/delete, any number of plans, arbitrary
+  tenure/storage combos. Originally a fixed 3 (tenure_years: 1/2/3) × 3 (storage_mb:
+  200/400/1024) grid seeded by `database/tbl_plans_and_billing.sql`; the free-form columns +
+  dropping the `UNIQUE (tenure_years, storage_mb)` constraint are added by
+  `database/tbl_plans_freeform.sql` (apply by hand, after the base script). `plans/` module
+  now has full CRUD (`POST /`, `PATCH /:id` for any field, `DELETE /:id` — delete is blocked
+  while any school or payment row still references the plan; deactivate instead). Consumed by
+  School Admin `Billing.jsx` (flat plan-card list — pick one → Razorpay) and Super Admin
+  `ManageSchools.jsx` "Assign Plan". There is no public marketing pricing page.
 - **`tbl_payments`** — one row per Razorpay order (`school_id`, `plan_id`,
   `razorpay_order_id/payment_id/signature`, `status`: `created`/`paid`/`failed`), created by
   the `billing/` module when a school starts checkout.
@@ -427,13 +435,17 @@ approval, `AdminLayout.jsx`'s `fetchModules()` effect (which already calls
 `getSelectedModulesApi` on every route change for the `is_first_login` → `/admin/modules/select`
 gate) also reads a new `hasActivePlan` field from that same response and force-redirects to
 `/admin/billing` (`Billing.jsx`) if `plan_id IS NULL` — checked *before* the module-selection
-gate. `Billing.jsx` is tenure → storage → Razorpay Checkout.js; `POST /api/billing/create-order`
-then `/api/billing/verify-payment` (HMAC signature check) sets `plan_id`/`plan_start_date`/
-`plan_end_date`, which flips `hasActivePlan` true and unlocks the rest of the admin panel.
+gate. `Billing.jsx` is a flat list of plan cards (name, tenure, storage, price, features) —
+pick one → Razorpay Checkout.js; `POST /api/billing/create-order` then
+`/api/billing/verify-payment` (HMAC signature check) sets `plan_id`/`plan_start_date`/
+`plan_end_date` (`plan_end_date` = start + the plan's `tenure_years`), which flips
+`hasActivePlan` true and unlocks the rest of the admin panel.
 
-**Pricing**: one global ₹ price per of the 9 tenure×storage combos (`plans/` module), edited
-from the Super Admin's `Plans.jsx` page — not negotiated per school. All modules are included
-in every plan; the only differentiators are tenure, storage cap, and price.
+**Pricing**: the Super Admin designs a free-form set of plans from `Plans.jsx` (name, tenure
+years, storage MB/GB, ₹ price, description, features bullet list, active toggle, display
+order) — see `tbl_plans` under Database. Not negotiated per school. All website modules are
+included in every plan; plans differ by tenure, storage cap, price, and whatever the
+`features` list says.
 
 **Storage enforcement**: `backend/src/utils/storage.utils.js` exports `checkStorageLimitMiddleware`
 (pre-check using the `Content-Length` header, wired in front of every upload route in both
@@ -497,12 +509,13 @@ routed into a forced checkout. See Outstanding backlog.
 - **TC Generation System upgrade** (planned, spec ready) — see TC Information section above.
 - **Plans & Billing — built, not yet fully rolled out**: see the Plans & Billing section above.
   Remaining before this is live in production:
-  - Apply `database/tbl_plans_and_billing.sql` to any other environment (same hand-applied
-    convention as the rest of the schema).
+  - Apply `database/tbl_plans_and_billing.sql` **then** `database/tbl_plans_freeform.sql` to
+    any other environment (same hand-applied convention as the rest of the schema).
   - Set real `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` (currently blank in `.env.example`) —
     `billing/` gracefully 503s with "Payments aren't configured yet" until these are set, it
     doesn't crash the server.
-  - Set real ₹ prices for the 9 plan combos from the Super Admin Plans page (seeded at ₹0).
+  - Build the real plans (name / tenure / storage / ₹ price / features) from the Super Admin
+    Plans page — the originally-seeded 9 rows are at ₹0 and can be edited or deleted.
   - Run "Assign Plan" against every pre-existing school once, before real admins hit the new
     `hasActivePlan` login gate (see Backfilling note above).
   - Not built yet: plan expiry/renewal enforcement (`plan_end_date` is stored but nothing

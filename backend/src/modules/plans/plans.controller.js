@@ -1,4 +1,10 @@
-const { getActivePlansService, getAllPlansService, updatePlanService } = require('./plans.service');
+const {
+    getActivePlansService,
+    getAllPlansService,
+    createPlanService,
+    updatePlanService,
+    deletePlanService,
+} = require('./plans.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
 
 const getActivePlans = async (req, res) => {
@@ -19,6 +25,15 @@ const getAllPlans = async (req, res) => {
     }
 };
 
+const createPlan = async (req, res) => {
+    try {
+        const plan = await createPlanService(req.body);
+        return sendSuccess(res, 'Plan created', plan, 201);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 const updatePlan = async (req, res) => {
     try {
         const plan = await updatePlanService(req.params.id, req.body);
@@ -28,4 +43,13 @@ const updatePlan = async (req, res) => {
     }
 };
 
-module.exports = { getActivePlans, getAllPlans, updatePlan };
+const deletePlan = async (req, res) => {
+    try {
+        const result = await deletePlanService(req.params.id);
+        return sendSuccess(res, result.message, result);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+module.exports = { getActivePlans, getAllPlans, createPlan, updatePlan, deletePlan };

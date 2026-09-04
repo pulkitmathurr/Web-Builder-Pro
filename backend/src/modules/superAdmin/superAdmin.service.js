@@ -31,7 +31,7 @@ const createSchoolService = async (schoolData, superAdminId) => {
 const getAllSchoolsService = async () => {
     const [schools] = await pool.query(
         `SELECT s.*, a.name as admin_name, a.email as admin_email,
-                p.tenure_years as plan_tenure_years, p.storage_mb as plan_storage_mb
+                p.name as plan_name, p.tenure_years as plan_tenure_years, p.storage_mb as plan_storage_mb
         FROM tbl_schools s
         LEFT JOIN tbl_admins a ON s.id = a.school_id
         LEFT JOIN tbl_plans p ON s.plan_id = p.id

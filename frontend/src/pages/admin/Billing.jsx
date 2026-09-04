@@ -12,8 +12,9 @@ const hexToRgba = (hex, alpha) => {
     return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 };
 
-const TENURE_LABELS = { 1: '1 Year', 2: '2 Years', 3: '3 Years' };
-const STORAGE_LABELS = { 200: '200 MB', 400: '400 MB', 1024: '1 GB' };
+const tenureLabel = (y) => `${y} Year${y > 1 ? 's' : ''}`;
+const storageLabel = (mb) =>
+    mb >= 1024 && mb % 1024 === 0 ? `${mb / 1024} GB` : `${mb} MB`;
 
 const loadRazorpayScript = () => new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
@@ -30,9 +31,11 @@ const Billing = () => {
     const { school, tc } = useSchoolStore();
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [tenure, setTenure] = useState(null);
-    const [storage, setStorage] = useState(null);
+    const [selectedId, setSelectedId] = useState(null);
     const [paying, setPaying] = useState(false);
+
+    const primary = tc?.primary || '#4169E1';
+    const secondary = tc?.secondary || '#2541A8';
 
     useEffect(() => {
         getActivePlansApi()
@@ -41,9 +44,7 @@ const Billing = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    const tenures = [...new Set(plans.map((p) => p.tenure_years))].sort();
-    const storageTiers = [...new Set(plans.map((p) => p.storage_mb))].sort((a, b) => a - b);
-    const selectedPlan = plans.find((p) => p.tenure_years === tenure && p.storage_mb === storage);
+    const selectedPlan = plans.find((p) => p.id === selectedId);
 
     const handlePay = async () => {
         if (!selectedPlan) return;
@@ -65,9 +66,9 @@ const Billing = () => {
                 currency: order.currency,
                 order_id: order.orderId,
                 name: 'Web Builder Pro',
-                description: `${TENURE_LABELS[selectedPlan.tenure_years]} · ${STORAGE_LABELS[selectedPlan.storage_mb]}`,
+                description: `${selectedPlan.name} · ${tenureLabel(selectedPlan.tenure_years)} · ${storageLabel(selectedPlan.storage_mb)}`,
                 prefill: { name: user?.name, email: user?.email },
-                theme: { color: tc?.primary || '#4169E1' },
+                theme: { color: primary },
                 handler: async (response) => {
                     try {
                         await verifyBillingPaymentApi(response);
@@ -96,14 +97,14 @@ const Billing = () => {
     if (loading) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-                <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: `3px solid ${tc?.primary || '#4169E1'}`, borderRadius: '50%', animation: 'billingSpin 1s linear infinite' }}></div>
+                <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: `3px solid ${primary}`, borderRadius: '50%', animation: 'billingSpin 1s linear infinite' }}></div>
                 <style>{`@keyframes billingSpin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
 
     return (
-        <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '860px', margin: '0 auto' }}>
+        <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '960px', margin: '0 auto' }}>
             {/* Hero header — standard admin page anatomy */}
             <div style={{
                 background: 'linear-gradient(135deg, #2d0a1a, #4a1030, #2d0520)',
@@ -111,66 +112,74 @@ const Billing = () => {
             }}>
                 <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.4px' }}>Choose your plan</h1>
                 <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
-                    {school?.name ? `${school.name}'s ` : "Your "}account is approved — pick a tenure and storage tier to activate your website. All modules are included in every plan.
+                    {school?.name ? `${school.name}'s ` : 'Your '}account is approved — pick a plan to activate your website.
                 </p>
             </div>
 
-            {/* Step 1: Tenure */}
-            <div style={{ marginBottom: '1.5rem' }}>
-                <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>1. Select Tenure</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${tenures.length}, 1fr)`, gap: '12px' }}>
-                    {tenures.map((t) => (
-                        <button key={t} onClick={() => setTenure(t)}
-                            style={{
-                                padding: '18px', borderRadius: '14px', cursor: 'pointer', textAlign: 'center',
-                                border: tenure === t ? `2px solid ${tc?.primary || '#4169E1'}` : '1px solid #eef1f6',
-                                background: tenure === t ? hexToRgba(tc?.primary || '#4169E1', 0.06) : '#ffffff',
-                            }}>
-                            <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a' }}>{TENURE_LABELS[t] || `${t} Years`}</p>
-                        </button>
-                    ))}
+            {plans.length === 0 ? (
+                <div style={{ background: '#fff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '3rem', textAlign: 'center', color: '#64748b', fontSize: '13.5px' }}>
+                    No plans are available right now — please contact Web Builder Pro.
                 </div>
-            </div>
-
-            {/* Step 2: Storage */}
-            <div style={{ marginBottom: '1.75rem' }}>
-                <h2 style={{ fontSize: '13px', fontWeight: 700, color: '#334155', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>2. Select Storage</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${storageTiers.length}, 1fr)`, gap: '12px' }}>
-                    {storageTiers.map((mb) => {
-                        const plan = plans.find((p) => p.tenure_years === tenure && p.storage_mb === mb);
-                        return (
-                            <button key={mb} disabled={!tenure} onClick={() => setStorage(mb)}
-                                style={{
-                                    padding: '18px', borderRadius: '14px', cursor: tenure ? 'pointer' : 'not-allowed', textAlign: 'center',
-                                    border: storage === mb ? `2px solid ${tc?.primary || '#4169E1'}` : '1px solid #eef1f6',
-                                    background: storage === mb ? hexToRgba(tc?.primary || '#4169E1', 0.06) : '#ffffff',
-                                    opacity: tenure ? 1 : 0.5,
-                                }}>
-                                <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{STORAGE_LABELS[mb] || `${mb}MB`}</p>
-                                {tenure && plan && <p style={{ fontSize: '12px', color: '#94a3b8' }}>₹{plan.price}</p>}
-                            </button>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* Summary + Pay */}
-            {selectedPlan && (
-                <div style={{ background: '#ffffff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 10px rgba(15,23,42,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                    <div>
-                        <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>You're purchasing</p>
-                        <p style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-                            {TENURE_LABELS[selectedPlan.tenure_years]} · {STORAGE_LABELS[selectedPlan.storage_mb]}
-                        </p>
+            ) : (
+                <>
+                    {/* Plan cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '1.75rem' }}>
+                        {plans.map((plan) => {
+                            const active = plan.id === selectedId;
+                            return (
+                                <button key={plan.id} onClick={() => setSelectedId(plan.id)}
+                                    style={{
+                                        textAlign: 'left', padding: '22px', borderRadius: '16px', cursor: 'pointer',
+                                        border: active ? `2px solid ${primary}` : '1px solid #eef1f6',
+                                        background: active ? hexToRgba(primary, 0.05) : '#fff',
+                                        boxShadow: active ? `0 8px 24px ${hexToRgba(primary, 0.18)}` : '0 2px 10px rgba(15,23,42,0.03)',
+                                        display: 'flex', flexDirection: 'column', transition: 'all 0.15s',
+                                    }}>
+                                    <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '3px' }}>{plan.name}</p>
+                                    <p style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '12px' }}>
+                                        {tenureLabel(plan.tenure_years)} · {storageLabel(plan.storage_mb)} storage
+                                    </p>
+                                    <p style={{ fontSize: '24px', fontWeight: 800, color: primary, marginBottom: '12px' }}>
+                                        ₹{Number(plan.price).toLocaleString('en-IN')}
+                                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}> / {plan.tenure_years}yr</span>
+                                    </p>
+                                    {plan.description && (
+                                        <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px', lineHeight: 1.5 }}>{plan.description}</p>
+                                    )}
+                                    {plan.features?.length > 0 && (
+                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                            {plan.features.map((f, i) => (
+                                                <li key={i} style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '7px', alignItems: 'flex-start' }}>
+                                                    <svg width="13" height="13" fill="none" stroke="#22c55e" strokeWidth="3" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: '2px' }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                    {f}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </button>
+                            );
+                        })}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontSize: '22px', fontWeight: 800, color: tc?.primary || '#4169E1', marginBottom: '8px' }}>₹{selectedPlan.price}</p>
-                        <button onClick={handlePay} disabled={paying}
-                            style={{ padding: '12px 26px', background: paying ? '#94a3b8' : `linear-gradient(135deg, ${tc?.primary || '#4169E1'}, ${tc?.secondary || '#2541A8'})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13.5px', fontWeight: 700, cursor: paying ? 'not-allowed' : 'pointer' }}>
-                            {paying ? 'Processing...' : 'Pay with Razorpay'}
-                        </button>
-                    </div>
-                </div>
+
+                    {/* Summary + Pay */}
+                    {selectedPlan && (
+                        <div style={{ background: '#fff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 10px rgba(15,23,42,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
+                            <div>
+                                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>You're purchasing</p>
+                                <p style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
+                                    {selectedPlan.name} — {tenureLabel(selectedPlan.tenure_years)} · {storageLabel(selectedPlan.storage_mb)}
+                                </p>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                                <p style={{ fontSize: '22px', fontWeight: 800, color: primary, marginBottom: '8px' }}>₹{Number(selectedPlan.price).toLocaleString('en-IN')}</p>
+                                <button onClick={handlePay} disabled={paying}
+                                    style={{ padding: '12px 26px', background: paying ? '#94a3b8' : `linear-gradient(135deg, ${primary}, ${secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13.5px', fontWeight: 700, cursor: paying ? 'not-allowed' : 'pointer' }}>
+                                    {paying ? 'Processing...' : 'Pay with Razorpay'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     );
