@@ -52,10 +52,10 @@ END $$
 DELIMITER ;
 
 -- ── New columns ──────────────────────────────────────────────────────
-CALL _plans_add_col('name',        "`name` VARCHAR(100) NOT NULL DEFAULT '' AFTER `uuid`");
-CALL _plans_add_col('description', "`description` VARCHAR(500) NULL AFTER `price`");
-CALL _plans_add_col('features',    "`features` JSON NULL AFTER `description`");
-CALL _plans_add_col('sort_order',  "`sort_order` INT NOT NULL DEFAULT 0 AFTER `is_active`");
+CALL _plans_add_col('name',        '`name` VARCHAR(100) NOT NULL DEFAULT '''' AFTER `uuid`');
+CALL _plans_add_col('description', '`description` VARCHAR(500) NULL AFTER `price`');
+CALL _plans_add_col('features',    '`features` JSON NULL AFTER `description`');
+CALL _plans_add_col('sort_order',  '`sort_order` INT NOT NULL DEFAULT 0 AFTER `is_active`');
 
 -- ── Drop the fixed-grid uniqueness so plans can be free-form ─────────
 CALL _plans_drop_index('tenure_storage');
