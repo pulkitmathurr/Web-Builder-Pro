@@ -4,16 +4,22 @@ const { v4: uuidv4 } = require("uuid");
 const { pool } = require("../../config/db");
 const AppError = require("../../utils/error.utils");
 
+// Read the keys through these so a stray trailing space/newline in a hosting
+// dashboard env var (a real gotcha on Render) can't silently break auth —
+// `razorpay.orders.create` would then throw a confusing BAD_REQUEST_ERROR.
+const rzpKeyId = () => (process.env.RAZORPAY_KEY_ID || "").trim();
+const rzpKeySecret = () => (process.env.RAZORPAY_KEY_SECRET || "").trim();
+
 // Constructed lazily (not at module load) so the server still boots when
 // RAZORPAY_KEY_ID/SECRET aren't configured yet in local dev — the SDK throws
 // synchronously in its constructor if key_id is missing.
 const getRazorpayClient = () => {
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    if (!rzpKeyId() || !rzpKeySecret()) {
         throw new AppError("Payments aren't configured yet — contact Web Builder Pro", 503);
     }
     return new Razorpay({
-        key_id: process.env.RAZORPAY_KEY_ID,
-        key_secret: process.env.RAZORPAY_KEY_SECRET,
+        key_id: rzpKeyId(),
+        key_secret: rzpKeySecret(),
     });
 };
 
@@ -29,11 +35,28 @@ const createOrderService = async (schoolId, planId) => {
     }
 
     const amountPaise = Math.round(Number(plan.price) * 100);
-    const order = await razorpay.orders.create({
-        amount: amountPaise,
-        currency: "INR",
-        receipt: `school-${schoolId}-plan-${planId}-${Date.now()}`,
-    });
+    let order;
+    try {
+        order = await razorpay.orders.create({
+            amount: amountPaise,
+            currency: "INR",
+            receipt: `school-${schoolId}-plan-${planId}-${Date.now()}`,
+        });
+    } catch (err) {
+        // The Razorpay SDK's rejection has no top-level `.message` — the real
+        // reason lives at `.error.description`. Without this, the controller's
+        // `sendError(res, error.message, ...)` sends message: undefined, which
+        // JSON.stringify drops entirely, leaving the frontend with no text to
+        // show (falls back to a generic "Failed to start payment" toast).
+        console.error("[billing] razorpay.orders.create failed", {
+            schoolId,
+            planId,
+            amountPaise,
+            statusCode: err.statusCode,
+            error: err.error || err.message,
+        });
+        throw new AppError(err.error?.description || "Could not start payment — try again", err.statusCode || 502);
+    }
 
     const uuid = uuidv4();
     await pool.query(
@@ -46,7 +69,7 @@ const createOrderService = async (schoolId, planId) => {
         orderId: order.id,
         amount: order.amount,
         currency: order.currency,
-        keyId: process.env.RAZORPAY_KEY_ID,
+        keyId: rzpKeyId(),
     };
 };
 
@@ -64,7 +87,7 @@ const verifyPaymentService = async (schoolId, { razorpay_order_id, razorpay_paym
     const payment = payments[0];
 
     const expectedSignature = crypto
-        .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+        .createHmac("sha256", rzpKeySecret())
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
         .digest("hex");
 
