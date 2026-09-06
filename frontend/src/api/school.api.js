@@ -1,5 +1,6 @@
 import axiosInstance from '../config/axios';
 import { assertImageSizeOk, assertHeroVideoSizeOk } from '../utils/fileValidation';
+import { compressFormDataImage } from '../utils/compressImage';
 
 // ── Profile ──────────────────────────────────────────
 export const getSchoolProfileApi = async () => {
@@ -51,6 +52,7 @@ export const uploadHeroVideoApi = async (formData) => {
 
 export const uploadSchoolLogoApi = async (formData) => {
     assertImageSizeOk(formData.get('schoolLogo'));
+    await compressFormDataImage(formData, 'schoolLogo');
     const response = await axiosInstance.post('/school/logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -59,6 +61,7 @@ export const uploadSchoolLogoApi = async (formData) => {
 
 export const uploadWelcomeBannerApi = async (formData) => {
     assertImageSizeOk(formData.get('welcomeBanner'));
+    await compressFormDataImage(formData, 'welcomeBanner');
     const response = await axiosInstance.post('/school/welcome-banner', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });
@@ -67,6 +70,7 @@ export const uploadWelcomeBannerApi = async (formData) => {
 
 export const uploadFooterBackgroundApi = async (formData) => {
     assertImageSizeOk(formData.get('footerBg'));
+    await compressFormDataImage(formData, 'footerBg');
     const response = await axiosInstance.post('/school/footer-bg', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     });

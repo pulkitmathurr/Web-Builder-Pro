@@ -1,4 +1,5 @@
 import axiosInstance from '../config/axios';
+import { compressFormDataImage } from '../utils/compressImage';
 
 // ── Schools ──────────────────────────────────────────
 export const getAllSchoolsApi = async () => {
@@ -44,6 +45,7 @@ export const updateAdminStatusApi = async (uuid, status) => {
 };
 
 export const createSchoolWithAdminApi = async (data) => {
+    await compressFormDataImage(data, 'schoolImage');
     const response = await axiosInstance.post(
         '/super-admin/schools/create-with-admin',
         data,

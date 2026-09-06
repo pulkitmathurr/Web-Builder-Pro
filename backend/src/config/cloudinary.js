@@ -66,14 +66,17 @@ const videoStorage = new CloudinaryStorage({
     },
 });
 
+// 2MB cap — the frontend auto-compresses every image to ~0.9MB before upload
+// (frontend/src/utils/compressImage.js); this leaves headroom for the odd
+// large-dimension PNG that compresses less and still rejects anything abnormal.
 const upload = multer({
     storage: imageStorage,
-    limits: { fileSize: 1 * 1024 * 1024 },
+    limits: { fileSize: 2 * 1024 * 1024 },
 });
 
 const uploadContentImage = multer({
     storage: contentImageStorage,
-    limits: { fileSize: 1 * 1024 * 1024 },
+    limits: { fileSize: 2 * 1024 * 1024 },
 });
 
 const uploadPdf = multer({

@@ -1,6 +1,7 @@
 import axiosInstance from '../config/axios';
 import { noBreakHyphensDeep } from '../utils/textFormat';
 import { assertImageSizeOk } from '../utils/fileValidation';
+import { compressImage } from '../utils/compressImage';
 
 export const getModuleContentApi = async (moduleKey) => {
     const response = await axiosInstance.get(`/content/${moduleKey}`);
@@ -37,8 +38,9 @@ const currentModuleKey = () => window.location.pathname.match(/\/admin\/module\/
 
 export const uploadContentImageApi = async (file) => {
     assertImageSizeOk(file);
+    const compressed = await compressImage(file);
     const formData = new FormData();
-    formData.append('image', file);
+    formData.append('image', compressed);
     const response = await axiosInstance.post(`/content/upload-image?moduleKey=${currentModuleKey()}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
