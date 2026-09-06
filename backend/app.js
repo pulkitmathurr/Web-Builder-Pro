@@ -78,7 +78,13 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({
+    limit: '50mb',
+    // Stash the raw request bytes so the Razorpay webhook (billing/) can verify
+    // its HMAC signature against exactly what was received — express.json()
+    // otherwise consumes the stream and only the parsed object survives.
+    verify: (req, res, buf) => { req.rawBody = buf; },
+}));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
