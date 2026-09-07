@@ -1,5 +1,6 @@
 const { pool } = require("../../config/db");
 const AppError = require("../../utils/error.utils");
+const { reconcileSchoolAssetMedia, reconcileHeroVideoMedia } = require("../../utils/storage.utils");
 
 // ── Get School Profile ───────────────────────────────
 const getSchoolProfileService = async (schoolId) => {
@@ -54,6 +55,18 @@ const updateSchoolProfileService = async (schoolId, data) => {
     }
 
     const [updated] = await pool.query('SELECT * FROM tbl_schools WHERE id = ?', [schoolId]);
+
+    // Free storage for any school asset this update replaced or cleared — logo /
+    // welcome banner / footer bg (branding bucket) and the Home hero video
+    // (bucketed under 'home'). Best-effort — a reconcile hiccup must never fail
+    // the profile save.
+    try {
+        await reconcileSchoolAssetMedia(schoolId, updated[0]);
+        await reconcileHeroVideoMedia(schoolId);
+    } catch (err) {
+        console.error('[storage] school-asset reconcile failed', schoolId, err?.message);
+    }
+
     return updated[0];
 };
 
@@ -105,13 +118,17 @@ const selectModulesService = async (schoolId, modules) => {
     return { selectedModules: modules };
 };
 
+// Bump this whenever the consent text in AcceptTerms.jsx materially changes —
+// schools whose stored terms_version falls behind get re-prompted once.
+const CURRENT_TERMS_VERSION = 1;
+
 // ── Get Selected Modules ─────────────────────────────
-// Also returns hasActivePlan — the AdminLayout gate piggybacks on this same
-// call (already fired on every admin route change) rather than adding a
-// second round-trip just to check plan status.
+// Also returns hasActivePlan and hasAcceptedTerms — the AdminLayout gate
+// piggybacks on this same call (already fired on every admin route change)
+// rather than adding extra round-trips just to check plan/consent status.
 const getSelectedModulesService = async (schoolId) => {
     const [schools] = await pool.query(
-        "SELECT selected_modules, is_first_login, plan_id FROM tbl_schools WHERE id = ?",
+        "SELECT selected_modules, is_first_login, plan_id, terms_accepted_at, terms_version FROM tbl_schools WHERE id = ?",
         [schoolId]
     );
 
@@ -127,7 +144,17 @@ const getSelectedModulesService = async (schoolId) => {
             : [],
         isFirstLogin: schools[0].is_first_login,
         hasActivePlan: schools[0].plan_id !== null,
+        hasAcceptedTerms: schools[0].terms_accepted_at !== null && schools[0].terms_version >= CURRENT_TERMS_VERSION,
     };
+};
+
+// ── Accept Terms ──────────────────────────────────────
+const acceptTermsService = async (schoolId) => {
+    await pool.query(
+        "UPDATE tbl_schools SET terms_accepted_at = NOW(), terms_version = ? WHERE id = ?",
+        [CURRENT_TERMS_VERSION, schoolId]
+    );
+    return { termsAccepted: true };
 };
 
 // ── Get Storage Usage ─────────────────────────────────
@@ -252,6 +279,7 @@ module.exports = {
     updateSchoolSettingsService,
     selectModulesService,
     getSelectedModulesService,
+    acceptTermsService,
     getPublicSchoolService,
     getSchoolSlugByDomainService,
     getDashboardStatsService,

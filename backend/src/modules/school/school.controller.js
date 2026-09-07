@@ -4,12 +4,13 @@ const {
     updateSchoolSettingsService,
     selectModulesService,
     getSelectedModulesService,
+    acceptTermsService,
     getPublicSchoolService,
     getSchoolSlugByDomainService,
     getStorageUsageService,
 } = require('./school.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
-const { recordMediaUsage } = require('../../utils/storage.utils');
+const { recordMediaUsage, recalculateSchoolStorage } = require('../../utils/storage.utils');
 
 // ── Get School Profile ───────────────────────────────
 const getSchoolProfile = async (req, res) => {
@@ -61,6 +62,16 @@ const getSelectedModules = async (req, res) => {
     }
 };
 
+// ── Accept Terms ──────────────────────────────────────
+const acceptTerms = async (req, res) => {
+    try {
+        const result = await acceptTermsService(req.user.schoolId);
+        return sendSuccess(res, 'Terms accepted', result);
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 // ── Get Public School ────────────────────────────────
 const getPublicSchool = async (req, res) => {
     try {
@@ -91,7 +102,7 @@ const uploadHeroVideo = async (req, res) => {
             hero_video_url: videoUrl,
             hero_video_title: title
         });
-        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: null, resourceType: 'video', sizeBytes: req.file.size, url: videoUrl, publicId: req.file.filename });
+        await recordMediaUsage({ schoolId: req.user.schoolId, moduleKey: 'home', resourceType: 'video', sizeBytes: req.file.size, url: videoUrl, publicId: req.file.filename });
         return sendSuccess(res, 'Hero video uploaded successfully', { hero_video_url: videoUrl });
     } catch (error) {
         return sendError(res, error.message, error.statusCode || 500);
@@ -168,12 +179,26 @@ const getStorageUsage = async (req, res) => {
     }
 };
 
+// Dashboard "Recalculate storage" — reconciles the media ledger against saved
+// content (drops orphaned uploads, deletes them from Cloudinary), then returns
+// the refreshed usage numbers plus how many rows were reclaimed.
+const recalculateStorage = async (req, res) => {
+    try {
+        const { removed } = await recalculateSchoolStorage(req.user.schoolId);
+        const usage = await getStorageUsageService(req.user.schoolId);
+        return sendSuccess(res, 'Storage recalculated', { ...usage, removed });
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
 module.exports = {
     getSchoolProfile,
     updateSchoolProfile,
     updateSchoolSettings,
     selectModules,
     getSelectedModules,
+    acceptTerms,
     getPublicSchool,
     getSchoolByDomain,
     uploadHeroVideo,
@@ -183,4 +208,5 @@ module.exports = {
     uploadProspectus,
     getDashboardStats,
     getStorageUsage,
+    recalculateStorage,
 };

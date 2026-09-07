@@ -6,6 +6,7 @@ const {
     updateSchoolSettings,
     selectModules,
     getSelectedModules,
+    acceptTerms,
     getPublicSchool,
     getSchoolByDomain,
     uploadHeroVideo,
@@ -13,7 +14,8 @@ const {
     uploadWelcomeBanner,
     uploadFooterBackground,
     uploadProspectus,
-    getStorageUsage
+    getStorageUsage,
+    recalculateStorage
 } = require('./school.controller');
 const { protect, isAdmin } = require('../../middlewares/auth.middleware');
 const { upload, uploadContentImage, uploadPdf, uploadHeroVideo: uploadHeroVideoMiddleware } = require('../../config/cloudinary');
@@ -39,8 +41,12 @@ router.put('/settings', updateSchoolSettings);
 router.post('/modules', selectModules);
 router.get('/modules', getSelectedModules);
 
+// ── Terms Consent ─────────────────────────────────────
+router.post('/accept-terms', acceptTerms);
+
 // ── Storage Usage ─────────────────────────────────────
 router.get('/storage-usage', getStorageUsage);
+router.post('/storage-usage/recalculate', recalculateStorage);
 
 // ── Logo Upload ──────────────────────────────────────
 router.post('/logo', checkStorageLimitMiddleware, upload.single('schoolLogo'), uploadSchoolLogo);

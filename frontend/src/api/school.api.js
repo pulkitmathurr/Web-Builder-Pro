@@ -30,6 +30,12 @@ export const selectModulesApi = async (modules) => {
     return response.data;
 };
 
+// ── Terms Consent ─────────────────────────────────────
+export const acceptTermsApi = async () => {
+    const response = await axiosInstance.post('/school/accept-terms');
+    return response.data;
+};
+
 export const getPublicSchoolApi = async (slug) => {
     const response = await axiosInstance.get(`/school/public/${slug}`);
     return response.data;
@@ -87,5 +93,12 @@ export const uploadProspectusApi = async (formData) => {
 // ── Storage Usage ─────────────────────────────────────
 export const getStorageUsageApi = async () => {
     const response = await axiosInstance.get('/school/storage-usage');
+    return response.data;
+};
+
+// Reconciles the media ledger against saved content (drops orphaned uploads),
+// then returns the refreshed usage figures plus a `removed` count.
+export const recalculateStorageApi = async () => {
+    const response = await axiosInstance.post('/school/storage-usage/recalculate');
     return response.data;
 };

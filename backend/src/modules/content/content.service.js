@@ -1,5 +1,6 @@
 const { pool } = require("../../config/db");
 const AppError = require("../../utils/error.utils");
+const { reconcileModuleMedia } = require("../../utils/storage.utils");
 
 // ── Get Module Content ───────────────────────────────
 const getModuleContentService = async (schoolId, moduleKey) => {
@@ -33,6 +34,14 @@ const saveModuleContentService = async (schoolId, moduleKey, content) => {
     );
     // Note: is_published intentionally absent from the UPDATE clause —
     // a new row starts as draft (0), an existing row keeps its flag.
+
+    // Free the school's storage quota for any uploads this save removed
+    // (see storage.utils.js). Isolated so a reconcile hiccup can't fail a save.
+    try {
+        await reconcileModuleMedia(schoolId, moduleKey, content);
+    } catch (err) {
+        console.error("[storage] reconcile failed", schoolId, moduleKey, err?.message);
+    }
 
     return await getModuleContentService(schoolId, moduleKey);
 };
