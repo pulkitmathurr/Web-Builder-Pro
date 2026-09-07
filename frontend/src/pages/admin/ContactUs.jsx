@@ -58,34 +58,37 @@ const ContactUs = () => {
         setFormData({ ...formData, [name]: value });
     };
 
- const handleSave = async () => {
-    if (formData.phone && !isValidPhone(formData.phone)) {
+ // `fields` scopes the save to just the section the user clicked "Save" on —
+ // each button passes only the field names shown in its own card, so e.g.
+ // Save Location never touches map_url/social fields and vice versa.
+ const handleSave = async (fields) => {
+    if (fields.includes('phone') && formData.phone && !isValidPhone(formData.phone)) {
         toast.error('Phone number must be exactly 10 digits');
         return;
     }
-    if (formData.phone2 && !isValidPhone(formData.phone2)) {
+    if (fields.includes('phone2') && formData.phone2 && !isValidPhone(formData.phone2)) {
         toast.error('Alternate phone number must be exactly 10 digits');
         return;
     }
-    if (formData.whatsapp_number && !isValidPhone(formData.whatsapp_number)) {
+    if (fields.includes('whatsapp_number') && formData.whatsapp_number && !isValidPhone(formData.whatsapp_number)) {
         toast.error('WhatsApp number must be exactly 10 digits');
         return;
     }
     setSaving(true);
     try {
-        let dataToSave = { ...formData };
+        const dataToSave = {};
+        fields.forEach(f => { dataToSave[f] = formData[f]; });
 
-        // If the full iframe code was pasted, extract the src
-        if (dataToSave.map_url && dataToSave.map_url.includes('<iframe')) {
-            const srcMatch = dataToSave.map_url.match(/src="([^"]+)"/);
-            if (srcMatch && srcMatch[1]) {
-                dataToSave.map_url = srcMatch[1];
-                setFormData(prev => ({ ...prev, map_url: srcMatch[1] }));
+        if (fields.includes('map_url') && dataToSave.map_url) {
+            // If the full iframe code was pasted, extract the src
+            if (dataToSave.map_url.includes('<iframe')) {
+                const srcMatch = dataToSave.map_url.match(/src="([^"]+)"/);
+                if (srcMatch && srcMatch[1]) {
+                    dataToSave.map_url = srcMatch[1];
+                }
             }
-        }
 
-        // Decode HTML entities
-        if (dataToSave.map_url) {
+            // Decode HTML entities
             dataToSave.map_url = dataToSave.map_url
                 .replace(/&#39;/g, "'")
                 .replace(/&amp;/g, '&')
@@ -103,6 +106,10 @@ const ContactUs = () => {
         setSaving(false);
     }
 };
+
+const LOCATION_FIELDS = ['phone', 'phone2', 'whatsapp_number', 'address', 'city', 'state', 'pincode'];
+const MAP_FIELDS = ['map_url'];
+const SOCIAL_FIELDS = ['facebook', 'instagram', 'youtube', 'twitter', 'linkedin'];
 
     const inputStyle = {
         width: '100%',
@@ -359,13 +366,13 @@ const ContactUs = () => {
 
                         <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
                             <button
-                                onClick={handleSave} disabled={saving}
+                                onClick={() => handleSave(LOCATION_FIELDS)} disabled={saving}
                                 style={{ padding: '12px 32px', background: saving ? hexToRgba(tc.primary, 0.5) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: 'flex', alignItems: 'center', gap: '8px' }}
                             >
                                 {saving ? (
                                     <><svg style={{ animation: 'spin 1s linear infinite', width: '16px', height: '16px' }} viewBox="0 0 24 24" fill="none"><circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Saving...</>
                                 ) : (
-                                    <><svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>Save Location</>
+                                    <>Save </>
                                 )}
                             </button>
                         </div>
@@ -398,7 +405,7 @@ const ContactUs = () => {
                                     ))}
                                 </div>
                                 <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
-                                    <button onClick={handleSave} disabled={saving} style={{ padding: '11px 24px', background: saving ? hexToRgba(tc.primary, 0.5) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.25)}` }}>
+                                    <button onClick={() => handleSave(MAP_FIELDS)} disabled={saving} style={{ padding: '11px 24px', background: saving ? hexToRgba(tc.primary, 0.5) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: `0 4px 12px ${hexToRgba(tc.primary, 0.25)}` }}>
                                         {saving ? 'Saving...' : 'Save Map'}
                                     </button>
                                 </div>
@@ -469,7 +476,7 @@ const ContactUs = () => {
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                             <button
-                                onClick={handleSave} disabled={saving}
+                                onClick={() => handleSave(SOCIAL_FIELDS)} disabled={saving}
                                 style={{ padding: '12px 32px', background: saving ? hexToRgba(tc.primary, 0.5) : `linear-gradient(135deg,${tc.primary},${tc.secondary})`, color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', boxShadow: `0 4px 14px ${hexToRgba(tc.primary, 0.3)}`, display: 'flex', alignItems: 'center', gap: '8px' }}
                             >
                                 {saving ? (

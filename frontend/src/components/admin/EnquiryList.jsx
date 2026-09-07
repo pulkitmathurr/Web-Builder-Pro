@@ -44,6 +44,20 @@ const TrashIcon = ({ color = '#ef4444', size = 13 }) => (
     </svg>
 );
 
+const SearchIcon = ({ color = '#94a3b8', size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4.3-4.3" />
+    </svg>
+);
+
+const STATUS_FILTERS = [
+    { key: 'all', label: 'All' },
+    { key: 'new', label: 'New' },
+    { key: 'contacted', label: 'Contacted' },
+    { key: 'closed', label: 'Closed' },
+];
+
 // ── Shared list/inbox UI for both Admission Enquiry and Career Enquiry admin pages —
 // same submission → status → delete lifecycle, only the extra fields shown per row differ. ──
 const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] }) => {
@@ -51,6 +65,8 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
     const [loading, setLoading] = useState(true);
     const [enquiries, setEnquiries] = useState([]);
     const [expanded, setExpanded] = useState(null);
+    const [search, setSearch] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     useEffect(() => { fetchEnquiries(); }, [type]);
 
@@ -89,6 +105,12 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
 
     const newCount = enquiries.filter(e => e.status === 'new').length;
 
+    const filteredEnquiries = enquiries.filter(en => {
+        const matchesStatus = statusFilter === 'all' || en.status === statusFilter;
+        const matchesSearch = !search.trim() || (en.name || '').toLowerCase().includes(search.trim().toLowerCase());
+        return matchesStatus && matchesSearch;
+    });
+
     if (loading) return (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
             <div style={{ width: '40px', height: '40px', border: '3px solid #f0c4c4', borderTop: `3px solid ${tc.primary}`, borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
@@ -120,6 +142,8 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
                 .enquiry-link-pill { transition: transform 0.18s ease, box-shadow 0.18s ease; }
                 .enquiry-link-pill:hover { transform: translateY(-1px); box-shadow: 0 4px 12px ${hexToRgba(tc.primary, 0.35)}; }
                 .enquiry-new-pulse { animation: pulseDot 2s infinite; }
+                .enquiry-search-input:focus { border-color: ${tc.primary} !important; background: #ffffff !important; box-shadow: 0 0 0 3px ${hexToRgba(tc.primary, 0.12)}; }
+                .enquiry-status-filter:hover, .enquiry-status-filter:focus { border-color: ${tc.primary} !important; }
                 @media (max-width: 640px) {
                     .enquiry-hero { padding: 1.1rem 1.15rem !important; border-radius: 16px !important; margin-bottom: 1rem !important; }
                     .enquiry-hero-eyebrow { font-size: 9.5px !important; margin-bottom: 6px !important; }
@@ -161,20 +185,61 @@ const EnquiryList = ({ type, breadcrumb, title, description, extraFields = [] })
                 </div>
 
                 <div className="enquiry-section">
+                    {enquiries.length > 0 && (
+                        <div className="enquiry-toolbar" style={{
+                            display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'flex-end',
+                            marginBottom: '1rem',
+                        }}>
+                            <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px', maxWidth: '320px' }}>
+                                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', display: 'flex', pointerEvents: 'none' }}>
+                                    <SearchIcon />
+                                </span>
+                                <input
+                                    type="text" value={search} onChange={e => setSearch(e.target.value)}
+                                    placeholder="Search by name"
+                                    className="enquiry-search-input"
+                                    style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px 9px 34px', fontSize: '13px', color: '#0f172a', border: '1.5px solid #e2e8f0', borderRadius: '8px', outline: 'none', background: '#f8fafc', transition: 'border-color 0.15s, background 0.15s, box-shadow 0.15s' }}
+                                />
+                            </div>
+                            <div style={{ position: 'relative', flexShrink: 0 }}>
+                                <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+                                    className="enquiry-status-filter"
+                                    style={{
+                                        appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
+                                        padding: '9px 32px 9px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer',
+                                        border: '1.5px solid #e2e8f0', background: '#f8fafc', color: '#334155', transition: 'border-color 0.15s',
+                                    }}>
+                                    {STATUS_FILTERS.map(f => {
+                                        const count = f.key === 'all' ? enquiries.length : enquiries.filter(e => e.status === f.key).length;
+                                        return (
+                                            <option key={f.key} value={f.key}>{f.label} ({count})</option>
+                                        );
+                                    })}
+                                </select>
+                                <span style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%) rotate(90deg)', pointerEvents: 'none', display: 'flex', color: '#94a3b8' }}>
+                                    <ChevronIcon size={11} />
+                                </span>
+                            </div>
+                        </div>
+                    )}
                     {enquiries.length === 0 ? (
                         <div style={{ background: '#ffffff', border: '1.5px dashed #cbd5e1', borderRadius: '10px', padding: '3.5rem 2rem', textAlign: 'center' }}>
                             <p style={{ fontSize: '13.5px', color: '#94a3b8' }}>No enquiries yet. Submissions from the public site will show up here.</p>
                         </div>
+                    ) : filteredEnquiries.length === 0 ? (
+                        <div style={{ background: '#ffffff', border: '1.5px dashed #cbd5e1', borderRadius: '10px', padding: '3.5rem 2rem', textAlign: 'center' }}>
+                            <p style={{ fontSize: '13.5px', color: '#94a3b8' }}>No enquiries match your search/filter.</p>
+                        </div>
                     ) : (
                         <div style={{ background: '#ffffff', border: '1.5px solid #cbd5e1', borderRadius: '10px', boxShadow: '0 4px 16px rgba(15,23,42,0.06)', overflow: 'hidden' }}>
-                            {enquiries.map((en, i) => {
+                            {filteredEnquiries.map((en, i) => {
                                 const sc = STATUS_COLORS[en.status] || STATUS_COLORS.new;
                                 const isOpen = expanded === en.uuid;
                                 const accentColor = en.status === 'new' ? tc.primary : sc.dot;
                                 return (
                                     <div key={en.uuid} className="enquiry-row"
                                         style={{
-                                            borderBottom: i < enquiries.length - 1 ? '1px solid #eef1f6' : 'none',
+                                            borderBottom: i < filteredEnquiries.length - 1 ? '1px solid #eef1f6' : 'none',
                                             borderLeft: `3px solid ${isOpen ? accentColor : 'transparent'}`,
                                             transition: 'background 0.15s, border-left-color 0.2s ease',
                                             animationDelay: `${Math.min(i * 0.03, 0.25)}s`,
