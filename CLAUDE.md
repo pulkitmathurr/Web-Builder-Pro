@@ -455,10 +455,26 @@ Cloudinary uploads are segregated per-school (`backend/src/config/cloudinary.js`
 params are now `(req) => ...school-${req.user.schoolId}` instead of static strings) so
 Cloudinary's own usage stats could be cross-checked against the ledger later if needed.
 `GET /api/school/storage-usage` feeds `components/admin/StorageUsageBar.jsx` (dropped into the
-School Admin `Dashboard.jsx`) — overall used/limit bar plus a per-`module_key` breakdown.
-**Known gap**: there's no reclaim/decrement when content is edited/replaced — the ledger only
-grows, since no code path anywhere deletes the old Cloudinary asset on replace (pre-existing gap,
-not introduced by this feature). A school with no `plan_id` is treated as storage-unlimited by
+School Admin `Dashboard.jsx`) — overall used/limit bar plus a per-`module_key` breakdown, and a
+"Recalculate" button (`POST /api/school/storage-usage/recalculate`).
+**Storage reclaim** (`storage.utils.js`): after every `saveModuleContentService`,
+`reconcileModuleMedia` diffs that module's `tbl_media_usage` rows against the just-saved content
+JSON — any row whose `file_url` no longer appears is an orphan: its Cloudinary asset is deleted
+(best-effort), its ledger row removed, and `storage_used_bytes` recomputed as
+`SUM(tbl_media_usage.file_size_bytes)` (authoritative — also heals drift). `reconcileSchoolAssetMedia` does the equivalent for branding uploads (the
+`module_key IS NULL` bucket) — it diffs the `image`/`video` ledger rows against the current
+`logo_url` / `welcome_banner_url` / `footer_bg_url` columns. The **Home hero video** is
+special-cased: its ledger row is tagged `module_key = 'home'` (so it shows under "Home" in the
+usage breakdown, not "General"), lives on `tbl_schools.hero_video_url`, and is reconciled by
+`reconcileHeroVideoMedia` (which also re-tags any legacy `module_key IS NULL` hero-video row).
+`reconcileModuleMedia` skips `resource_type = 'video'` rows for the `home` module so it never
+touches the hero video. All three run at the end of every `updateSchoolProfileService` (which
+every logo/banner/footer/hero-video upload *and* removal routes through) and again in
+`recalculateSchoolStorage` (the dashboard button). **Still not reclaimed**: `pdf` rows in the
+`module_key IS NULL` bucket (prospectus, career-application resumes) — left alone since resumes
+are referenced from `tbl_enquiries`; also, an asset uploaded but never saved into content
+lingers until that module's next save. A school with
+no `plan_id` is treated as storage-unlimited by
 `checkStorageLimit` — in practice this can't happen for real uploads since a school can't reach
 any content page without an active plan (see the `AdminLayout` gate above); it only matters for
 the handful of pre-existing schools created before this feature shipped (see backlog below).
@@ -519,8 +535,10 @@ routed into a forced checkout. See Outstanding backlog.
   - Run "Assign Plan" against every pre-existing school once, before real admins hit the new
     `hasActivePlan` login gate (see Backfilling note above).
   - Not built yet: plan expiry/renewal enforcement (`plan_end_date` is stored but nothing
-    blocks access once it lapses), storage reclaim on content replace/delete, and a rejection
-    email (only the signup-received and approval emails are wired).
+    blocks access once it lapses) and a rejection email (only the signup-received and approval
+    emails are wired). Storage reclaim is now done for module content *and* school assets
+    (logo / hero video / welcome banner / footer bg) — see "Storage reclaim" under Architecture;
+    still missing only for `pdf` school assets (prospectus, career resumes).
 
 ## Working style / communication notes
 
