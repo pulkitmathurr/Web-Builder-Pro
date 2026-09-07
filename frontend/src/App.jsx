@@ -20,6 +20,7 @@ import Plans from './pages/superAdmin/Plans';
 // Admin
 import AdminDashboard from './pages/admin/Dashboard';
 import ModuleSelector from './pages/admin/ModuleSelector';
+import AcceptTerms from './pages/admin/AcceptTerms';
 import Billing from './pages/admin/Billing';
 import AdminSettings from './pages/admin/Settings';
 import ModulePage from './pages/admin/ModulePage';
@@ -192,6 +193,7 @@ const RootRouter = () => {
             }>
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="accept-terms" element={<AcceptTerms />} />
                 <Route path="modules/select" element={<ModuleSelector />} />
                 <Route path="billing" element={<Billing />} />
                 <Route path="settings" element={<AdminSettings />} />
