@@ -6,11 +6,14 @@ import { createBillingOrderApi, verifyBillingPaymentApi } from '../../api/billin
 import useAuthStore from '../../store/authStore';
 import useSchoolStore from '../../store/schoolStore';
 
-const hexToRgba = (hex, alpha) => {
-    const h = hex.replace('#', '');
-    const n = parseInt(h, 16);
-    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
-};
+// ── Landing-page palette (frontend/src/pages/LandingPage.jsx) — this page is
+// deliberately themed to match the public marketing site, not the school's
+// admin theme colours. ──
+const BLUE = '#4169E1';
+const BLUE_DARK = '#2541A8';
+const BLUE_LIGHT = '#EDF1FD';
+const TEXT_DARK = '#20242C';
+const TEXT_MUTED = '#5B6270';
 
 const tenureLabel = (y) => `${y} Year${y > 1 ? 's' : ''}`;
 const storageLabel = (mb) =>
@@ -28,14 +31,10 @@ const loadRazorpayScript = () => new Promise((resolve) => {
 const Billing = () => {
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const { school, tc } = useSchoolStore();
+    const { school } = useSchoolStore();
     const [plans, setPlans] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedId, setSelectedId] = useState(null);
-    const [paying, setPaying] = useState(false);
-
-    const primary = tc?.primary || '#4169E1';
-    const secondary = tc?.secondary || '#2541A8';
+    const [payingId, setPayingId] = useState(null);
 
     useEffect(() => {
         getActivePlansApi()
@@ -44,20 +43,23 @@ const Billing = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    const selectedPlan = plans.find((p) => p.id === selectedId);
+    // The middle plan (by display order) is flagged "Recommended". Reorder via
+    // the Super Admin Plans page (sort_order) to move the badge. Suppressed when
+    // there's only one plan.
+    const recommendedIndex = plans.length > 1 ? Math.floor(plans.length / 2) : -1;
 
-    const handlePay = async () => {
-        if (!selectedPlan) return;
-        setPaying(true);
+    const handlePay = async (plan) => {
+        if (payingId) return;
+        setPayingId(plan.id);
         try {
             const scriptOk = await loadRazorpayScript();
             if (!scriptOk) {
                 toast.error('Failed to load payment gateway — check your connection');
-                setPaying(false);
+                setPayingId(null);
                 return;
             }
 
-            const orderRes = await createBillingOrderApi(selectedPlan.id);
+            const orderRes = await createBillingOrderApi(plan.id);
             const order = orderRes.data;
 
             const rzp = new window.Razorpay({
@@ -66,9 +68,9 @@ const Billing = () => {
                 currency: order.currency,
                 order_id: order.orderId,
                 name: 'Web Builder Pro',
-                description: `${selectedPlan.name} · ${tenureLabel(selectedPlan.tenure_years)} · ${storageLabel(selectedPlan.storage_mb)}`,
+                description: `${plan.name} · ${tenureLabel(plan.tenure_years)} · ${storageLabel(plan.storage_mb)}`,
                 prefill: { name: user?.name, email: user?.email },
-                theme: { color: primary },
+                theme: { color: BLUE },
                 handler: async (response) => {
                     try {
                         await verifyBillingPaymentApi(response);
@@ -78,110 +80,240 @@ const Billing = () => {
                     } catch (e) {
                         toast.error(e.response?.data?.message || 'Payment verification failed');
                     } finally {
-                        setPaying(false);
+                        setPayingId(null);
                     }
                 },
-                modal: { ondismiss: () => setPaying(false) },
+                modal: { ondismiss: () => setPayingId(null) },
             });
             rzp.on('payment.failed', () => {
                 toast.error('Payment failed — please try again');
-                setPaying(false);
+                setPayingId(null);
             });
             rzp.open();
         } catch (e) {
             toast.error(e.response?.data?.message || 'Failed to start payment');
-            setPaying(false);
+            setPayingId(null);
         }
     };
 
     if (loading) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh' }}>
-                <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: `3px solid ${primary}`, borderRadius: '50%', animation: 'billingSpin 1s linear infinite' }}></div>
+                <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTop: `3px solid ${BLUE}`, borderRadius: '50%', animation: 'billingSpin 1s linear infinite' }}></div>
                 <style>{`@keyframes billingSpin { to { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
 
     return (
-        <div style={{ fontFamily: 'system-ui, sans-serif', maxWidth: '960px', margin: '0 auto' }}>
-            {/* Hero header — standard admin page anatomy */}
-            <div style={{
-                background: 'linear-gradient(135deg, #2d0a1a, #4a1030, #2d0520)',
-                borderRadius: '20px', padding: '2rem 2rem 1.75rem', marginBottom: '1.75rem', color: '#fff',
-            }}>
-                <h1 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '6px', letterSpacing: '-0.4px' }}>Choose your plan</h1>
-                <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>
-                    {school?.name ? `${school.name}'s ` : 'Your '}account is approved — pick a plan to activate your website.
-                </p>
-            </div>
+        <>
+            <link
+                href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
+                rel="stylesheet"
+            />
+            <style>{`
+                @keyframes billingSpin { to { transform: rotate(360deg); } }
+                @keyframes billPopIn { from { opacity: 0; transform: translateY(22px) scale(0.92); } to { opacity: 1; transform: translateY(0) scale(1); } }
+                @keyframes billShimmer { 0% { background-position: 200% center; } 100% { background-position: -200% center; } }
+                @keyframes billOrbDrift { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-22px,16px) scale(1.08); } }
 
-            {plans.length === 0 ? (
-                <div style={{ background: '#fff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '3rem', textAlign: 'center', color: '#64748b', fontSize: '13.5px' }}>
-                    No plans are available right now — please contact Web Builder Pro.
+                .bill-shimmer {
+                    background: linear-gradient(90deg, #ffffff, ${BLUE_LIGHT}, #ffffff);
+                    background-size: 200% auto; -webkit-background-clip: text; background-clip: text;
+                    -webkit-text-fill-color: transparent; animation: billShimmer 8s linear infinite;
+                }
+
+                /* ── 3D plan card — a resting isometric tilt that flattens and lifts on hover,
+                     mirroring .lp-3d-card on the landing page. ── */
+                .bill-3d-card {
+                    transform: perspective(1100px) rotateX(4deg);
+                    transform-style: preserve-3d;
+                    transition: transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.45s ease, border-color 0.3s ease;
+                    animation: billPopIn 0.55s cubic-bezier(0.34,1.56,0.64,1) both;
+                }
+                .bill-3d-card:hover {
+                    transform: perspective(1100px) rotateX(0deg) translateY(-12px);
+                    box-shadow: 0 34px 64px rgba(37,65,168,0.28);
+                    border-color: ${BLUE}66;
+                }
+                .bill-3d-card--featured { transform: perspective(1100px) rotateX(4deg) translateY(-10px); }
+                .bill-3d-card--featured:hover { transform: perspective(1100px) rotateX(0deg) translateY(-20px); }
+
+                .bill-3d-tile {
+                    transform: perspective(700px) rotateX(16deg) rotateY(-18deg);
+                    transition: transform 0.5s cubic-bezier(0.16,1,0.3,1);
+                }
+                .bill-3d-card:hover .bill-3d-tile { transform: perspective(700px) rotateX(0deg) rotateY(0deg) scale(1.08); }
+
+                .bill-cta { position: relative; overflow: hidden; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, border-color 0.18s ease, color 0.18s ease; }
+                .bill-cta::after {
+                    content: ''; position: absolute; top: 0; left: -60%; width: 40%; height: 100%;
+                    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.45), transparent);
+                    transform: skewX(-20deg); transition: left 0.6s ease; pointer-events: none;
+                }
+                .bill-cta:not(:disabled):hover { transform: translateY(-2px); }
+                .bill-cta:not(:disabled):hover::after { left: 130%; }
+                .bill-cta:not(:disabled):active { transform: scale(0.98); }
+                .bill-cta-outline:not(:disabled):hover { background: ${BLUE} !important; color: #fff !important; border-color: ${BLUE} !important; }
+
+                @media (max-width: 760px) {
+                    .bill-3d-card, .bill-3d-card--featured,
+                    .bill-3d-card:hover, .bill-3d-card--featured:hover { transform: none !important; }
+                }
+            `}</style>
+
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", color: TEXT_DARK, maxWidth: '1060px', margin: '0 auto' }}>
+
+                {/* Hero — landing-page blue gradient with dot-grid + glow orb */}
+                <div style={{
+                    position: 'relative', overflow: 'hidden',
+                    background: `linear-gradient(160deg, ${BLUE_DARK} 0%, ${BLUE} 55%, ${BLUE_DARK} 100%)`,
+                    borderRadius: '22px', padding: '2.4rem 2rem 2.1rem', marginBottom: '2.75rem', color: '#fff',
+                }}>
+                    <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.10) 1px, transparent 1px)', backgroundSize: '24px 24px', pointerEvents: 'none' }} />
+                    <div style={{ position: 'absolute', width: '340px', height: '340px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.16) 0%, transparent 70%)', top: '-150px', right: '-90px', animation: 'billOrbDrift 11s ease-in-out infinite', pointerEvents: 'none' }} />
+                    <div style={{ position: 'relative' }}>
+                        <span style={{ display: 'inline-block', fontSize: '10.5px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', padding: '5px 12px', background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.28)', borderRadius: '999px', marginBottom: '14px' }}>
+                            Activate your website
+                        </span>
+                        <h1 className="bill-shimmer" style={{ fontFamily: "'Playfair Display', serif", fontSize: 'clamp(26px, 3.4vw, 36px)', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '8px' }}>
+                            Choose your plan
+                        </h1>
+                        <p style={{ fontSize: '13.5px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.65, maxWidth: '520px' }}>
+                            {school?.name ? `${school.name}'s ` : 'Your '}account is approved — pick a plan to take your school website live.
+                        </p>
+                    </div>
                 </div>
-            ) : (
-                <>
-                    {/* Plan cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '1.75rem' }}>
-                        {plans.map((plan) => {
-                            const active = plan.id === selectedId;
-                            return (
-                                <button key={plan.id} onClick={() => setSelectedId(plan.id)}
-                                    style={{
-                                        textAlign: 'left', padding: '22px', borderRadius: '16px', cursor: 'pointer',
-                                        border: active ? `2px solid ${primary}` : '1px solid #eef1f6',
-                                        background: active ? hexToRgba(primary, 0.05) : '#fff',
-                                        boxShadow: active ? `0 8px 24px ${hexToRgba(primary, 0.18)}` : '0 2px 10px rgba(15,23,42,0.03)',
-                                        display: 'flex', flexDirection: 'column', transition: 'all 0.15s',
-                                    }}>
-                                    <p style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginBottom: '3px' }}>{plan.name}</p>
-                                    <p style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '12px' }}>
-                                        {tenureLabel(plan.tenure_years)} · {storageLabel(plan.storage_mb)} storage
-                                    </p>
-                                    <p style={{ fontSize: '24px', fontWeight: 800, color: primary, marginBottom: '12px' }}>
-                                        ₹{Number(plan.price).toLocaleString('en-IN')}
-                                        <span style={{ fontSize: '12px', fontWeight: 500, color: '#94a3b8' }}> / {plan.tenure_years}yr</span>
-                                    </p>
-                                    {plan.description && (
-                                        <p style={{ fontSize: '12px', color: '#64748b', marginBottom: '10px', lineHeight: 1.5 }}>{plan.description}</p>
-                                    )}
-                                    {plan.features?.length > 0 && (
-                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                            {plan.features.map((f, i) => (
-                                                <li key={i} style={{ fontSize: '12px', color: '#475569', display: 'flex', gap: '7px', alignItems: 'flex-start' }}>
-                                                    <svg width="13" height="13" fill="none" stroke="#22c55e" strokeWidth="3" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: '2px' }}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+
+                {plans.length === 0 ? (
+                    <div style={{ background: '#fff', border: '1px solid #eef1f6', borderRadius: '18px', padding: '3rem', textAlign: 'center', color: TEXT_MUTED, fontSize: '13.5px' }}>
+                        No plans are available right now — please contact Web Builder Pro.
+                    </div>
+                ) : (
+                    <>
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(258px, 1fr))',
+                            gap: '22px', alignItems: 'start',
+                            marginBottom: '1.75rem', padding: '18px 4px 8px',
+                        }}>
+                            {plans.map((plan, idx) => {
+                                const featured = idx === recommendedIndex;
+                                const busy = payingId === plan.id;
+                                const disabled = payingId != null;
+                                return (
+                                    <div key={plan.id}
+                                        className={`bill-3d-card${featured ? ' bill-3d-card--featured' : ''}`}
+                                        style={{
+                                            position: 'relative', background: '#fff',
+                                            borderRadius: '20px',
+                                            padding: featured ? '32px 24px 26px' : '26px 24px',
+                                            border: featured ? `2px solid ${BLUE}` : '1px solid #eef1f6',
+                                            boxShadow: featured
+                                                ? `0 26px 58px ${BLUE}33`
+                                                : '0 4px 18px rgba(15,23,42,0.05)',
+                                            display: 'flex', flexDirection: 'column',
+                                            animationDelay: `${idx * 0.07}s`,
+                                        }}>
+
+                                        {featured && (
+                                            <div style={{
+                                                position: 'absolute', top: '-13px', left: '50%', transform: 'translateX(-50%)',
+                                                background: `linear-gradient(135deg, ${BLUE}, ${BLUE_DARK})`,
+                                                color: '#fff', fontSize: '10px', fontWeight: 800, letterSpacing: '0.1em',
+                                                textTransform: 'uppercase', padding: '6px 14px', borderRadius: '999px',
+                                                whiteSpace: 'nowrap', boxShadow: `0 8px 18px ${BLUE}55`,
+                                            }}>
+                                                ★ Recommended
+                                            </div>
+                                        )}
+
+                                        {/* 3D beveled monogram tile */}
+                                        <div className="bill-3d-tile" style={{
+                                            width: '46px', height: '46px', borderRadius: '13px',
+                                            background: `linear-gradient(145deg, ${BLUE}, ${BLUE_DARK})`,
+                                            boxShadow: `inset 0 2px 2px rgba(255,255,255,0.35), inset 0 -3px 6px rgba(0,0,0,0.28), 0 12px 22px ${BLUE}50`,
+                                            color: '#fff', fontWeight: 800, fontSize: '19px', fontFamily: "'Playfair Display', serif",
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px',
+                                        }}>
+                                            {plan.name?.trim()?.[0]?.toUpperCase() || 'P'}
+                                        </div>
+
+                                        <p style={{ fontSize: '16.5px', fontWeight: 700, color: TEXT_DARK, marginBottom: '2px' }}>{plan.name}</p>
+                                        <p style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '16px' }}>
+                                            {tenureLabel(plan.tenure_years)} · {storageLabel(plan.storage_mb)} storage
+                                        </p>
+
+                                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '5px', marginBottom: '3px' }}>
+                                            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: '34px', fontWeight: 800, color: TEXT_DARK, letterSpacing: '-0.02em' }}>
+                                                ₹{Number(plan.price).toLocaleString('en-IN')}
+                                            </span>
+                                            <span style={{ fontSize: '12.5px', fontWeight: 500, color: '#94a3b8' }}>
+                                                / {plan.tenure_years} yr
+                                            </span>
+                                        </div>
+                                        <p style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '18px' }}>
+                                            One-time · {tenureLabel(plan.tenure_years)} of hosting
+                                        </p>
+
+                                        <button
+                                            onClick={() => handlePay(plan)}
+                                            disabled={disabled}
+                                            className={`bill-cta${featured ? '' : ' bill-cta-outline'}`}
+                                            style={{
+                                                width: '100%', padding: '13px', borderRadius: '13px',
+                                                fontSize: '13.5px', fontWeight: 700, marginBottom: '20px',
+                                                fontFamily: "'Inter', system-ui, sans-serif",
+                                                cursor: disabled ? 'not-allowed' : 'pointer',
+                                                border: featured ? 'none' : `1.5px solid ${BLUE}66`,
+                                                background: featured
+                                                    ? (busy ? '#94a3b8' : `linear-gradient(135deg, ${BLUE}, ${BLUE_DARK})`)
+                                                    : (busy ? '#f1f5f9' : '#fff'),
+                                                color: featured ? '#fff' : (busy ? '#94a3b8' : BLUE),
+                                                boxShadow: featured && !busy ? `0 14px 28px ${BLUE}44` : 'none',
+                                                opacity: disabled && !busy ? 0.55 : 1,
+                                            }}>
+                                            {busy ? 'Processing…' : 'Get this plan'}
+                                        </button>
+
+                                        <div style={{ height: '1px', background: '#eef1f6', marginBottom: '16px' }} />
+
+                                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            {[
+                                                `${storageLabel(plan.storage_mb)} media storage`,
+                                                'All website modules included',
+                                                ...(plan.features || []),
+                                            ].map((f, i) => (
+                                                <li key={i} style={{ fontSize: '12.5px', color: '#475569', display: 'flex', gap: '9px', alignItems: 'flex-start', lineHeight: 1.45 }}>
+                                                    <span style={{
+                                                        flexShrink: 0, width: '17px', height: '17px', borderRadius: '50%',
+                                                        background: BLUE_LIGHT, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '1px',
+                                                    }}>
+                                                        <svg width="9" height="9" fill="none" stroke={BLUE} strokeWidth="3.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                                                    </span>
                                                     {f}
                                                 </li>
                                             ))}
                                         </ul>
-                                    )}
-                                </button>
-                            );
-                        })}
-                    </div>
 
-                    {/* Summary + Pay */}
-                    {selectedPlan && (
-                        <div style={{ background: '#fff', border: '0.5px solid #f1f5f9', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 2px 10px rgba(15,23,42,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-                            <div>
-                                <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '4px' }}>You're purchasing</p>
-                                <p style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>
-                                    {selectedPlan.name} — {tenureLabel(selectedPlan.tenure_years)} · {storageLabel(selectedPlan.storage_mb)}
-                                </p>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                                <p style={{ fontSize: '22px', fontWeight: 800, color: primary, marginBottom: '8px' }}>₹{Number(selectedPlan.price).toLocaleString('en-IN')}</p>
-                                <button onClick={handlePay} disabled={paying}
-                                    style={{ padding: '12px 26px', background: paying ? '#94a3b8' : `linear-gradient(135deg, ${primary}, ${secondary})`, color: '#fff', border: 'none', borderRadius: '10px', fontSize: '13.5px', fontWeight: 700, cursor: paying ? 'not-allowed' : 'pointer' }}>
-                                    {paying ? 'Processing...' : 'Pay with Razorpay'}
-                                </button>
-                            </div>
+                                        {plan.description && (
+                                            <p style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '16px', lineHeight: 1.5, borderTop: '1px dashed #eef1f6', paddingTop: '12px' }}>
+                                                {plan.description}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
-                    )}
-                </>
-            )}
-        </div>
+
+                        <p style={{ textAlign: 'center', fontSize: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2" /><path d="M8 11V7a4 4 0 018 0v4" /></svg>
+                            Secure checkout powered by Razorpay · you'll get an email receipt
+                        </p>
+                    </>
+                )}
+            </div>
+        </>
     );
 };
 
