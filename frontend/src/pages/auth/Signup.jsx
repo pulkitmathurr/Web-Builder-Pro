@@ -83,15 +83,23 @@ const Signup = () => {
         .signup-swirl-layer { animation: signupSwirlSpin 34s linear infinite; }
         .signup-swirl-layer-rev { animation: signupSwirlSpin 26s linear infinite reverse; }
 
+        /* Mobile-only logo shown inside the form panel once the image panel is dropped. */
+        .signup-mobile-logo { display: none; }
+
+        /* ── Mobile: drop the photo panel entirely and show a clean single-column
+             form (desktop split-card layout above 860px is untouched). ── */
         @media (max-width: 860px) {
           .signup-outer { padding: 0 !important; align-items: stretch !important; }
-          .signup-card { border-radius: 0 !important; min-height: 100vh !important; grid-template-columns: 1fr !important; }
-          .signup-left-panel { border-radius: 0 !important; margin: 0 !important; inset: auto !important; position: relative !important; width: 100% !important; height: clamp(200px, 30vh, 280px) !important; padding: 1.75rem !important; }
-          .signup-right-panel { border-radius: 0 !important; padding: 2.25rem 1.5rem 2.5rem !important; }
-          .signup-left-heading { font-size: clamp(24px, 6vw, 32px) !important; }
+          .signup-card { border-radius: 0 !important; min-height: 100vh !important; grid-template-columns: 1fr !important; box-shadow: none !important; }
+          .signup-left-panel { display: none !important; }
+          .signup-right-panel { border-radius: 0 !important; padding: 2.5rem 1.5rem 3rem !important; justify-content: flex-start !important; flex: 1 !important; }
+          .signup-mobile-logo { display: block !important; }
+          /* 16px keeps iOS Safari from zooming in on focus */
+          .signup-input { font-size: 16px !important; }
         }
-        @media (max-width: 420px) {
-          .signup-right-panel { padding-inline: 1.15rem !important; }
+        @media (max-width: 520px) {
+          .signup-field-row { grid-template-columns: 1fr !important; }
+          .signup-right-panel { padding-inline: 1.2rem !important; }
         }
       `}</style>
 
@@ -126,12 +134,12 @@ const Signup = () => {
               <h1 className="signup-left-heading signup-anim-2" style={{ fontFamily: "'Playfair Display', serif", color: "#ffffff", fontSize: "clamp(30px, 3.6vw, 42px)", fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.01em", marginBottom: "14px" }}>
                 Bring Your<br />School Online
               </h1>
-              <p className="signup-anim-3" style={{ color: "rgba(255,255,255,0.68)", fontSize: "15px", lineHeight: 1.6, maxWidth: "300px" }}>
+              <p className="signup-anim-3 signup-left-desc" style={{ color: "rgba(255,255,255,0.68)", fontSize: "15px", lineHeight: 1.6, maxWidth: "300px" }}>
                 Sign up and get a public website, admin panel, and dashboard — approved and ready to launch.
               </p>
             </div>
 
-            <p className="signup-anim-4" style={{ position: "relative", zIndex: 1, color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>
+            <p className="signup-anim-4 signup-left-copy" style={{ position: "relative", zIndex: 1, color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>
               © 2026 Web Builder Pro
             </p>
           </div>
@@ -141,6 +149,8 @@ const Signup = () => {
             position: "relative", zIndex: 1, background: "#ffffff",
             padding: "2.75rem 3rem 2.5rem", display: "flex", flexDirection: "column", justifyContent: "center",
           }}>
+            <img src={logo} alt="Web Builder Pro" className="signup-mobile-logo signup-anim-1"
+              style={{ height: "52px", objectFit: "contain", margin: "0 auto 1.75rem", display: "none" }} />
             {submitted ? (
               <div style={{ textAlign: "center", padding: "1.5rem 0" }}>
                 <div style={{ position: "relative", width: "72px", height: "72px", margin: "0 auto 1.25rem" }}>
@@ -169,11 +179,11 @@ const Signup = () => {
                 </p>
 
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                  <input className="signup-anim-2 signup-input" type="text" name="schoolName" value={formData.schoolName} onChange={handleChange} placeholder="School name" required style={inputStyle} />
-                  <input className="signup-anim-3 signup-input" type="text" name="adminName" value={formData.adminName} onChange={handleChange} placeholder="Your full name" required style={inputStyle} />
-                  <div className="signup-anim-4" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                    <input className="signup-input" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email address" required style={inputStyle} />
-                    <input className="signup-input" type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone number" style={inputStyle} />
+                  <input className="signup-anim-2 signup-input" type="text" name="schoolName" value={formData.schoolName} onChange={handleChange} placeholder="Enter school name" required style={inputStyle} />
+                  <input className="signup-anim-3 signup-input" type="text" name="adminName" value={formData.adminName} onChange={handleChange} placeholder="Enter your full name" required style={inputStyle} />
+                  <div className="signup-anim-4 signup-field-row" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <input className="signup-input" type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Enter email address" required style={inputStyle} />
+                    <input className="signup-input" type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Enter phone number" style={inputStyle} />
                   </div>
                   <input className="signup-anim-5 signup-input" type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Create a password" required minLength={6} style={inputStyle} />
 

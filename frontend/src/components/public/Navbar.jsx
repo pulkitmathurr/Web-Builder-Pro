@@ -190,6 +190,10 @@ const Navbar = forwardRef(({ school, slug, tc, scrollY = 0, activeKey, forceSoli
                 @media (max-width: 960px) {
                     .navbar-desktop-items { display: none !important; }
                     .navbar-badges { display: none !important; }
+                    /* .navbar-right is now empty (its children are hidden above) — drop it
+                       so justify-content:space-between pushes the hamburger hard to the
+                       right edge instead of leaving it floating mid-gap. */
+                    .navbar-right { display: none !important; }
                     .navbar-hamburger { display: flex !important; }
                 }
                 @media (max-width: 1280px) {
