@@ -36,6 +36,14 @@ const useSchoolStore = create((set) => ({
             bc: getBaseColors(base_theme),
         }));
     },
+
+    // Keeps the sidebar's school logo in sync after a Settings -> Logo upload /
+    // remove, without waiting for a full page reload to re-run fetchSchool().
+    setLogo: (logo_url) => {
+        set((state) => ({
+            school: state.school ? { ...state.school, logo_url: logo_url || null } : state.school,
+        }));
+    },
 }));
 
 export default useSchoolStore;

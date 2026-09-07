@@ -26,7 +26,7 @@ const hexToRgba = (hex, alpha) => {
 };
 
 const AdminSettings = () => {
-    const { tc, setTheme: setStoreTheme, setBaseTheme: setStoreBaseTheme } = useSchoolStore();
+    const { tc, setTheme: setStoreTheme, setBaseTheme: setStoreBaseTheme, setLogo: setStoreLogo } = useSchoolStore();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState('profile');
@@ -232,7 +232,7 @@ const AdminSettings = () => {
             setProspectusFile(null);
             toast.success('Prospectus uploaded!');
         } catch (e) {
-            toast.error('Failed to upload prospectus');
+            toast.error(e?.response?.data?.message || 'Failed to upload prospectus');
         } finally {
             setUploadingProspectus(false);
         }
@@ -312,10 +312,11 @@ const AdminSettings = () => {
             formData.append('schoolLogo', logoFile);
             const res = await uploadSchoolLogoApi(formData);
             setSettingsData(prev => ({ ...prev, logo_url: res.data.logo_url }));
+            setStoreLogo(res.data.logo_url); // reflect in the sidebar immediately
             toast.success('Logo uploaded successfully!');
             setLogoFile(null);
         } catch (e) {
-            toast.error('Failed to upload logo');
+            toast.error(e?.response?.data?.message || 'Failed to upload logo');
         } finally {
             setUploadingLogo(false);
         }
@@ -326,6 +327,7 @@ const AdminSettings = () => {
         try {
             await updateSchoolProfileApi({ logo_url: null });
             setSettingsData(prev => ({ ...prev, logo_url: '' }));
+            setStoreLogo(null); // clear it from the sidebar immediately
             setLogoFile(null);
             setLogoPreview(null);
             toast.success('Logo removed');
@@ -360,7 +362,7 @@ const AdminSettings = () => {
             toast.success('Welcome banner uploaded successfully!');
             setBannerFile(null);
         } catch (e) {
-            toast.error('Failed to upload banner');
+            toast.error(e?.response?.data?.message || 'Failed to upload banner');
         } finally {
             setUploadingBanner(false);
         }
@@ -435,7 +437,7 @@ const AdminSettings = () => {
             toast.success('Footer background uploaded successfully!');
             setFooterBgFile(null);
         } catch (e) {
-            toast.error('Failed to upload footer background');
+            toast.error(e?.response?.data?.message || 'Failed to upload footer background');
         } finally {
             setUploadingFooterBg(false);
         }
@@ -507,7 +509,7 @@ const AdminSettings = () => {
             const res = await uploadContentImageApi(file);
             updateBadge(id, 'url', res.data.url);
         } catch (e) {
-            toast.error('Failed to upload badge image');
+            toast.error(e?.response?.data?.message || 'Failed to upload badge image');
         } finally {
             setUploadingBadge(null);
         }
