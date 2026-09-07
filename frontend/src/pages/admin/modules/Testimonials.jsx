@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi } from '../../../api/content.api';
 import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
+import ScrollTabs from '../../../components/admin/ScrollTabs';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
@@ -212,7 +213,7 @@ const Testimonials = () => {
                     </div>
 
                     {/* Text / Video tabs */}
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <ScrollTabs colors={tc}>
                         {TABS.map(t => (
                             <button key={t.key} type="button" className="test-tab-btn" onClick={() => setActiveTab(t.key)}
                                 style={{ padding: '10px 20px', borderRadius: '10px', border: activeTab === t.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === t.key ? tc.light : '#ffffff', color: activeTab === t.key ? tc.primary : '#64748b', fontWeight: activeTab === t.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', boxShadow: activeTab === t.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none' }}>
@@ -220,7 +221,7 @@ const Testimonials = () => {
                                 {t.label}
                             </button>
                         ))}
-                    </div>
+                    </ScrollTabs>
 
                     {activeTab === 'text' ? (
                         <>
@@ -249,7 +250,7 @@ const Testimonials = () => {
                                             const updated = [...content.testimonials];
                                             updated[idx] = { ...updated[idx], photo: res.data.url };
                                             updateField('testimonials', updated);
-                                        } catch (e) { toast.error('Failed to upload'); }
+                                        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
                                         finally { setUploading(prev => ({ ...prev, [`test-${t.id}`]: false })); }
                                     }}
                                     uploading={uploading[`test-${t.id}`]}
@@ -287,7 +288,7 @@ const Testimonials = () => {
                                                 const updated = [...content.videoTestimonials];
                                                 updated[idx] = { ...updated[idx], thumbnail: res.data.url };
                                                 updateField('videoTestimonials', updated);
-                                            } catch (e) { toast.error('Failed to upload'); }
+                                            } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
                                             finally { setUploadingThumb(prev => ({ ...prev, [`vtest-${t.id}`]: false })); }
                                         }}
                                         uploading={uploadingThumb[`vtest-${t.id}`]}

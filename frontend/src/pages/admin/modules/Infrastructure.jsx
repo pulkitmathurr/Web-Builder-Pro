@@ -219,7 +219,7 @@ const Infrastructure = () => {
       }
       toast.success("Image uploaded!");
     } catch (e) {
-      toast.error("Failed to upload image");
+      toast.error(e?.response?.data?.message || "Failed to upload image");
     } finally {
       setUploading((prev) => ({ ...prev, [key]: false }));
       if (imageQueue.length > 0) {

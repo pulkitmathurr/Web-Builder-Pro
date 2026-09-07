@@ -178,7 +178,7 @@ const PublicDisclosure = () => {
             const res = await uploadPdfApi(file);
             updateField('disclosurePdf', { ...content.disclosurePdf, pdfUrl: res.data.url });
             toast.success('PDF uploaded!');
-        } catch (e) { toast.error('Failed to upload PDF'); }
+        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload PDF'); }
         finally { setUploading(prev => ({ ...prev, disclosurePdf: false })); }
     };
 
@@ -385,7 +385,7 @@ const CategorySection = ({ category, catIndex, onRenameCategory, onRemoveCategor
             onUpdateRow(rowIdx, 'pdfUrl', res.data.url);
             toast.success('PDF uploaded!');
         } catch (e) {
-            toast.error('Failed to upload PDF');
+            toast.error(e?.response?.data?.message || 'Failed to upload PDF');
         } finally {
             setUploading(prev => ({ ...prev, [rowId]: false }));
         }

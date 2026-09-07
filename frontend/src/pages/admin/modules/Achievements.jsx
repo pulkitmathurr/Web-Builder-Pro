@@ -155,7 +155,7 @@ const Achievements = () => {
                 toast.success('Photo uploaded');
             }
         } catch (e) {
-            toast.error('Failed to upload');
+            toast.error(e?.response?.data?.message || 'Failed to upload');
         } finally {
             setUploading(prev => ({ ...prev, [uploadKey]: false }));
         }

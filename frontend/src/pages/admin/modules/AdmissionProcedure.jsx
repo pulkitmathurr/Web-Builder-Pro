@@ -92,7 +92,7 @@ const AdmissionProcedure = () => {
         try {
             const res = await uploadPdfApi(file);
             updateField('formPdfUrl', res.data.url);
-        } catch (e) { toast.error('Failed to upload'); }
+        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
         finally { setUploadingForm(false); }
     };
 

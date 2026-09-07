@@ -6,3 +6,17 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+/* ── Admin <ScrollTabs> strip: hide the scrollbar, and keep every tab on one
+   line so the row scrolls instead of wrapping (see components/admin/ScrollTabs.jsx). ── */
+.scrolltabs-strip {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrolltabs-strip::-webkit-scrollbar {
+  display: none;
+}
+.scrolltabs-strip > * {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

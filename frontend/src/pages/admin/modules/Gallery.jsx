@@ -214,7 +214,7 @@ const Gallery = () => {
         try {
             const res = await uploadContentImageApi(file);
             updateNodes(nodes.map(n => n.id === currentFolderId ? { ...n, images: [...(n.images || []), res.data.url] } : n));
-        } catch (e) { toast.error('Failed to upload'); }
+        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
         finally { setUploading(prev => ({ ...prev, images: false })); }
     };
 
@@ -224,7 +224,7 @@ const Gallery = () => {
         const res = await uploadContentImageApi(file);
         updateNodes(nodes.map(n => n.id === folderId ? { ...n, coverImage: res.data.url } : n));
         toast.success('Cover image set');
-    } catch (e) { toast.error('Failed to upload'); }
+    } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
     finally { setUploading(prev => ({ ...prev, [`cover-${folderId}`]: false })); }
 };
 
@@ -267,7 +267,7 @@ const Gallery = () => {
             updateVideo(videoId, 'thumbnail', res.data.url);
             toast.success('Thumbnail uploaded');
         } catch (e) {
-            toast.error('Failed to upload thumbnail');
+            toast.error(e?.response?.data?.message || 'Failed to upload thumbnail');
         } finally {
             setUploading(prev => ({ ...prev, [`vidthumb-${videoId}`]: false }));
         }

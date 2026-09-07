@@ -116,7 +116,7 @@ const Faculty = () => {
             updateMember(target.id, 'photo', res.data.url);
             toast.success('Photo uploaded!');
         } catch (e) {
-            toast.error('Failed to upload');
+            toast.error(e?.response?.data?.message || 'Failed to upload');
         } finally {
             setUploading(prev => ({ ...prev, [target.id]: false }));
         }

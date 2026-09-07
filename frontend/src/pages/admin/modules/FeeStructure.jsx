@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi } from '../../../api/content.api';
 import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
+import ScrollTabs from '../../../components/admin/ScrollTabs';
 import useSchoolStore from '../../../store/schoolStore';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ItalicToggle from '../../../components/common/ItalicToggle';
@@ -357,7 +358,7 @@ const FeeStructure = () => {
                 </div>
 
                 {/* ── Section tabs ── */}
-                <div style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
+                <ScrollTabs colors={tc} style={{ marginBottom: '1.75rem' }}>
                     {FEE_TABS.map(t => {
                         const count = t.key === 'classes' ? content.classes.length : t.key === 'optional' ? content.optionalFeeTables.length : content.transportTables.length;
                         return (
@@ -369,7 +370,7 @@ const FeeStructure = () => {
                             </button>
                         );
                     })}
-                </div>
+                </ScrollTabs>
 
                 {/* ── Main Layout ── */}
                 {activeTab === 'classes' && (

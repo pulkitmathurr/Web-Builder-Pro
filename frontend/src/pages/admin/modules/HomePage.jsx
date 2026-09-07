@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ReorderButtons from '../../../components/common/ReorderButtons';
+import ScrollTabs from '../../../components/admin/ScrollTabs';
 import useSchoolStore from '../../../store/schoolStore';
 import { FONT_OPTIONS, getFontFamily } from '../../../constants/fonts';
 import { SHIELD_PATH_D, SHIELD_ASPECT } from '../../../constants/shieldShape';
@@ -54,6 +55,7 @@ const defaultContent = {
     introHeading: '',
     introHeadingColor: '',
     introHeadingFont: '',
+    introHeadingItalic: true,
     introDescription: '',
     introImage1: '',
     introImage2: '',
@@ -107,6 +109,14 @@ const FontField = ({ label, value, onChange }) => (
             {FONT_OPTIONS.map(f => <option key={f.key} value={f.key}>{f.label}</option>)}
         </select>
     </div>
+);
+
+// ── Small inline italic toggle, paired next to FontField for headings that default to italic ──
+const ItalicField = ({ label = 'Italic', checked, onChange }) => (
+    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '8px', fontSize: '11px', fontWeight: 600, color: '#64748b', cursor: 'pointer', width: 'fit-content' }}>
+        <input type="checkbox" checked={checked !== false} onChange={e => onChange(e.target.checked)} style={{ cursor: 'pointer' }} />
+        {label}
+    </label>
 );
 
 // ── Single-photo upload tile (with preview + remove), used by the two Homepage
@@ -389,7 +399,7 @@ const HomePage = () => {
                 setContent(prev => ({ ...prev, campusImages: [...prev.campusImages, { id: `campus-${Date.now()}`, url: res.data.url }] }));
             }
         } catch (e) {
-            toast.error('Failed to upload image');
+            toast.error(e?.response?.data?.message || 'Failed to upload image');
         } finally {
             setUploadingImage(false);
             if (imageQueue.length > 0) {
@@ -430,7 +440,7 @@ const HomePage = () => {
             const res = await uploadContentImageApi(file);
             updateTestimonial(idx, 'photo', res.data.url);
         } catch (e) {
-            toast.error('Failed to upload photo');
+            toast.error(e?.response?.data?.message || 'Failed to upload photo');
         } finally {
             setTestimonialUploading(prev => ({ ...prev, [testimonialId]: false }));
         }
@@ -449,7 +459,7 @@ const HomePage = () => {
             setVideoFile(null);
             setVideoPreview(null);
         } catch (e) {
-            toast.error('Failed to upload video');
+            toast.error(e?.response?.data?.message || 'Failed to upload video');
         } finally {
             setUploadingVideo(false);
         }
@@ -627,7 +637,7 @@ const HomePage = () => {
                 </div>
 
                 {/* ── Section tabs ── */}
-                <div className="settings-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
+                <ScrollTabs colors={tc} style={{ marginBottom: '1.75rem' }}>
                     {HOME_TABS.map(t => (
                         <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
                             style={{ padding: '10px 20px', borderRadius: '6px', border: activeTab === t.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activeTab === t.key ? tc.light : '#ffffff', color: activeTab === t.key ? tc.primary : '#64748b', fontWeight: activeTab === t.key ? 600 : 400, display: 'flex', alignItems: 'center', gap: '7px', transition: 'all 0.15s', boxShadow: activeTab === t.key ? `0 4px 12px ${hexToRgba(tc.primary, 0.15)}` : 'none' }}>
@@ -635,7 +645,7 @@ const HomePage = () => {
                             {t.label}
                         </button>
                     ))}
-                </div>
+                </ScrollTabs>
 
                 {activeTab === 'hero' && <>
                 {/* ── Hero Background ── */}
@@ -857,6 +867,7 @@ const HomePage = () => {
                             <ColorField label="Heading Color" value={content.introHeadingColor} defaultColor={tc.primary}
                                 onChange={val => handleChange('introHeadingColor', val)} />
                             <FontField label="Heading Font" value={content.introHeadingFont} onChange={val => handleChange('introHeadingFont', val)} />
+                            <ItalicField checked={content.introHeadingItalic} onChange={val => handleChange('introHeadingItalic', val)} />
                         </div>
                         <div>
                             <label style={labelStyle}>Description</label>

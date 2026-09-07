@@ -201,7 +201,7 @@ const AboutUs = () => {
       const res = await uploadPdfApi(file);
       updateAffiliation(id, "pdfUrl", res.data.url);
     } catch (e) {
-      toast.error("Failed to upload PDF");
+      toast.error(e?.response?.data?.message || "Failed to upload PDF");
     } finally {
       setPdfUploading((prev) => ({ ...prev, [id]: false }));
     }
@@ -264,7 +264,7 @@ const AboutUs = () => {
       }
       toast.success("Image uploaded!");
     } catch (e) {
-      toast.error("Failed to upload image");
+      toast.error(e?.response?.data?.message || "Failed to upload image");
     } finally {
       setUploading((prev) => ({ ...prev, [key]: false }));
       if (target.mode === "historyGallery" && galleryQueue.length > 0) {

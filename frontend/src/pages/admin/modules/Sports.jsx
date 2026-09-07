@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi, uploadPdfApi } from '../../../api/content.api';
 import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
+import ScrollTabs from '../../../components/admin/ScrollTabs';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
 import ItalicToggle from '../../../components/common/ItalicToggle';
@@ -250,7 +251,7 @@ const Sports = () => {
                 }
             }
         } catch (e) {
-            toast.error('Failed to upload');
+            toast.error(e?.response?.data?.message || 'Failed to upload');
         } finally {
             setUploading(prev => ({ ...prev, [key]: false }));
             if (target.mode !== 'cert' && imageQueue.length > 0) {
@@ -572,14 +573,14 @@ const Sports = () => {
                 </div>
 
                 {/* Page Tabs */}
-                <div className="sports-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <ScrollTabs colors={tc} style={{ marginBottom: '1.5rem' }}>
                     {PAGES.map(p => (
                         <button key={p.key} onClick={() => setActivePage(p.key)}
                             style={{ padding: '10px 18px', borderRadius: '10px', border: activePage === p.key ? `1.5px solid ${tc.primary}` : '0.5px solid #e2e8f0', fontSize: '13px', cursor: 'pointer', background: activePage === p.key ? tc.light : '#ffffff', color: activePage === p.key ? tc.primary : '#64748b', fontWeight: activePage === p.key ? 600 : 400 }}>
                             {p.label}
                         </button>
                     ))}
-                </div>
+                </ScrollTabs>
 
                 {/* ── Sports at School (simple page) ── */}
                 {activePage === 'sportsAt' && (
@@ -1109,7 +1110,7 @@ const YearlyAwardRow = ({ yearItem, onUpdate, onRemove, uploading, onUploadStart
             onUpdate('pdfUrl', res.data.url);
             toast.success('PDF uploaded!');
         } catch (e) {
-            toast.error('Failed to upload PDF');
+            toast.error(e?.response?.data?.message || 'Failed to upload PDF');
         } finally {
             onUploadEnd();
         }

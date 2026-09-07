@@ -233,7 +233,7 @@ const BookList = () => {
                                                         try {
                                                             const res = await uploadPdfApi(f);
                                                             const updated = [...content.rows]; updated[idx] = { ...row, pdfUrl: res.data.url }; updateField('rows', updated);
-                                                        } catch (err) { toast.error('Failed to upload'); }
+                                                        } catch (err) { toast.error(err?.response?.data?.message || 'Failed to upload'); }
                                                         finally { setUploading(prev => ({ ...prev, [row.id]: false })); }
                                                     }} />
                                             </label>

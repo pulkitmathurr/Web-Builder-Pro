@@ -231,7 +231,7 @@ const Alumni = () => {
                                     const updated = [...content.alumni];
                                     updated[idx] = { ...updated[idx], photo: res.data.url };
                                     updateField('alumni', updated);
-                                } catch (e) { toast.error('Failed to upload'); }
+                                } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
                                 finally { setUploading(prev => ({ ...prev, [`alumnus-${al.id}`]: false })); }
                             }}
                             uploading={uploading[`alumnus-${al.id}`]}

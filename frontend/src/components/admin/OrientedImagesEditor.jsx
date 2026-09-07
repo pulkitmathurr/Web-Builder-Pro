@@ -48,7 +48,7 @@ const OrientedImagesEditor = ({ images, onChange, max = 5 }) => {
         try {
             const res = await uploadContentImageApi(croppedFile);
             onChange([...items, { url: res.data.url, orientation: 'horizontal' }]);
-        } catch (e) { toast.error('Failed to upload image'); }
+        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload image'); }
         finally {
             setUploading(false);
             if (imageQueue.length > 0) {

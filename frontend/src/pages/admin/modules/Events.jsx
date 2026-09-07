@@ -253,7 +253,7 @@ const Events = () => {
                                     const updated = [...content.events];
                                     updated[idx] = { ...updated[idx], image: res.data.url };
                                     updateField('events', updated);
-                                } catch (e) { toast.error('Failed to upload'); }
+                                } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
                                 finally { setUploading(prev => ({ ...prev, [ev.id]: false })); }
                             }}
                             uploading={uploading[ev.id]}
@@ -286,7 +286,7 @@ const VideoSlotsEditor = ({ videos, onChange, max = 3 }) => {
         try {
             const res = await uploadVideoFileApi(file);
             updateSlot(id, 'videoUrl', res.data.url);
-        } catch (e) { toast.error('Failed to upload video'); }
+        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload video'); }
         finally { setUploadingId(null); }
     };
 
@@ -297,7 +297,7 @@ const VideoSlotsEditor = ({ videos, onChange, max = 3 }) => {
         try {
             const res = await uploadContentImageApi(croppedFile);
             updateSlot(videoId, 'thumbnail', res.data.url);
-        } catch (e) { toast.error('Failed to upload thumbnail'); }
+        } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload thumbnail'); }
         finally { setUploadingThumbId(null); }
     };
 

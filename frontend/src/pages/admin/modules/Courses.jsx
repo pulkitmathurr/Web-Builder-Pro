@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getModuleContentApi, saveModuleContentApi, togglePublishApi, uploadContentImageApi } from '../../../api/content.api';
 import ModuleActionButtons from '../../../components/admin/ModuleActionButtons';
+import ScrollTabs from '../../../components/admin/ScrollTabs';
 import toast from 'react-hot-toast';
 import RichTextEditor from '../../../components/common/RichTextEditor';
 import ImageCropModal from '../../../components/common/ImageCropModal';
@@ -161,7 +162,7 @@ const Courses = () => {
             updateField(field, res.data.url);
             toast.success('Uploaded!');
         } catch (e) {
-            toast.error('Failed to upload');
+            toast.error(e?.response?.data?.message || 'Failed to upload');
         } finally {
             setUploading(prev => ({ ...prev, [field]: false }));
         }
@@ -405,7 +406,7 @@ const Courses = () => {
                 ) : (
                     <div className="crs-section">
                         {/* Level tabs (if multiple enabled) */}
-                        <div className="crs-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                        <ScrollTabs colors={tc} style={{ marginBottom: '1rem' }}>
                             {LEVELS.filter(l => content[l.key].enabled).map(l => (
                                 <button key={l.key} onClick={() => { setActiveLevel(l.key); setActiveTab('about'); }}
                                     style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 16px', borderRadius: '6px', border: activeLevel === l.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', background: activeLevel === l.key ? tc.light : '#ffffff', color: activeLevel === l.key ? tc.primary : '#64748b', fontSize: '13px', fontWeight: activeLevel === l.key ? 600 : 400, cursor: 'pointer' }}>
@@ -413,17 +414,17 @@ const Courses = () => {
                                     {l.label}
                                 </button>
                             ))}
-                        </div>
+                        </ScrollTabs>
 
                         {/* Section Tabs */}
-                        <div className="crs-tabs" style={{ display: 'flex', gap: '6px', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                        <ScrollTabs colors={tc} style={{ marginBottom: '1.25rem' }}>
                             {tabs.map(t => (
                                 <button key={t.key} onClick={() => setActiveTab(t.key)}
                                     style={{ padding: '9px 18px', borderRadius: '6px', border: activeTab === t.key ? `1.5px solid ${tc.primary}` : '1px solid #e2e8f0', fontSize: '12.5px', cursor: 'pointer', background: activeTab === t.key ? tc.light : '#ffffff', color: activeTab === t.key ? tc.primary : '#64748b', fontWeight: activeTab === t.key ? 600 : 400 }}>
                                     {t.label}
                                 </button>
                             ))}
-                        </div>
+                        </ScrollTabs>
 
                         <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
 

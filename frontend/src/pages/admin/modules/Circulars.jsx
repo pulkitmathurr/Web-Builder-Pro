@@ -229,7 +229,7 @@ const Circulars = () => {
                                     const updated = [...content.circulars];
                                     updated[idx] = { ...updated[idx], pdfUrl: res.data.url };
                                     updateField('circulars', updated);
-                                } catch (e) { toast.error('Failed to upload'); }
+                                } catch (e) { toast.error(e?.response?.data?.message || 'Failed to upload'); }
                                 finally { setUploading(prev => ({ ...prev, [c.id]: false })); }
                             }}
                             uploading={uploading[c.id]}
