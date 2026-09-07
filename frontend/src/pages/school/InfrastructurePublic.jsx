@@ -57,7 +57,9 @@ const InfrastructurePublic = () => {
             setSchool(res.data);
             if (res.data?.id) {
                 const contentRes = await getPublicModuleContentApi(res.data.id, 'infrastructure');
-                if (contentRes.data?.categories?.length > 0) setContent(contentRes.data);
+                // Non-null means published (the public endpoint only returns published
+                // rows) — show the page even before any categories have been added.
+                if (contentRes.data) setContent(contentRes.data);
             }
         } catch (e) {
             navigate('/school-not-found');
@@ -83,6 +85,30 @@ const InfrastructurePublic = () => {
     if (!content) return <NotPublished tc={tc} slug={slug} label="Infrastructure" />;
 
     const categories = content.categories || [];
+
+    // Published, but no categories added yet — render a minimal shell (header +
+    // Footer pushed below the fold) so the module still reads as "live", rather
+    // than falling through to the "category doesn't exist" screen below.
+    if (categories.length === 0) return (
+        <>
+            <style>{`* { margin: 0; padding: 0; box-sizing: border-box; }`}</style>
+            <div style={{ fontFamily: "'Inter', system-ui, sans-serif", background: bc.surface, minHeight: '100vh' }}>
+                <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="infrastructure" />
+                <div style={{ minHeight: '100vh' }}>
+                    <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                            <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 'clamp(30px, 4vw, 44px)', fontWeight: 800, color: '#ffffff', letterSpacing: '-1px', marginBottom: '10px' }}>
+                                Infrastructure
+                            </h1>
+                            <div style={{ width: '44px', height: '3px', background: tc.secondary, margin: '0 auto', borderRadius: '2px' }}></div>
+                        </div>
+                    </div>
+                </div>
+                <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />
+            </div>
+        </>
+    );
+
     const activeCat = categorySlug
         ? categories.find(c => c.slug === categorySlug)
         : categories[0];
@@ -181,6 +207,10 @@ const InfrastructurePublic = () => {
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="infrastructure" />
+
+                {/* Content wrapper — one full viewport min-height so a published-but-empty
+                    page pushes the Footer below the fold instead of under the header. */}
+                <div style={{ minHeight: '100vh' }}>
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
                 <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.6rem', textAlign: 'center' }}>
@@ -283,7 +313,7 @@ const InfrastructurePublic = () => {
                     <div style={{ padding: '0 clamp(1.25rem,6vw,5rem) 3rem', background: bc.surface }}>
                         <div style={{ maxWidth: '1300px', margin: '0 auto' }}>
                             <Reveal>
-                                <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1rem', textAlign: 'center' }}>Photo Gallery</p>
+                                <p style={{ fontSize: '12px', color: tc.primary, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, marginBottom: '1rem', textAlign: 'center' }}></p>
                             </Reveal>
                             <Reveal delay={0.1} style={{ position: 'relative' }}>
                                 <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '100px', background: `linear-gradient(90deg,${bc.surface},transparent)`, zIndex: 2, pointerEvents: 'none' }}></div>
@@ -334,6 +364,8 @@ const InfrastructurePublic = () => {
                         )}
                     </div>
                 )}
+
+                </div>{/* /content wrapper */}
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

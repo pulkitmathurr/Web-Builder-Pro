@@ -387,6 +387,11 @@ const AboutUsPublic = () => {
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="about" />
 
+                {/* Content wrapper — holds at least one full viewport of height so that
+                    when the page has little/no published content the Footer is pushed to
+                    the bottom (below the fold), instead of sitting right under the header. */}
+                <div style={{ minHeight: '100vh' }}>
+
                 {/* ── About header — no banner photo, just a clean gradient header ── */}
                 <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
@@ -766,6 +771,8 @@ const AboutUsPublic = () => {
                         </button>
                     </div>
                 )}
+
+                </div>{/* /content wrapper */}
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

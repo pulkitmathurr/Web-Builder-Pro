@@ -543,6 +543,11 @@ const SchoolWebsite = () => {
                     .hero-buttons-row { flex-wrap: nowrap !important; gap: 6px !important; }
                     .hero-water-btn { padding: 9px 8px !important; font-size: 9px !important; letter-spacing: 0.02em !important; white-space: nowrap !important; flex: 1 1 0 !important; text-align: center !important; }
                 }
+                /* Mobile: lift the hero text block (city / name / tagline / buttons) up
+                   off the bottom edge a little. Desktop is unchanged. */
+                @media (max-width: 768px) {
+                    .hero-content-overlay { padding-bottom: clamp(3.75rem, 15vw, 6.5rem) !important; }
+                }
                 @media (max-width: 800px) {
                     .home-intro-float-img { float: none !important; width: 100% !important; max-width: 340px; margin: 0 auto 1.5rem !important; display: flex !important; justify-content: center; }
                 }
@@ -606,7 +611,7 @@ const SchoolWebsite = () => {
                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(2,6,23,0.55)', zIndex: 1 }}></div>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px)', backgroundSize: '60px 60px', zIndex: 1 }}></div>
 
-                    <div style={{ position: 'absolute', inset: 0, zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.25rem,6vw,3.5rem) clamp(1.25rem,6vw,5rem) clamp(2rem,6vw,3rem)', boxSizing: 'border-box' }}>
+                    <div className="hero-content-overlay" style={{ position: 'absolute', inset: 0, zIndex: 2, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.25rem,6vw,3.5rem) clamp(1.25rem,6vw,5rem) clamp(2rem,6vw,3rem)', boxSizing: 'border-box' }}>
                         <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: '16px' }}>
                             {school.city || 'Excellence in Education'}
                         </p>
@@ -675,7 +680,7 @@ const SchoolWebsite = () => {
                                     {homeContent.introHeading && (
                                         <h2 style={{
                                             fontFamily: homeContent.introHeadingFont ? getFontFamily(homeContent.introHeadingFont) : "'Playfair Display', Georgia, serif",
-                                            fontStyle: homeContent.introHeadingFont ? 'normal' : 'italic',
+                                            fontStyle: homeContent.introHeadingItalic === false ? 'normal' : 'italic',
                                             fontWeight: 700, fontSize: 'clamp(22px,3vw,32px)', color: homeContent.introHeadingColor || tc.primary, lineHeight: 1.4, marginBottom: '1.25rem',
                                         }}>
                                             {homeContent.introHeading}

@@ -208,7 +208,9 @@ const FacultyPublic = () => {
             setSchool(res.data);
             if (res.data?.id) {
                 const contentRes = await getPublicModuleContentApi(res.data.id, 'faculty');
-                if (contentRes.data?.members?.length > 0) setContent(contentRes.data);
+                // Non-null means published (the public endpoint only returns published
+                // rows) — show the page even before any members have been added.
+                if (contentRes.data) setContent(contentRes.data);
             }
         } catch (e) {
             navigate('/school-not-found');
@@ -235,7 +237,7 @@ const FacultyPublic = () => {
 
     // Group members by level
     const grouped = {};
-    content.members.forEach(m => {
+    (content.members || []).forEach(m => {
         const lvl = m.level || 'general';
         if (!grouped[lvl]) grouped[lvl] = [];
         grouped[lvl].push(m);
@@ -286,6 +288,10 @@ const FacultyPublic = () => {
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="faculty" />
 
+                {/* Content wrapper — one full viewport min-height so a published-but-empty
+                    page pushes the Footer below the fold instead of under the header. */}
+                <div style={{ minHeight: '100vh' }}>
+
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
                 <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
@@ -310,7 +316,9 @@ const FacultyPublic = () => {
                 ))}
 
                 {/* ── Complete staff directory table ── */}
-                <FacultyTable members={content.members} tc={tc} bc={bc} />
+                <FacultyTable members={content.members || []} tc={tc} bc={bc} />
+
+                </div>{/* /content wrapper */}
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

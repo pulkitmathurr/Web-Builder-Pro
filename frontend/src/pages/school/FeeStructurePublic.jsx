@@ -131,8 +131,10 @@ const FeeStructurePublic = () => {
             if (res.data?.id) {
                 const contentRes = await getPublicModuleContentApi(res.data.id, 'fee');
                 const d = contentRes.data;
-                const hasData = d?.classes?.length > 0 || d?.optionalFeeTables?.length > 0 || d?.transportTables?.length > 0;
-                if (hasData) setContent(d);
+                // The public content endpoint only returns a row when it's published,
+                // so `d` being non-null already means "published" — show the page even
+                // if no fee tables have been added yet (empty sections just don't render).
+                if (d) setContent(d);
             }
         } catch (e) {
             navigate('/school-not-found');
@@ -193,6 +195,11 @@ const FeeStructurePublic = () => {
 
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="fee" />
+
+                {/* Content wrapper — one full viewport min-height so that when the page is
+                    published with no fee tables yet, the Footer is pushed below the fold
+                    instead of sitting right under the header. */}
+                <div style={{ minHeight: '100vh' }}>
 
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
                 <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.6rem', textAlign: 'center' }}>
@@ -329,6 +336,8 @@ const FeeStructurePublic = () => {
                         </Reveal>
                     </div>
                 )}
+
+                </div>{/* /content wrapper */}
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />

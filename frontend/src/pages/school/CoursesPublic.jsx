@@ -58,7 +58,9 @@ const CoursesPublic = () => {
             setSchool(res.data);
             if (res.data?.id) {
                 const contentRes = await getPublicModuleContentApi(res.data.id, 'courses');
-                if (contentRes.data?.sections?.length > 0) setContent(contentRes.data);
+                // Non-null means published (the public endpoint only returns published
+                // rows) — show the page even before any sections have been added.
+                if (contentRes.data) setContent(contentRes.data);
             }
         } catch (e) {
             navigate('/school-not-found');
@@ -109,6 +111,10 @@ const CoursesPublic = () => {
                 {/* ── Navbar ── */}
                 <Navbar school={school} slug={slug} tc={tc} scrollY={scrollY} activeKey="courses" />
 
+                {/* Content wrapper — one full viewport min-height so a published-but-empty
+                    page pushes the Footer below the fold instead of under the header. */}
+                <div style={{ minHeight: '100vh' }}>
+
                 {/* ── Header — no banner photo, clean gradient header (same design as About Us) ── */}
                 <div style={{ position: 'relative', overflow: 'hidden', background: `linear-gradient(135deg, ${tc.dark} 0%, ${tc.primary} 60%, ${tc.dark} 100%)`, padding: 'calc(92px + 1.6rem) clamp(1.25rem,6vw,3rem) 0.75rem', textAlign: 'center' }}>
                     <div style={{ position: 'absolute', inset: 0, backgroundImage: 'radial-gradient(rgba(255,255,255,0.07) 1px, transparent 1px)', backgroundSize: '26px 26px' }}></div>
@@ -133,7 +139,7 @@ const CoursesPublic = () => {
                     </Reveal>
 
                     <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-                        {content.sections.map((sec, i) => (
+                        {(content.sections || []).map((sec, i) => (
                             <Reveal key={sec.id} delay={i * 0.1}>
                                 <div className="section-card" style={{
                                     display: 'grid', gridTemplateColumns: sec.image ? 'minmax(240px,420px) 1fr' : '1fr',
@@ -188,6 +194,8 @@ const CoursesPublic = () => {
                         </button>
                     </Reveal>
                 </div>
+
+                </div>{/* /content wrapper */}
 
                 {/* ── Site Footer ── */}
                 <Footer school={school} slug={slug} tc={tc} bgImage={school.footer_bg_url} />
