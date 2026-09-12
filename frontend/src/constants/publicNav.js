@@ -111,6 +111,7 @@ export const NAVBAR_ITEMS = [
             { key: 'achievements',       label: 'Achievements',         path: (slug) => `/school/${slug}/achievements` },
             { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
             { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
+            { key: 'parentsCorner',      label: 'Parents Corner',       path: (slug) => `/school/${slug}/parents-corner` },
         ],
     },
     {
@@ -164,6 +165,7 @@ export const FOOTER_NAV_GROUPS = [
             { key: 'results',            label: 'Results',              path: (slug) => `/school/${slug}/results` },
             { key: 'admissionProcedure', label: 'Admission Procedure',  path: (slug) => `/school/${slug}/admission-procedure` },
             { key: 'bookList',           label: 'Book List',            path: (slug) => `/school/${slug}/book-list` },
+            { key: 'parentsCorner',      label: 'Parents Corner',       path: (slug) => `/school/${slug}/parents-corner` },
             { key: 'disclosure',         label: 'Mandatory Public Disclosure', path: (slug) => `/school/${slug}/public-disclosure` },
         ],
     },

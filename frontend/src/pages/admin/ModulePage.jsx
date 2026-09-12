@@ -23,6 +23,7 @@ const modulePageMap = {
     'testimonials': '/admin/module/testimonials',
     'admissionProcedure': '/admin/module/admissionProcedure',
     'bookList': '/admin/module/bookList',
+    'parentsCorner': '/admin/module/parentsCorner',
     'disclosure': '/admin/module/disclosure',
     'tc': '/admin/module/tc',
     'announcements': '/admin/module/announcements',

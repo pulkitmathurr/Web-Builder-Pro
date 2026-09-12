@@ -38,6 +38,7 @@ import Alumni from './pages/admin/modules/Alumni';
 import Testimonials from './pages/admin/modules/Testimonials';
 import AdmissionProcedure from './pages/admin/modules/AdmissionProcedure';
 import BookList from './pages/admin/modules/BookList';
+import ParentsCorner from './pages/admin/modules/ParentsCorner';
 import PublicDisclosure from './pages/admin/modules/PublicDisclosure';
 import TCInformation from './pages/admin/modules/TCInformation';
 import Announcements from './pages/admin/modules/Announcements';
@@ -63,6 +64,7 @@ import AlumniPublic from './pages/school/AlumniPublic';
 import TestimonialsPublic from './pages/school/TestimonialsPublic';
 import AdmissionProcedurePublic from './pages/school/AdmissionProcedurePublic';
 import BookListPublic from './pages/school/BookListPublic';
+import ParentsCornerPublic from './pages/school/ParentsCornerPublic';
 import PublicDisclosurePublic from './pages/school/PublicDisclosurePublic';
 import TCInformationPublic from './pages/school/TCInformationPublic';
 import AnnouncementsPublic from './pages/school/AnnouncementsPublic';
@@ -100,6 +102,7 @@ const PUBLIC_SCHOOL_ROUTE_DEFS = [
     { path: '/school/:slug/testimonials', element: <TestimonialsPublic /> },
     { path: '/school/:slug/admission-procedure', element: <AdmissionProcedurePublic /> },
     { path: '/school/:slug/book-list', element: <BookListPublic /> },
+    { path: '/school/:slug/parents-corner', element: <ParentsCornerPublic /> },
     { path: '/school/:slug/public-disclosure', element: <PublicDisclosurePublic /> },
     { path: '/school/:slug/tc', element: <TCInformationPublic /> },
     { path: '/school/:slug/announcements/:id', element: <AnnouncementDetailPublic /> },
@@ -212,6 +215,7 @@ const RootRouter = () => {
                 <Route path="module/testimonials" element={<Testimonials />} />
                 <Route path="module/admissionProcedure" element={<AdmissionProcedure />} />
                 <Route path="module/bookList" element={<BookList />} />
+                <Route path="module/parentsCorner" element={<ParentsCorner />} />
                 <Route path="module/disclosure" element={<PublicDisclosure />} />
                 <Route path="module/tc" element={<TCInformation />} />
                 <Route path="module/announcements" element={<Announcements />} />

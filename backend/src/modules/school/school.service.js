@@ -99,7 +99,7 @@ const selectModulesService = async (schoolId, modules) => {
     const validModules = [
         "home", "about", "fee", "courses", "faculty", "infrastructure",
         "sports", "gallery", "achievements", "alumni", "testimonials", "disclosure", "tc",
-        "events", "calendar", "announcements", "circulars", "results", "admissionProcedure", "bookList", "admission",
+        "events", "calendar", "announcements", "circulars", "results", "admissionProcedure", "bookList", "parentsCorner", "admission",
         "career", "contact", "settings",
     ];
 
@@ -128,7 +128,7 @@ const CURRENT_TERMS_VERSION = 1;
 // rather than adding extra round-trips just to check plan/consent status.
 const getSelectedModulesService = async (schoolId) => {
     const [schools] = await pool.query(
-        "SELECT selected_modules, is_first_login, plan_id, terms_accepted_at, terms_version FROM tbl_schools WHERE id = ?",
+        "SELECT selected_modules, is_first_login, plan_id, plan_end_date, terms_accepted_at, terms_version FROM tbl_schools WHERE id = ?",
         [schoolId]
     );
 
@@ -136,15 +136,23 @@ const getSelectedModulesService = async (schoolId) => {
         throw new AppError("School not found", 404);
     }
 
+    // A plan_id alone isn't enough — a lapsed plan_end_date (no renewal) must also
+    // force the admin back to Billing, same as never having had a plan at all.
+    // plan_end_date can be NULL on old rows from before this column existed; treat
+    // those as non-expiring rather than instant-lockout.
+    const school = schools[0];
+    const hasActivePlan = school.plan_id !== null &&
+        (!school.plan_end_date || new Date(school.plan_end_date) >= new Date(new Date().toDateString()));
+
     return {
-        selectedModules: schools[0].selected_modules
-            ? typeof schools[0].selected_modules === "string"
-                ? JSON.parse(schools[0].selected_modules)
-                : schools[0].selected_modules
+        selectedModules: school.selected_modules
+            ? typeof school.selected_modules === "string"
+                ? JSON.parse(school.selected_modules)
+                : school.selected_modules
             : [],
-        isFirstLogin: schools[0].is_first_login,
-        hasActivePlan: schools[0].plan_id !== null,
-        hasAcceptedTerms: schools[0].terms_accepted_at !== null && schools[0].terms_version >= CURRENT_TERMS_VERSION,
+        isFirstLogin: school.is_first_login,
+        hasActivePlan,
+        hasAcceptedTerms: school.terms_accepted_at !== null && school.terms_version >= CURRENT_TERMS_VERSION,
     };
 };
 
