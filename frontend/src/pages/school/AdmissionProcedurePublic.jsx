@@ -10,6 +10,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily, getHeadingSizeCss } from "../../constants/fonts";
 import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -30,13 +31,6 @@ const Reveal = ({ children, delay = 0, style = {} }) => {
             {children}
         </div>
     );
-};
-
-// ── Current Indian academic session label (April-March cycle) — e.g. Aug 2026 -> "2026-2027" ──
-const getCurrentSession = () => {
-    const now = new Date();
-    const y = now.getFullYear();
-    return now.getMonth() >= 3 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
 };
 
 const PhoneIcon = ({ color }) => (
@@ -83,7 +77,7 @@ const ProcedureBlock = ({ block, idx, isLast, tc }) => (
                 )}
                 {block.description && (
                     <div className="rte-content" style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85 }}
-                        dangerouslySetInnerHTML={{ __html: block.description }} />
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.description) }} />
                 )}
             </div>
         </div>
@@ -230,7 +224,7 @@ const AdmissionProcedurePublic = () => {
                                 </h2>
                                 {content.description ? (
                                     <div className="rte-content" style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85, marginBottom: '1.75rem' }}
-                                        dangerouslySetInnerHTML={{ __html: content.description }} />
+                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.description) }} />
                                 ) : (
                                     <p style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85, marginBottom: '1.75rem' }}>
                                         At {school.name}, we value communication and engagement. Whether you're a prospective parent, student, or educator, our team is here to answer your queries, provide guidance, and assist you in any way possible.
@@ -276,7 +270,7 @@ const AdmissionProcedurePublic = () => {
                             <div style={{ background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 12px 36px rgba(15,23,42,0.08)', overflow: 'hidden' }}>
                                 <div style={{ padding: '1.5rem 2rem', background: tc.dark, borderBottom: `3px solid ${tc.secondary}` }}>
                                     <h3 style={{ fontSize: 'clamp(17px,1.8vw,20px)', fontWeight: 700, color: '#ffffff', letterSpacing: '-0.2px' }}>
-                                        Admissions Open for Session {getCurrentSession()}
+                                        Admissions Open
                                     </h3>
                                 </div>
                                 <div style={{ padding: '2rem' }}>

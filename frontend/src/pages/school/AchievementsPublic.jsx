@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -219,7 +220,7 @@ const AchievementsPublic = () => {
                                         </svg>
                                         <div style={{ width: '38px', height: '3px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, borderRadius: '2px', marginBottom: '1.1rem' }}></div>
                                         <div className="rte-content" style={{ fontSize: '15.5px', color: '#475569', lineHeight: 1.9, textAlign: 'left', overflowWrap: 'normal', wordBreak: 'normal', position: 'relative', zIndex: 1 }}
-                                            dangerouslySetInnerHTML={{ __html: content.description }} />
+                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.description) }} />
                                     </div>
                                 )}
                             </Reveal>
@@ -282,7 +283,7 @@ const AchievementsPublic = () => {
                                         {a.quote && (
                                             <div style={a.photo ? { borderLeft: `3px solid ${tc.primary}`, paddingLeft: '1.25rem', marginBottom: '1.5rem' } : { marginBottom: '1.5rem' }}>
                                                 <div className="rte-content" style={{ fontSize: '16.5px', color: '#3f4a61', lineHeight: 1.85, overflowWrap: 'normal', wordBreak: 'normal' }}
-                                                    dangerouslySetInnerHTML={{ __html: a.quote }} />
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(a.quote) }} />
                                             </div>
                                         )}
 

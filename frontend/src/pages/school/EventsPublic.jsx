@@ -8,6 +8,7 @@ import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 import { parseDate, formatDate, stripHtml } from "../../utils/dateTimeFormat";
 
 const useScrollReveal = () => {
@@ -255,7 +256,7 @@ const EventsPublic = () => {
                     <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 0' }}>
                         <Reveal>
                             <div className="rte-content" style={{ maxWidth: '900px', margin: '0 auto', fontSize: '15px', color: '#475569', lineHeight: 1.9, textAlign: 'center' }}
-                                dangerouslySetInnerHTML={{ __html: content.description }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.description) }} />
                         </Reveal>
                     </div>
                 )}

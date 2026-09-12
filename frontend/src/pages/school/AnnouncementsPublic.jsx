@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 import { relativeLabel, shortDate, formatTime, stripHtml } from "../../utils/dateTimeFormat";
 import { getImageUrl } from "../../utils/imageOrientation";
 
@@ -205,7 +206,7 @@ const AnnouncementsPublic = () => {
                     <div style={{ padding: '3.5rem clamp(1.25rem,6vw,3rem) 0' }}>
                         <Reveal>
                             <div className="rte-content" style={{ maxWidth: '820px', margin: '0 auto', fontSize: '15px', color: '#475569', lineHeight: 1.9, textAlign: 'center' }}
-                                dangerouslySetInnerHTML={{ __html: content.description }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.description) }} />
                         </Reveal>
                     </div>
                 )}

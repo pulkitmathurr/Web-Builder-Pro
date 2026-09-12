@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -301,7 +302,7 @@ const InfrastructurePublic = () => {
                         <Reveal>
                             {activeCat.description && (
                                 <div className="rte-content" style={{ fontSize: '15.5px', color: '#475569', lineHeight: 1.9 }}
-                                    dangerouslySetInnerHTML={{ __html: activeCat.description }} />
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(activeCat.description) }} />
                             )}
                         </Reveal>
                         <div style={{ clear: 'both' }}></div>

@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const BookIcon = ({ color }) => (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 19.5A2.5 2.5 0 016.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
@@ -128,7 +129,7 @@ const BookListPublic = () => {
                                     )}
                                     {content.description && (
                                         <div className="rte-content" style={{ fontSize: '14.5px', color: '#475569', lineHeight: 1.85 }}
-                                            dangerouslySetInnerHTML={{ __html: content.description }} />
+                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.description) }} />
                                     )}
                                 </div>
                             )}

@@ -14,6 +14,7 @@ import Footer from '../../components/public/Footer';
 import { getThemeColors, getBaseColors, isModuleEnabled } from '../../constants/publicNav';
 import NotPublished from '../../components/public/NotPublished';
 import { RTE_LIST_CSS } from '../../constants/rteContentStyles';
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 import { getFontFamily } from '../../constants/fonts';
 import { getPublicSchoolApi } from '../../api/school.api';
 import { getPublicModuleContentApi } from '../../api/content.api';
@@ -219,7 +220,7 @@ const TCInformationPublic = () => {
                     <div
                         className="rte-content"
                         style={{ marginTop: 16, fontSize: 15.5, color: '#475569', maxWidth: 640, marginLeft: 'auto', marginRight: 'auto' }}
-                        dangerouslySetInnerHTML={{ __html: content.description }}
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(content.description) }}
                     />
                 )}
             </div>

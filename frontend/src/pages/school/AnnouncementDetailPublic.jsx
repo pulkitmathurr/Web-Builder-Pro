@@ -11,6 +11,7 @@ import { formatDate, formatTime, readingTime } from "../../utils/dateTimeFormat"
 import { normalizeImages, getImageUrl, getImageOrientation } from "../../utils/imageOrientation";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const ChevronLeftIcon = ({ color, size = 14 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
         <path d="M15 18l-6-6 6-6" />
@@ -281,7 +282,7 @@ const AnnouncementDetailPublic = () => {
 
                         {announcement.body && (
                             <div className="rte-content" style={{ fontSize: '15.5px', color: '#334155', lineHeight: 1.9, marginBottom: images.length ? '2rem' : 0 }}
-                                dangerouslySetInnerHTML={{ __html: announcement.body }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(announcement.body) }} />
                         )}
 
                         {images.length > 0 && (

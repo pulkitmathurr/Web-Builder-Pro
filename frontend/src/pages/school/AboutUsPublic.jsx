@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -78,7 +79,7 @@ const HistoryText = ({ html, tc }) => {
                 maxHeight: !expanded && needsClamp ? `${HISTORY_CLAMP_HEIGHT}px` : 'none',
                 overflow: !expanded && needsClamp ? 'hidden' : 'visible',
             }}
-                dangerouslySetInnerHTML={{ __html: html }} />
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />
             {needsClamp && (
                 <button onClick={() => setExpanded(v => !v)}
                     style={{ marginTop: '14px', padding: '9px 20px', background: 'transparent', color: tc.primary, border: `1.5px solid ${tc.primary}`, borderRadius: '8px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -427,7 +428,7 @@ const AboutUsPublic = () => {
                                             <div style={{ width: '32px', height: '3px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, borderRadius: '2px', marginBottom: '12px' }}></div>
                                             <h4 style={{ fontFamily: item.headingFont ? getFontFamily(item.headingFont) : undefined, fontSize: '19px', fontWeight: 800, color: item.headingColor || '#0f172a', letterSpacing: '0.02em', marginBottom: '8px', overflowWrap: 'normal', fontStyle: item.headingItalic ? 'italic' : 'normal' }}>{item.heading}</h4>
                                             <div className="rte-content" style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.65 }}
-                                                dangerouslySetInnerHTML={{ __html: item.text }} />
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.text) }} />
                                         </div>
                                     ))}
                                 </div>
@@ -444,7 +445,7 @@ const AboutUsPublic = () => {
                                             <div style={{ width: '32px', height: '3px', background: `linear-gradient(90deg,${tc.primary},${tc.secondary})`, borderRadius: '2px', marginBottom: '12px' }}></div>
                                             <h4 style={{ fontFamily: item.headingFont ? getFontFamily(item.headingFont) : undefined, fontSize: '19px', fontWeight: 800, color: item.headingColor || '#0f172a', letterSpacing: '0.02em', marginBottom: '8px', overflowWrap: 'normal', fontStyle: item.headingItalic ? 'italic' : 'normal' }}>{item.heading}</h4>
                                             <div className="rte-content" style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.65 }}
-                                                dangerouslySetInnerHTML={{ __html: item.text }} />
+                                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(item.text) }} />
                                         </div>
                                     </Reveal>
                                 ))}
@@ -571,7 +572,7 @@ const AboutUsPublic = () => {
                                             {/* Text starts right where the image starts — same row, no extra offset */}
                                             <Reveal delay={0.25}>
                                                 <div className="rte-content" style={{ fontSize: '17px', color: '#334155', lineHeight: 1.9, overflowWrap: 'normal' }}
-                                                    dangerouslySetInnerHTML={{ __html: m.message }} />
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(m.message) }} />
                                             </Reveal>
 
                                             <div style={{ clear: 'both', paddingTop: '0.75rem' }}>
@@ -627,7 +628,7 @@ const AboutUsPublic = () => {
                                             <div style={{ minWidth: 0 }}>
                                                 <h4 style={{ fontSize: '19px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', letterSpacing: '-0.5px' }}>{v.title}</h4>
                                                 <div className="rte-content" style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.65, maxWidth: '700px' }}
-                                                    dangerouslySetInnerHTML={{ __html: v.description }} />
+                                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(v.description) }} />
                                             </div>
                                         </div>
                                     </Reveal>

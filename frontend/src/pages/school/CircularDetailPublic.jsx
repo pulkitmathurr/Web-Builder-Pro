@@ -10,6 +10,7 @@ import { CIRCULAR_TAG_COLORS } from "./CircularsPublic";
 import { formatDate } from "../../utils/dateTimeFormat";
 import { RTE_FONT_CSS, RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const DocumentIcon = ({ color, size = 13 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -158,7 +159,7 @@ const CircularDetailPublic = () => {
 
                         {circular.note && (
                             <div className="rte-content" style={{ fontSize: '15.5px', color: '#334155', lineHeight: 1.9 }}
-                                dangerouslySetInnerHTML={{ __html: circular.note }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(circular.note) }} />
                         )}
                     </div>
                 </div>

@@ -10,6 +10,7 @@ import { getFontFamily } from "../../constants/fonts";
 import { COLLAGE_LAYOUTS, DEFAULT_COLLAGE_LAYOUT } from "../../utils/sportsCollage";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const PAGES = [
     { key: 'sportsAt', label: 'Sports at School' },
     { key: 'sportsOffered', label: 'Sports Offered' },
@@ -184,7 +185,7 @@ const EventStyleCard = ({ heading, description, images, tc, bc, onImageClick }) 
             </h3>
             {description && (
                 <div className="rte-content event-card-desc" style={{ fontSize: '14.5px', color: '#64748b', lineHeight: 1.8, textAlign: 'left' }}
-                    dangerouslySetInnerHTML={{ __html: description }} />
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }} />
             )}
             <div style={{ clear: 'both' }}></div>
         </div>
@@ -542,7 +543,7 @@ const SportsPublic = () => {
                                         fontSize: '15px', color: '#475569', lineHeight: 1.85, marginBottom: '2rem',
                                         textAlign: 'left'
                                     }}
-                                        dangerouslySetInnerHTML={{ __html: pageData.description }} />
+                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(pageData.description) }} />
                                 )}
                             </Reveal>
 

@@ -120,7 +120,10 @@ const verifyPaymentService = async (schoolId, { razorpay_order_id, razorpay_paym
         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
         .digest("hex");
 
-    if (expectedSignature !== razorpay_signature) {
+    const expectedBuf = Buffer.from(expectedSignature, "utf8");
+    const gotBuf = Buffer.from(String(razorpay_signature || ""), "utf8");
+    const signatureValid = expectedBuf.length === gotBuf.length && crypto.timingSafeEqual(expectedBuf, gotBuf);
+    if (!signatureValid) {
         await pool.query("UPDATE tbl_payments SET status = 'failed' WHERE id = ?", [payment.id]);
         throw new AppError("Payment verification failed", 400);
     }

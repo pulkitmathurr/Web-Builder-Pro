@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -75,7 +76,7 @@ const TestimonialCard = ({ t, index, tc }) => {
 
                 {t.quote && (
                     <div className="rte-content" style={{ fontSize: '14.5px', color: '#334155', lineHeight: 1.8, flex: 1, marginBottom: '18px' }}
-                        dangerouslySetInnerHTML={{ __html: t.quote }} />
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(t.quote) }} />
                 )}
                 {!t.quote && <div style={{ flex: 1 }} />}
 

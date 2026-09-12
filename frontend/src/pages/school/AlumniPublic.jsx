@@ -10,6 +10,7 @@ import { getFontFamily } from "../../constants/fonts";
 import { stripHtml } from "../../utils/dateTimeFormat";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const useScrollReveal = () => {
     const ref = useRef(null);
     const [visible, setVisible] = useState(false);
@@ -236,7 +237,7 @@ const LegacyScroll = ({ description, tc }) => {
                             <CornerFlourish color={`${tc.primary}80`} style={{ bottom: '10px', right: '10px', transform: 'scale(-1,-1)' }} />
 
                             <div className="rte-content legacy-text" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontStyle: 'italic', fontSize: '18px', color: '#5b4636', lineHeight: 2, overflowWrap: 'normal', wordBreak: 'normal', textAlign: 'left', position: 'relative', zIndex: 1 }}
-                                dangerouslySetInnerHTML={{ __html: description }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(description) }} />
                         </div>
                     </div>
                 </div>
@@ -297,7 +298,7 @@ const AlumnusEntry = ({ alumnus, index, tc, bc }) => {
                 )}
                 {alumnus.testimonial && (
                     <div className="rte-content" style={{ fontSize: '15px', color: '#1e293b', lineHeight: 1.85 }}
-                        dangerouslySetInnerHTML={{ __html: alumnus.testimonial }} />
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(alumnus.testimonial) }} />
                 )}
                 {alumnus.linkedinUrl && (
                     <a href={alumnus.linkedinUrl} target="_blank" rel="noopener noreferrer"

@@ -9,6 +9,7 @@ import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
 
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 const LEVEL_MAP = {
     'pre-primary-school': { key: 'preprimary', label: 'Pre Primary School' },
     'primary-school': { key: 'primary', label: 'Primary School' },
@@ -235,7 +236,7 @@ const SchoolLevelPublic = () => {
                                        so the quote text itself stays flush with the heading above it. */
                                     <div className="lvl-accent-block" style={{ borderLeft: `3px solid ${tc.primary}`, paddingLeft: '1.5rem', marginLeft: '-1.5rem', marginBottom: '1.25rem' }}>
                                         <div className="rte-content" style={{ fontSize: '15.5px', color: '#64748b', lineHeight: 1.9 }}
-                                            dangerouslySetInnerHTML={{ __html: data.aboutQuote }} />
+                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.aboutQuote) }} />
                                     </div>
                                 )}
                                 {data.aboutAuthor && (
@@ -276,7 +277,7 @@ const SchoolLevelPublic = () => {
                                 {data.uniqueText && (
                                     <div className="lvl-accent-block" style={{ borderLeft: `3px solid ${tc.primary}`, paddingLeft: '1.5rem', marginLeft: '-1.5rem' }}>
                                         <div className="rte-content" style={{ fontSize: '15.5px', color: '#64748b', lineHeight: 1.9 }}
-                                            dangerouslySetInnerHTML={{ __html: data.uniqueText }} />
+                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(data.uniqueText) }} />
                                     </div>
                                 )}
                             </Reveal>
