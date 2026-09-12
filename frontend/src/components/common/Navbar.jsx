@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../store/authStore';
 import { logoutApi } from '../../api/auth.api';
+import ChangePasswordModal from './ChangePasswordModal';
 import toast from 'react-hot-toast';
 
 // ── Top navbar for the Super Admin panel (the only place this component is used) ──
@@ -8,6 +10,7 @@ const Navbar = ({ title = 'Dashboard', onToggle }) => {
     const { user, clearAuth } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
+    const [showChangePassword, setShowChangePassword] = useState(false);
 
     const handleLogout = async () => {
         try { await logoutApi(); } catch (e) {}
@@ -22,6 +25,7 @@ const Navbar = ({ title = 'Dashboard', onToggle }) => {
         <>
             <style>{`
                 .navbar-logout:hover { background: #fef2f2 !important; border-color: #fecaca !important; color: #b91c1c !important; }
+                .navbar-change-pw:hover { background: #eef2ff !important; border-color: #c7d2fe !important; color: #4f6ef7 !important; }
                 .navbar-toggle:hover { background: #f1f5f9 !important; border-color: #e2e8f0 !important; }
                 @media (max-width: 640px) {
                     .navbar-username-block { display: none !important; }
@@ -119,6 +123,29 @@ const Navbar = ({ title = 'Dashboard', onToggle }) => {
                     {/* Divider */}
                     <div style={{ width: '1px', height: '24px', background: '#eef1f6' }}></div>
 
+                    {/* Change Password */}
+                    <button
+                        className="navbar-change-pw"
+                        onClick={() => setShowChangePassword(true)}
+                        style={{
+                            padding: '7px 14px',
+                            background: 'transparent',
+                            border: '1px solid #eef1f6',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            color: '#64748b',
+                            cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            fontWeight: 500,
+                            transition: 'all 0.15s'
+                        }}
+                    >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <rect x="3" y="11" width="18" height="10" rx="2" /><path strokeLinecap="round" strokeLinejoin="round" d="M7 11V7a5 5 0 0110 0v4" />
+                        </svg>
+                        <span className="navbar-logout-text">Change Password</span>
+                    </button>
+
                     {/* Logout */}
                     <button
                         className="navbar-logout"
@@ -143,6 +170,8 @@ const Navbar = ({ title = 'Dashboard', onToggle }) => {
                     </button>
                 </div>
             </div>
+
+            {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
         </>
     );
 };

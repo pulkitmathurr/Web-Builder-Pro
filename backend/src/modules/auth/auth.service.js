@@ -261,10 +261,47 @@ const resetPasswordService = async (token, role, newPassword) => {
   );
 };
 
+// ── Change Password (logged-in admin/super-admin, from within the panel) ──
+// Different from resetPasswordService: this requires knowing the current password
+// (no email link/token involved) so it can be used any time, not just via "forgot password".
+// `currentRefreshToken` (the caller's own cookie) is kept alive on revoke so changing your
+// password doesn't immediately log out the tab you just changed it from — every *other*
+// session/device still gets revoked, same safety net as an email-link reset.
+const changePasswordService = async (userId, role, currentPassword, newPassword, currentRefreshToken) => {
+  if (!currentPassword || !newPassword) {
+    throw new AppError("Current password and new password are required", 400);
+  }
+  if (newPassword.length < 6) {
+    throw new AppError("New password must be at least 6 characters", 400);
+  }
+
+  const table = role === "super_admin" ? "tbl_super_admins" : "tbl_admins";
+  const [rows] = await pool.query(`SELECT password FROM ${table} WHERE id = ?`, [userId]);
+  if (rows.length === 0) {
+    throw new AppError("Account not found", 404);
+  }
+
+  const isCurrentValid = await bcrypt.compare(currentPassword, rows[0].password);
+  if (!isCurrentValid) {
+    throw new AppError("Current password is incorrect", 401);
+  }
+
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await pool.query(`UPDATE ${table} SET password = ? WHERE id = ?`, [hashedPassword, userId]);
+
+  await pool.query(
+    role === "super_admin"
+      ? `UPDATE tbl_refresh_tokens SET is_revoked = 1 WHERE super_admin_id = ? AND token != ?`
+      : `UPDATE tbl_refresh_tokens SET is_revoked = 1 WHERE admin_id = ? AND token != ?`,
+    [userId, currentRefreshToken || ""],
+  );
+};
+
 module.exports = {
   loginService,
   logoutService,
   refreshTokenService,
   forgotPasswordService,
   resetPasswordService,
+  changePasswordService,
 };

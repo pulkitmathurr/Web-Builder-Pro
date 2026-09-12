@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { login, logout, refreshToken, forgotPassword, resetPassword } = require('./auth.controller');
+const { login, logout, refreshToken, forgotPassword, resetPassword, changePassword } = require('./auth.controller');
 const { protect } = require('../../middlewares/auth.middleware');
 const { authLimiter } = require('../../middlewares/rateLimit.middleware');
 
@@ -9,5 +9,8 @@ router.post('/logout', protect, logout);
 router.post('/refresh', refreshToken);
 router.post('/forgot-password', authLimiter, forgotPassword);
 router.post('/reset-password', authLimiter, resetPassword);
+// Logged-in self-service change — works for both admin and super_admin (protect alone,
+// no isAdmin/isSuperAdmin gate, since either role should be able to change their own password).
+router.post('/change-password', protect, authLimiter, changePassword);
 
 module.exports = router;

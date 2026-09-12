@@ -4,6 +4,7 @@ const {
     refreshTokenService,
     forgotPasswordService,
     resetPasswordService,
+    changePasswordService,
 } = require('./auth.service');
 const { sendSuccess, sendError } = require('../../utils/response.utils');
 
@@ -107,4 +108,21 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = { login, logout, refreshToken, forgotPassword, resetPassword };
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return sendError(res, 'Current password and new password are required', 400);
+        }
+
+        await changePasswordService(req.user.id, req.user.role, currentPassword, newPassword, req.cookies.refreshToken);
+
+        return sendSuccess(res, 'Password changed successfully');
+
+    } catch (error) {
+        return sendError(res, error.message, error.statusCode || 500);
+    }
+};
+
+module.exports = { login, logout, refreshToken, forgotPassword, resetPassword, changePassword };
