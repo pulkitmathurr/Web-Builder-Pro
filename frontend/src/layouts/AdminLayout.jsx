@@ -162,7 +162,8 @@ const AdminLayout = () => {
             label: m.label,
             path: m.key === 'home' ? '/admin/module/home' : `/admin/module/${m.key}`,
             icon: m.icon,
-        }));
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label));
 
     const title =
         pageTitles[location.pathname] ||

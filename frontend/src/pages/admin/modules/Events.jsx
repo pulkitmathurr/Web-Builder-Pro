@@ -7,7 +7,9 @@ import ItalicToggle from '../../../components/common/ItalicToggle';
 import HeadingStyleField from '../../../components/common/HeadingStyleField';
 import OrientedImagesEditor from '../../../components/admin/OrientedImagesEditor';
 import ImageSizeHint from '../../../components/admin/ImageSizeHint';
+import ReorderButtons from '../../../components/common/ReorderButtons';
 import useSchoolStore from '../../../store/schoolStore';
+import { moveItem } from '../../../utils/reorder';
 import { assertEventsVideoSizeOk, MAX_EVENTS_VIDEO_SIZE_MB } from '../../../utils/fileValidation';
 import toast from 'react-hot-toast';
 
@@ -279,6 +281,7 @@ const VideoSlotsEditor = ({ videos, onChange, max = 3 }) => {
     };
     const updateSlot = (id, field, val) => onChange(videos.map(v => v.id === id ? { ...v, [field]: val } : v));
     const removeSlot = (id) => onChange(videos.filter(v => v.id !== id));
+    const moveSlot = (idx, dir) => onChange(moveItem(videos, idx, dir));
 
     const handleFile = async (id, file) => {
         try { assertEventsVideoSizeOk(file); } catch (e) { return; }
@@ -307,8 +310,12 @@ const VideoSlotsEditor = ({ videos, onChange, max = 3 }) => {
     return (
         <>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {videos.map(v => (
+            {videos.map((v, idx) => (
                 <div key={v.id} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', background: '#ffffff', border: '1px solid #eef1f6', borderRadius: '14px', padding: '14px', boxShadow: '0 1px 4px rgba(15,23,42,0.04)' }}>
+                    {/* Reorder */}
+                    <div style={{ display: 'flex', alignItems: 'center', paddingTop: '22px' }}>
+                        <ReorderButtons index={idx} length={videos.length} onMove={moveSlot} />
+                    </div>
                     {/* Thumbnail preview / upload */}
                     <label style={{
                         flexShrink: 0, display: 'block', width: '108px', height: '72px', borderRadius: '10px', overflow: 'hidden',

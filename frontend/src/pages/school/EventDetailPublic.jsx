@@ -10,6 +10,8 @@ import { EVENT_TAG_COLORS } from "./EventsPublic";
 import { parseDate, formatDate, formatTime, readingTime } from "../../utils/dateTimeFormat";
 import { normalizeImages, getImageUrl, getImageOrientation } from "../../utils/imageOrientation";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
+import { getYoutubeEmbedUrl } from "../../utils/youtube";
 
 const ChevronLeftIcon = ({ color, size = 14 }) => (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
@@ -77,12 +79,15 @@ const BookGlyph = ({ color, size = 13 }) => (
 );
 
 // ── A video card — image on top with a centered play/link button, title below in its own
-// text area (not overlaid on the photo). Uploaded videos open the shared player modal,
-// link videos open in a new tab. Uses a real thumbnail when the admin has uploaded one. ──
+// text area (not overlaid on the photo). Uploaded videos and YouTube links both open the
+// shared player modal inline; any other link video opens in a new tab. Uses a real
+// thumbnail when the admin has uploaded one. ──
 const VideoTile = ({ video, tagColor, onPlay }) => {
     const isUpload = video.sourceType === 'upload' && video.videoUrl;
     const isLink = video.sourceType === 'link' && video.linkUrl;
     if (!isUpload && !isLink) return null;
+    const youtubeEmbed = isLink ? getYoutubeEmbedUrl(video.linkUrl) : null;
+    const playsInline = isUpload || !!youtubeEmbed;
     const hasThumb = !!video.thumbnail;
 
     const media = (
@@ -95,7 +100,7 @@ const VideoTile = ({ video, tagColor, onPlay }) => {
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.12)' }}></div>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <div className="video-card-play" style={{ width: '50px', height: '50px', borderRadius: '50%', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 18px rgba(15,23,42,0.35)' }}>
-                    {isUpload ? <PlayIcon color={tagColor} size={16} /> : <ExternalLinkIcon color={tagColor} size={15} />}
+                    {playsInline ? <PlayIcon color={tagColor} size={16} /> : <ExternalLinkIcon color={tagColor} size={15} />}
                 </div>
             </div>
         </div>
@@ -107,16 +112,16 @@ const VideoTile = ({ video, tagColor, onPlay }) => {
         <div className="video-card-footer" style={{ padding: '13px 16px 15px', background: '#eef2f7', borderTop: '1px solid #dde3ea' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
                 <span style={{ marginTop: '2px', flexShrink: 0 }}>
-                    {isUpload ? <PlayIcon color={tagColor} size={11} /> : <ExternalLinkIcon color={tagColor} size={11} />}
+                    {playsInline ? <PlayIcon color={tagColor} size={11} /> : <ExternalLinkIcon color={tagColor} size={11} />}
                 </span>
                 <span className="video-card-title" style={{ fontSize: '13.5px', fontWeight: 600, color: '#1e293b', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {video.title || (isUpload ? 'Watch Video' : 'View Video')}
+                    {video.title || (playsInline ? 'Watch Video' : 'View Video')}
                 </span>
             </div>
         </div>
     );
 
-    return isUpload ? (
+    return playsInline ? (
         <div className="video-card" style={cardStyle} onClick={() => onPlay(video)}>{media}{footer}</div>
     ) : (
         <a className="video-card" href={video.linkUrl} target="_blank" rel="noreferrer" style={cardStyle}>{media}{footer}</a>
@@ -403,7 +408,7 @@ const EventDetailPublic = () => {
 
                             {event.body && (
                                 <div className="rte-content" style={{ fontSize: '16px', color: '#334155', lineHeight: 1.95 }}
-                                    dangerouslySetInnerHTML={{ __html: event.body }} />
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(event.body) }} />
                             )}
                         </div>
 
@@ -443,7 +448,7 @@ const EventDetailPublic = () => {
                                                 <div style={{ padding: '0 4px 2rem' }}>
                                                     {h.description && (
                                                         <div className="rte-content" style={{ fontSize: '15px', color: '#475569', lineHeight: 1.85, marginBottom: (images.length || videos.length) ? '1.25rem' : 0 }}
-                                                            dangerouslySetInnerHTML={{ __html: h.description }} />
+                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(h.description) }} />
                                                     )}
                                                     {images.length > 0 && (
                                                         <div style={{ marginBottom: videos.length ? '3rem' : 0 }}>
@@ -496,12 +501,21 @@ const EventDetailPublic = () => {
                     </div>
                 )}
 
-                {/* ── Uploaded video player modal ── */}
+                {/* ── Video player modal — uploaded MP4 plays via <video>, YouTube links play
+                     via an embedded iframe right here instead of opening a new tab. ── */}
                 {videoModal && (
                     <div onClick={() => setVideoModal(null)}
                         style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.2s ease' }}>
                         <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '900px' }}>
-                            <video src={videoModal.videoUrl} poster={videoModal.thumbnail || undefined} controls autoPlay style={{ width: '100%', maxHeight: '75vh', borderRadius: '12px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', display: 'block' }} />
+                            {videoModal.sourceType === 'link' ? (
+                                <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+                                    <iframe src={`${getYoutubeEmbedUrl(videoModal.linkUrl)}?autoplay=1`} title={videoModal.title || 'Video'}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen
+                                        style={{ width: '100%', height: '100%', border: 'none' }} />
+                                </div>
+                            ) : (
+                                <video src={videoModal.videoUrl} poster={videoModal.thumbnail || undefined} controls autoPlay style={{ width: '100%', maxHeight: '75vh', borderRadius: '12px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', display: 'block' }} />
+                            )}
                             {videoModal.title && <p style={{ color: '#fff', fontSize: '14px', marginTop: '1rem', textAlign: 'center' }}>{videoModal.title}</p>}
                         </div>
                         <button onClick={() => setVideoModal(null)}

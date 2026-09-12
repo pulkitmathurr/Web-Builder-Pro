@@ -154,7 +154,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
 
                 <div className="footer-main-grid" style={{
                     display: 'grid',
-                    gridTemplateColumns: 'minmax(240px,1.1fr) minmax(280px,1.5fr) minmax(210px,1fr) minmax(240px,1.2fr)',
+                    gridTemplateColumns: 'minmax(240px,1fr) minmax(280px,1.3fr) minmax(210px,0.9fr) minmax(280px,1.6fr)',
                     gap: '2.5rem',
                     alignItems: 'start',
                 }}>
@@ -263,7 +263,7 @@ const Footer = ({ school, slug, tc, bgImage }) => {
                         <div>
                             <SectionHeading accent={accent}>Our Location</SectionHeading>
                             <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
-                                <iframe src={school.map_url} width="100%" height="230" style={{ border: 0, display: 'block', minWidth: '260px' }} loading="lazy" title="School location" />
+                                <iframe src={school.map_url} width="100%" height="320" style={{ border: 0, display: 'block', minWidth: '260px' }} loading="lazy" title="School location" />
                                 <a href={school.map_url} target="_blank" rel="noopener noreferrer"
                                     style={{ position: 'absolute', top: '10px', left: '10px', background: '#ffffff', color: '#1a73e8', fontSize: '11px', fontWeight: 600, padding: '5px 10px', borderRadius: '4px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
                                     Open in Maps

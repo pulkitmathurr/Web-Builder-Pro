@@ -203,7 +203,7 @@ const Announcements = () => {
                     {/* Add Announcement */}
                     <div style={{ display: 'flex' }}>
                         <button className="announcements-addbtn" onClick={() => updateField('announcements', [{
-                            id: `ann-${Date.now()}`, title: '', date: new Date().toISOString().slice(0, 10), time: new Date().toTimeString().slice(0, 5), tag: 'General', body: '', images: [], pinned: false
+                            id: `ann-${Date.now()}`, title: '', date: new Date().toISOString().slice(0, 10), time: new Date().toTimeString().slice(0, 5), tag: 'General', body: '', images: [], pinned: false, tickerPriority: ''
                         }, ...content.announcements])}
                             style={{ padding: '11px 20px', background: '#ffffff', border: `1.5px dashed ${tc.primary}55`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, color: tc.primary, cursor: 'pointer' }}>
                             + Add Announcement
@@ -240,11 +240,19 @@ const AnnouncementCard = ({ announcement, onUpdate, onRemove, delay = 0 }) => {
 
     return (
         <div className="announcement-card" style={{ background: '#ffffff', border: '1px solid #eef1f6', borderRadius: '16px', padding: '1.75rem', boxShadow: '0 2px 12px rgba(0,0,0,0.04)', animationDelay: `${delay}s` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', gap: '12px', flexWrap: 'wrap' }}>
                 <label className="announcements-pin" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 600, color: announcement.pinned ? tc.primary : '#94a3b8', transition: 'color 0.2s ease' }}>
                     <input type="checkbox" checked={!!announcement.pinned} onChange={e => onUpdate('pinned', e.target.checked)} />
                     📌 Pin to top
                 </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: 'auto' }}
+                    title="Controls the order in the Home page ticker only — lower number shows first. Leave blank to fall back to Pin to top + date.">
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748b', whiteSpace: 'nowrap' }}>Ticker Priority</span>
+                    <input type="number" min="1" step="1" value={announcement.tickerPriority ?? ''}
+                        onChange={e => onUpdate('tickerPriority', e.target.value)}
+                        placeholder="Auto"
+                        style={{ width: '64px', padding: '6px 8px', border: '1px solid #e5e9f0', borderRadius: '8px', fontSize: '12.5px', textAlign: 'center', color: '#0f172a', outline: 'none', background: '#f8fafc' }} />
+                </div>
                 <button className="announcements-remove" onClick={onRemove} style={{ background: '#fef2f2', border: '0.5px solid #fecaca', borderRadius: '6px', color: '#ef4444', cursor: 'pointer', fontSize: '14px', width: '28px', height: '28px' }}>×</button>
             </div>
 

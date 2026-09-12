@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import NotPublished from "../../components/public/NotPublished";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { normalizeDashes } from "../../utils/dateTimeFormat";
+import { getYoutubeEmbedUrl } from "../../utils/youtube";
 
 // ── Icons (SVG, no emojis) ──
 const IconFolder = ({ size = 22, color = '#8b2252' }) => (
@@ -470,11 +471,11 @@ const GalleryPublic = () => {
                                                 {info}
                                             </div>
                                         ) : (
-                                            <a key={v.id} href={v.youtubeUrl} target="_blank" rel="noreferrer" className="video-row"
-                                                style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '14px', background: bc.cardAlt, border: '1px solid #e2e8f0', borderRadius: '8px', textDecoration: 'none' }}>
+                                            <div key={v.id} className="video-row" onClick={() => setVideoModal({ youtubeUrl: v.youtubeUrl, title: v.title, thumbnail: v.thumbnail })}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '14px', background: bc.cardAlt, border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer' }}>
                                                 {thumbBox}
                                                 {info}
-                                            </a>
+                                            </div>
                                         );
                                     })}
                                 </div>
@@ -558,12 +559,21 @@ const GalleryPublic = () => {
                     </div>
                 )}
 
-                {/* ── Uploaded Video Player Modal ── */}
+                {/* ── Video Player Modal — uploaded MP4 plays via <video>, YouTube plays via an
+                     embedded iframe right here on the site instead of opening a new tab. ── */}
                 {videoModal && (
                     <div onClick={() => setVideoModal(null)}
                         style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.92)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', animation: 'fadeIn 0.25s ease' }}>
                         <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '900px' }}>
-                            <video src={videoModal.url} poster={videoModal.thumbnail || undefined} controls autoPlay style={{ width: '100%', maxHeight: '75vh', borderRadius: '12px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', display: 'block' }} />
+                            {videoModal.youtubeUrl ? (
+                                <div style={{ width: '100%', aspectRatio: '16/9', background: '#000', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}>
+                                    <iframe src={`${getYoutubeEmbedUrl(videoModal.youtubeUrl)}?autoplay=1`} title={videoModal.title || 'Video'}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen
+                                        style={{ width: '100%', height: '100%', border: 'none' }} />
+                                </div>
+                            ) : (
+                                <video src={videoModal.url} poster={videoModal.thumbnail || undefined} controls autoPlay style={{ width: '100%', maxHeight: '75vh', borderRadius: '12px', boxShadow: '0 30px 80px rgba(0,0,0,0.5)', display: 'block' }} />
+                            )}
                             {videoModal.title && <p style={{ color: '#fff', fontSize: '14px', marginTop: '1rem', textAlign: 'center' }}>{videoModal.title}</p>}
                         </div>
                         <button onClick={() => setVideoModal(null)}

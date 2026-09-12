@@ -7,6 +7,7 @@ import Footer from "../../components/public/Footer";
 import { getThemeColors, getBaseColors, isModuleEnabled } from "../../constants/publicNav";
 import { getFontFamily } from "../../constants/fonts";
 import { RTE_LIST_CSS } from "../../constants/rteContentStyles";
+import { sanitizeHtml } from "../../utils/sanitizeHtml";
 import { SHIELD_PATH_D, SHIELD_ASPECT } from "../../constants/shieldShape";
 import { parseDate, shortDate } from "../../utils/dateTimeFormat";
 import { getMusicTrack } from "../../constants/musicTracks";
@@ -100,7 +101,7 @@ const TestimonialCard = ({ t, index, tc }) => {
 
                 {t.quote && (
                     <div className="rte-content" style={{ fontSize: '14.5px', color: '#334155', lineHeight: 1.8, flex: 1, marginBottom: '18px' }}
-                        dangerouslySetInnerHTML={{ __html: t.quote }} />
+                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(t.quote) }} />
                 )}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
@@ -314,6 +315,9 @@ const SchoolWebsite = () => {
         ? [...(announcementsContent?.announcements || [])]
             .filter(a => a.title)
             .sort((a, b) => {
+                const ap = a.tickerPriority !== '' && a.tickerPriority != null ? Number(a.tickerPriority) : Infinity;
+                const bp = b.tickerPriority !== '' && b.tickerPriority != null ? Number(b.tickerPriority) : Infinity;
+                if (ap !== bp) return ap - bp;
                 if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
                 return (parseDate(b.date) || 0) - (parseDate(a.date) || 0);
             })
@@ -625,12 +629,12 @@ const SchoolWebsite = () => {
 
                         {homeContent?.tagline && (
                             <div className="rte-content" style={{ fontFamily: homeContent.taglineFont ? getFontFamily(homeContent.taglineFont) : undefined, fontSize: 'clamp(16px,3.2vw,22px)', color: homeContent.taglineColor || tc.secondary, marginBottom: '20px', fontWeight: 600, letterSpacing: '0.02em', overflowWrap: 'normal', wordBreak: 'normal' }}
-                                dangerouslySetInnerHTML={{ __html: homeContent.tagline }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(homeContent.tagline) }} />
                         )}
 
                         {homeContent?.subText && (
                             <div className="rte-content" style={{ fontFamily: homeContent.subTextFont ? getFontFamily(homeContent.subTextFont) : undefined, fontSize: 'clamp(14px,2vw,18px)', color: homeContent.subTextColor || 'rgba(255,255,255,0.55)', lineHeight: 1.8, marginBottom: '2.5rem', width: '100%', maxWidth: '1040px', overflowWrap: 'normal', wordBreak: 'normal' }}
-                                dangerouslySetInnerHTML={{ __html: homeContent.subText }} />
+                                dangerouslySetInnerHTML={{ __html: sanitizeHtml(homeContent.subText) }} />
                         )}
                         <div className="hero-buttons-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
                             <HeroButton variant="solid" tc={tc} onClick={() => navigate(`/school/${slug}/about`)}>Explore School</HeroButton>
@@ -687,7 +691,7 @@ const SchoolWebsite = () => {
                                         </h2>
                                     )}
                                     {homeContent.introDescription && (
-                                        <div className="rte-content" style={{ fontSize: '15px', color: '#334155', lineHeight: 1.9, overflowWrap: 'normal' }} dangerouslySetInnerHTML={{ __html: homeContent.introDescription }} />
+                                        <div className="rte-content" style={{ fontSize: '15px', color: '#334155', lineHeight: 1.9, overflowWrap: 'normal' }} dangerouslySetInnerHTML={{ __html: sanitizeHtml(homeContent.introDescription) }} />
                                     )}
                                 </div>
                             </Reveal>
